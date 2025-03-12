@@ -39,15 +39,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const customizer = useSelector((state: AppState) => state.customizer);
   const theme = useTheme();
 
-  const router = useRouter();
+  // const router = useRouter();
 
-  useEffect(() => {
-    const token = getCookie("token");
+  // useEffect(() => {
+  //   const token = getCookie("token");
 
-    if (!token) {
-      router.push("/login");
-    }
-  }, [router]);
+  //   if (!token) {
+  //     router.push("/login");
+  //   }
+  // }, [router]);
 
   return (
     <MainWrapper className={customizer.activeMode === "dark" ? "darkbg mainwrapper" : "mainwrapper"}>

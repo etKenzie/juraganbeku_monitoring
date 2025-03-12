@@ -34,27 +34,5 @@ export default function DashboardPage() {
   //   return <Loading />;
   // }
 
-  // Return the appropriate dashboard based on brand_id
-  // switch (brandId) {
-  //   case "1":
-  //     return <TokopandaiDashboard />;
-  //   case "2":
-  //     return <JanjijiwaDashboard />;
-  //   case "3":
-  //     return <HangryDashboard />;
-  //   case "4":
-  //     return <DarmiDashboard />;
-  //   case "5":
-  //     return <AmorDashboard />;
-  //   case "7":
-  //     return <HausEbikeDashboard />
-  //   case "8":
-  //     return <RoempiDashboard />;
-  //   default:
-  //     // Handle unknown brand_id
-  //     router.push("/auth/auth2/login");
-  //     return <Loading />;
-  // }
-
   return <InvoiceDashboard />
 }

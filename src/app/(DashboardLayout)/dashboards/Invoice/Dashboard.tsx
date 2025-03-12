@@ -30,6 +30,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import Loading from "@/app/(DashboardLayout)/loading";
+import { useInvoiceData } from "./data";
 
 export default function Dashboard() {
   // add data on peak hours. Average line length based on date. 12 - 4. download image functionality.
@@ -39,8 +40,6 @@ export default function Dashboard() {
   // store type 1 hanya drink and service, type 2 ada drink service food, store type 3
   // daily score updates
   // liat brp liat toko
-
- console.log("HERE")
 
   const router = useRouter();
   const dispatch = useDispatch();
@@ -63,11 +62,22 @@ export default function Dashboard() {
 
   const [areas, setAreas] = useState<string[]>([""]);
 
+  const { processData } = useInvoiceData();
+  const [processedData, setProcessedData] = useState<any>(null);
+
   useEffect(() => {
     handleApplyFilters();
     // Initial gerai fetch
     // dispatch(fetchGeraiData({ search: "haus" }))
   }, []);
+
+  useEffect(() => {
+    if (orders) {
+      const data = processData(orders);
+      setProcessedData(data);
+      console.log('Processed Data:', data);
+    }
+  }, [orders]);
 
   const handleApplyFilters = async () => {
     try {
@@ -90,15 +100,10 @@ export default function Dashboard() {
     }
   };
 
-  // const handleGeraiSearch = (search: string) => {
-  //   setSearchGerai(search);
-  //   dispatch(fetchGeraiData({ search }));
-  // };
-
   // Show loading screen while data is being fetched
-  if (loading) {
-    return <Loading />;
-  }
+  // if (loading) {
+  //   return <Loading />;
+  // }
 
   return (
     <PageContainer title="Order Dashboard" description="Order Management Dashboard">
@@ -154,6 +159,48 @@ export default function Dashboard() {
           <Typography color="error" mb={2}>
             {error}
           </Typography>
+        )}
+
+        {/* Summary Section */}
+        {processedData && (
+          <Box mb={4}>
+            <Typography variant="h6" mb={2}>Order Summary</Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle1">Overall Summary</Typography>
+                  <Typography>Total Orders: {processedData.totalOrderCount}</Typography>
+                  <Typography>Total Invoice: Rp {processedData.overallTotalInvoice.toLocaleString()}</Typography>
+                  <Typography>Total Pembayaran: Rp {processedData.overallTotalPembayaran.toLocaleString()}</Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={8}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle1">Hub Summary</Typography>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Hub</TableCell>
+                        <TableCell align="right">Orders</TableCell>
+                        <TableCell align="right">Total Invoice</TableCell>
+                        <TableCell align="right">Total Pembayaran</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {Object.entries(processedData.hubSummaries).map(([hub, data]: [string, any]) => (
+                        <TableRow key={hub}>
+                          <TableCell>{hub}</TableCell>
+                          <TableCell align="right">{data.orderCount}</TableCell>
+                          <TableCell align="right">Rp {data.totalInvoice.toLocaleString()}</TableCell>
+                          <TableCell align="right">Rp {data.totalPembayaran.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
         )}
 
         <Typography variant="h6" mb={2}>Orders Table</Typography>
