@@ -1,0 +1,112 @@
+"use client";
+import dynamic from "next/dynamic";
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+import { useTheme } from "@mui/material/styles";
+import { Stack, Typography, Avatar, Box } from "@mui/material";
+import { IconArrowDownRight, IconArrowUpLeft } from "@tabler/icons-react";
+import DashboardCard from "../../shared/DashboardCard";
+import SkeletonCustomersCard from "../skeleton/CustomersCard";
+
+interface CustomersCardProps {
+  isLoading?: boolean;
+  averageScore: number;
+}
+
+const formatTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+const AverageEntry = ({ isLoading, averageScore }: CustomersCardProps) => {
+  // chart color
+  const theme = useTheme();
+  const secondarylight = theme.palette.secondary.light;
+
+  // chart
+  const optionscolumnchart: any = {
+    chart: {
+      type: "area",
+      fontFamily: "'Plus Jakarta Sans', sans-serif;",
+      foreColor: "#adb0bb",
+      toolbar: {
+        show: false,
+      },
+      height: 80,
+      sparkline: {
+        enabled: true,
+      },
+      group: "sparklines",
+    },
+    stroke: {
+      curve: "smooth",
+      width: 2,
+    },
+    fill: {
+      colors: [secondarylight],
+      type: "solid",
+      opacity: 0.05,
+    },
+    markers: {
+      size: 0,
+    },
+    tooltip: {
+      theme: theme.palette.mode === "dark" ? "dark" : "light",
+      x: {
+        show: false,
+      },
+    },
+  };
+  //   const seriescolumnchart = [
+  //     {
+  //       name: "",
+  //       color: secondary,
+  //       data: [30, 25, 35, 20, 30, 40],
+  //     },
+  //   ];
+
+  return (
+    <>
+      {isLoading ? (
+        <SkeletonCustomersCard />
+      ) : (
+        <DashboardCard
+          height="100%"
+          // footer={
+          //   <>
+          //     <Box height="80px">
+          //       {/* <Chart
+          //         options={optionscolumnchart}
+          //         series={seriescolumnchart}
+          //         type="area"
+          //         height={80}
+          //         width={"100%"}
+          //       /> */}
+          //     </Box>
+          //   </>
+          // }
+        >
+          <>
+            <Typography variant="subtitle2" color="textSecondary">
+              Entry to Service
+            </Typography>
+            <Typography variant="h2">{formatTime(averageScore)}</Typography>
+            <Stack direction="row" spacing={1} mt={1} alignItems="center">
+              {/* <Avatar sx={{ bgcolor: iconColor, width: 24, height: 24 }}>
+                <ArrowIcon width={20} style={arrowStyle} />
+              </Avatar>
+              <Typography variant="subtitle2" fontWeight="600">
+                {difference}
+              </Typography> */}
+              <Typography variant="subtitle2" color="textSecondary">
+                minutes
+              </Typography>
+            </Stack>
+          </>
+        </DashboardCard>
+      )}
+    </>
+  );
+};
+
+export default AverageEntry;
