@@ -4,7 +4,7 @@ import { AppDispatch } from "../../store";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { getCookie } from "cookies-next";
 
-const ORDER_DASHBOARD_URL = `http://192.168.13.3:9210/api/order/dashboard`;
+const ORDER_DASHBOARD_URL = `http://192.168.13.4:9210/api/order/dashboard`;
 
 // Combined interfaces
 interface DashboardData {
