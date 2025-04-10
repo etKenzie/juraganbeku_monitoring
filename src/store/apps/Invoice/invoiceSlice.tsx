@@ -52,6 +52,7 @@ interface OrderDetail {
   principle: string;
   area_name: string;
   serve_price: number | null;
+  buy_price: number;
 }
 
 export interface OrderData {

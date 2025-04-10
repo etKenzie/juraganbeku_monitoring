@@ -1,36 +1,31 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
-import { useDashboardData } from "@/app/(DashboardLayout)/dashboards/tokopandai/data";
+import { useInvoiceData } from "./data";
 import { fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
-import type { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 
-import { getCookie } from "cookies-next";
 import PageContainer from "@/app/components/container/PageContainer";
-
-import { 
-  Grid, 
-  Box, 
-  TextField, 
-  MenuItem, 
-  Button, 
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
+import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
+import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
+import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
+import {
+  Stack,
+  Grid,
+  Box,
+  TextField,
+  MenuItem,
+  Button,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import Loading from "@/app/(DashboardLayout)/loading";
-import { useInvoiceData } from "./data";
+import { formatLargeNumber, formatCurrency } from "@/app/utils/formatNumber";
+import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 
 export default function Dashboard() {
   // add data on peak hours. Average line length based on date. 12 - 4. download image functionality.
@@ -48,65 +43,125 @@ export default function Dashboard() {
   const { orders, loading, error } = useSelector(
     (state: RootState) => ({
       orders: state.invoiceReducer.orders,
-      loading: state.dashboardReducer.loading,
-      error: state.dashboardReducer.error
+      loading: state.invoiceReducer.loading,
+      error: state.invoiceReducer.error
     })
   );
   // const { dashboardData, geraiData, totalItems, meta, loading } = useSelector(
   //   (state: RootState) => state.dashboardReducer
   // );
 
-  const [startDate, setStartDate] = useState("2025-01-01");
-  const [endDate, setEndDate] = useState("2025-01-31");
-  const [sortTime, setSortTime] = useState<'asc' | 'desc'>('desc');
-
-  const [areas, setAreas] = useState<string[]>([""]);
-
   const { processData } = useInvoiceData();
   const [processedData, setProcessedData] = useState<any>(null);
+  const [isDataEmpty, setIsDataEmpty] = useState(false);
 
-  useEffect(() => {
-    handleApplyFilters();
-    // Initial gerai fetch
-    // dispatch(fetchGeraiData({ search: "haus" }))
-  }, []);
+  const [period, setPeriod] = useState("thisMonth");
+  const [customMonth, setCustomMonth] = useState(new Date().getMonth());
+  const [customYear, setCustomYear] = useState(new Date().getFullYear());
+  const [sortTime, setSortTime] = useState<'asc' | 'desc'>('desc');
 
-  useEffect(() => {
-    if (orders) {
-      const data = processData(orders);
-      setProcessedData(data);
-      console.log('Processed Data:', data);
+  const [timePeriod, setTimePeriod] = useState("Last 30 Days");
+  const [chartData, setChartData] = useState<Array<{
+    date: string;
+    totalInvoice: number;
+    totalProfit: number;
+  }>>([]);
+
+  const getDateRange = (period: string) => {
+    const now = new Date();
+    const startDate = new Date();
+
+    switch (period) {
+      case "thisMonth":
+        startDate.setMonth(now.getMonth());
+        startDate.setDate(1);
+        break;
+      case "lastMonth":
+        startDate.setMonth(now.getMonth() - 1);
+        startDate.setDate(1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        lastMonthEnd.setHours(23, 59, 59, 999);
+        return {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: lastMonthEnd.toISOString().split("T")[0],
+        };
+      case "threeMonths":
+        startDate.setMonth(now.getMonth() - 2);
+        startDate.setDate(1);
+        break;
+      case "oneYear":
+        startDate.setFullYear(now.getFullYear() - 1);
+        startDate.setMonth(now.getMonth());
+        startDate.setDate(1);
+        break;
+      case "custom":
+        startDate.setFullYear(customYear);
+        startDate.setMonth(customMonth);
+        startDate.setDate(1);
+        const customEnd = new Date(customYear, customMonth + 1, 0);
+        return {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: customEnd.toISOString().split("T")[0],
+        };
+      default:
+        startDate.setDate(1);
     }
-  }, [orders]);
+
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    return {
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+    };
+  };
+
+  const dateRange = useMemo(() => getDateRange(period), [period, customMonth, customYear]);
 
   const handleApplyFilters = async () => {
     try {
+      console.log(dateRange);
       await dispatch(
         fetchOrders({
-          startDate,
-          endDate,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
           sortTime,
         })
       );
 
-      // Log the results
-      console.log('Fetched Orders:', orders);
-
+      setIsDataEmpty(!orders || orders.length === 0);
     } catch (error) {
-      if (error instanceof Error && error.message === "AUTH_ERROR") {
-        // router.push("/auth/auth2/login");
-      }
-      console.error('Error fetching orders:', error);
+      console.error("Fetch error:", error);
+      setIsDataEmpty(true);
     }
   };
 
+  useEffect(() => {
+    handleApplyFilters();
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (orders) {
+      const processed = processData(orders);
+      setProcessedData(processed);
+
+      // Prepare chart data
+      const chartData = orders.map(order => ({
+        date: order.order_date,
+        totalInvoice: order.total_invoice,
+        totalProfit: order.total_invoice - order.total_pembayaran
+      }));
+      setChartData(chartData);
+    }
+  }, [orders]);
+
   // Show loading screen while data is being fetched
-  // if (loading) {
-  //   return <Loading />;
-  // }
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
-    <PageContainer title="Order Dashboard" description="Order Management Dashboard">
+    <PageContainer title="Invoice Dashboard" description="Invoice dashboard">
       <>
         {/* Filter Section */}
         <Box
@@ -116,33 +171,49 @@ export default function Dashboard() {
           mb={3}
         >
           <Box display="flex" gap={2} alignItems="center" width="100%">
-            <TextField
-              label="Start Date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ flexBasis: "20%", flexGrow: 1 }}
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ flexBasis: "20%", flexGrow: 1 }}
-            />
-            <FormControl sx={{ flexBasis: "20%", flexGrow: 1 }}>
-              <InputLabel>Sort Time</InputLabel>
+            <FormControl sx={{ flexBasis: "40%", flexGrow: 1 }}>
+              <InputLabel>Time Period</InputLabel>
               <Select
-                value={sortTime}
-                label="Sort Time"
-                onChange={(e) => setSortTime(e.target.value as 'asc' | 'desc')}
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                label="Time Period"
               >
-                <MenuItem value="desc">Newest First</MenuItem>
-                <MenuItem value="asc">Oldest First</MenuItem>
+                <MenuItem value="thisMonth">This Month</MenuItem>
+                <MenuItem value="lastMonth">Last Month</MenuItem>
+                <MenuItem value="threeMonths">Past 3 Months</MenuItem>
+                <MenuItem value="oneYear">Past Year</MenuItem>
+                <MenuItem value="custom">Custom</MenuItem>
               </Select>
             </FormControl>
+
+            {period === "custom" && (
+              <Stack direction="row" spacing={2} sx={{ flexBasis: "40%", flexGrow: 1 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Month</InputLabel>
+                  <Select value={customMonth} onChange={(e) => setCustomMonth(Number(e.target.value))} label="Month">
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <MenuItem key={i} value={i}>
+                        {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl fullWidth>
+                  <InputLabel>Year</InputLabel>
+                  <Select value={customYear} onChange={(e) => setCustomYear(Number(e.target.value))} label="Year">
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return (
+                        <MenuItem key={year} value={year}>
+                          {year}
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                </FormControl>
+              </Stack>
+            )}
+
             <Button
               variant="contained"
               color="primary"
@@ -154,89 +225,77 @@ export default function Dashboard() {
           </Box>
         </Box>
 
-        {/* Error Display */}
-        {error && (
-          <Typography color="error" mb={2}>
-            {error}
-          </Typography>
-        )}
-
-        {/* Summary Section */}
-        {processedData && (
-          <Box mb={4}>
-            <Typography variant="h6" mb={2}>Order Summary</Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle1">Overall Summary</Typography>
-                  <Typography>Total Orders: {processedData.totalOrderCount}</Typography>
-                  <Typography>Total Invoice: Rp {processedData.overallTotalInvoice.toLocaleString()}</Typography>
-                  <Typography>Total Pembayaran: Rp {processedData.overallTotalPembayaran.toLocaleString()}</Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={8}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle1">Hub Summary</Typography>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Hub</TableCell>
-                        <TableCell align="right">Orders</TableCell>
-                        <TableCell align="right">Total Invoice</TableCell>
-                        <TableCell align="right">Total Pembayaran</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.entries(processedData.hubSummaries).map(([hub, data]: [string, any]) => (
-                        <TableRow key={hub}>
-                          <TableCell>{hub}</TableCell>
-                          <TableCell align="right">{data.orderCount}</TableCell>
-                          <TableCell align="right">Rp {data.totalInvoice.toLocaleString()}</TableCell>
-                          <TableCell align="right">Rp {data.totalPembayaran.toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Paper>
-              </Grid>
-            </Grid>
+        {isDataEmpty ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="50vh"
+          >
+            <Typography variant="h6" color="textSecondary">
+              Data tidak tersedia untuk periode ini.
+            </Typography>
           </Box>
-        )}
+        ) : (
+          <>
+            {/* Summary Cards */}
+            {processedData && (
+              <Box mb={4}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
+                      title="Total Orders"
+                      value={processedData.totalOrderCount}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
+                      title="Total Invoice"
+                      value={processedData.overallTotalInvoice}
+                      isCurrency
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
+                      title="Total COD"
+                      value={processedData.overallCOD}
+                      isCurrency
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
+                      title="Total TOP"
+                      value={processedData.overallTOP}
+                      isCurrency
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
 
-        <Typography variant="h6" mb={2}>Orders Table</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Order Code</TableCell>
-                <TableCell>Reseller Name</TableCell>
-                <TableCell>Store Name</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Payment Type</TableCell>
-                <TableCell>Order Date</TableCell>
-                <TableCell>Total Invoice</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {orders && orders.map((order: OrderData) => (
-                <TableRow key={order.order_id}>
-                  <TableCell>{order.order_code}</TableCell>
-                  <TableCell>{order.reseller_name}</TableCell>
-                  <TableCell>{order.store_name}</TableCell>
-                  <TableCell>{order.status_order}</TableCell>
-                  <TableCell>{order.payment_type}</TableCell>
-                  <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                  <TableCell>Rp {order.total_invoice.toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            {/* Line Chart */}
+            <Box mb={4}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} lg={8}>
+                  <InvoiceLineChart data={chartData} timePeriod={timePeriod} />
+                </Grid>
+              </Grid>
+            </Box>
 
-        {orders && orders.length === 0 && (
-          <Typography textAlign="center" mt={3}>
-            No orders found for the selected period
-          </Typography>
+            {/* Store Summary Table */}
+            {processedData && (
+              <Box mb={4}>
+                <StoreSummaryTable storeSummaries={processedData.storeSummaries} />
+              </Box>
+            )}
+
+            {/* Orders Table */}
+            {orders && (
+              <Box>
+                <OrdersTable orders={orders} />
+              </Box>
+            )}
+          </>
         )}
       </>
     </PageContainer>
