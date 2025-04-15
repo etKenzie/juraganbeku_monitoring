@@ -1,19 +1,6 @@
 import {
-  IconHome,
-  IconPoint,
-  IconApps,
-  IconClipboard,
-  IconFileDescription,
-  IconBorderAll,
-  IconZoomCode,
-  IconRotate,
-  IconUserPlus,
-  IconLogin,
-  IconAlertCircle,
-  IconSettings,
   IconAlignBoxBottomCenter,
-  IconList,
-  IconAppWindow,
+  IconList
 } from "@tabler/icons-react";
 import { uniqueId } from "lodash";
 
@@ -26,11 +13,12 @@ const Menuitems = [
     // chip: "New",
     chipColor: "secondary",
   },
+
   {
     id: uniqueId(),
-    title: "Visit",
+    title: "Leads",
     icon: IconList,
-    href: "/dashboards/visit",
+    href: "/dashboards/leads",
   },
   // {
   //   id: uniqueId(),

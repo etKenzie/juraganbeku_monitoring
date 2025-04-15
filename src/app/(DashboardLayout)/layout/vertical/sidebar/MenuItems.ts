@@ -1,3 +1,9 @@
+import { getTitleKey } from "@/utils/brands/brandUtils";
+import {
+  IconAlignBoxBottomCenter,
+  IconList
+} from "@tabler/icons-react";
+import { getCookie } from "cookies-next";
 import { uniqueId } from "lodash";
 
 interface MenuitemsType {
@@ -14,30 +20,6 @@ interface MenuitemsType {
   variant?: string;
   external?: boolean;
 }
-import {
-  IconPoint,
-  IconList,
-  IconNotes,
-  IconBorderAll,
-  IconBorderHorizontal,
-  IconBorderInner,
-  IconBorderVertical,
-  IconBorderTop,
-  IconUserCircle,
-  IconAlignBoxBottomCenter,
-  IconBorderStyle2,
-  IconLockAccess,
-  IconFileCheck,
-  IconDashboard,
-  IconLogin,
-  IconUserPlus,
-  IconRotate,
-  IconZoomCode,
-  IconAlertCircle,
-  IconSettings,
-} from "@tabler/icons-react";
-import { getTitleKey } from "@/utils/brands/brandUtils";
-import { getCookie } from "cookies-next";
 
 const brandId = Number(getCookie("brand_id"));
 const brandTitle = getTitleKey(brandId);
@@ -56,9 +38,9 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     id: uniqueId(),
-    title: "Visit",
+    title: "Leads",
     icon: IconList,
-    href: "/dashboards/visit",
+    href: "/dashboards/leads",
   },
   // {
   //   id: uniqueId(),
