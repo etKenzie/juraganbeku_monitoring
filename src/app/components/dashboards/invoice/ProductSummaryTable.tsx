@@ -1,0 +1,149 @@
+"use client";
+import React, { useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TablePagination,
+  TableSortLabel,
+  Box,
+  Typography,
+} from "@mui/material";
+import { ProductSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+
+type Order = "asc" | "desc";
+
+interface HeadCell {
+  id: string;
+  label: string;
+  numeric: boolean;
+}
+
+interface DisplayProductSummary {
+  name: string;
+  totalInvoice: number;
+  quantity: number;
+  averagePrice: number;
+  totalProfit: number;
+}
+
+const headCells: HeadCell[] = [
+  { id: "name", label: "Product Name", numeric: false },
+  { id: "quantity", label: "Total Quantity", numeric: true },
+  { id: "averagePrice", label: "Average Price", numeric: true },
+  { id: "totalInvoice", label: "Total Invoice", numeric: true },
+  { id: "totalProfit", label: "Total Profit", numeric: true },
+];
+
+interface ProductSummaryTableProps {
+  productSummaries: { [key: string]: ProductSummary };
+}
+
+export default function ProductSummaryTable({ productSummaries }: ProductSummaryTableProps) {
+  const [order, setOrder] = useState<Order>("desc");
+  const [orderBy, setOrderBy] = useState<keyof DisplayProductSummary>("totalInvoice");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleRequestSort = (property: keyof DisplayProductSummary) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const formatCurrency = (value: number) => {
+    return `Rp ${value.toLocaleString()}`;
+  };
+
+
+  const sortedProducts: DisplayProductSummary[] = Object.entries(productSummaries)
+    .map(([_, data]) => ({
+      name: data.name,
+      totalInvoice: data.totalInvoice,
+      quantity: data.quantity,
+      averagePrice: data.price / data.difPrice,
+      totalProfit: data.profit,
+    }))
+    .sort((a, b) => {
+      const aValue = a[orderBy];
+      const bValue = b[orderBy];
+      if (order === "asc") {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return bValue < aValue ? -1 : bValue > aValue ? 1 : 0;
+      }
+    });
+
+  if (Object.keys(productSummaries).length === 0) {
+    return (
+      <Box>
+        <Typography variant="h6" mb={2}>Product Summary</Typography>
+        <Typography>No product data available</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Typography variant="h6" mb={2}>Product Summary</Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              {headCells.map((headCell) => (
+                <TableCell
+                  key={headCell.id}
+                  align={headCell.numeric ? "right" : "left"}
+                  sortDirection={orderBy === headCell.id ? order : false}
+                >
+                  <TableSortLabel
+                    active={orderBy === headCell.id}
+                    direction={orderBy === headCell.id ? order : "asc"}
+                    onClick={() => handleRequestSort(headCell.id as keyof DisplayProductSummary)}
+                  >
+                    {headCell.label}
+                  </TableSortLabel>
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedProducts
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((product) => (
+                <TableRow key={product.name}>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell align="right">{product.quantity}</TableCell>
+                  <TableCell align="right">{formatCurrency(product.averagePrice)}</TableCell>
+                  <TableCell align="right">{formatCurrency(product.totalInvoice)}</TableCell>
+                  <TableCell align="right">{formatCurrency(product.totalProfit)}</TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={Object.keys(productSummaries).length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </TableContainer>
+    </Box>
+  );
+} 

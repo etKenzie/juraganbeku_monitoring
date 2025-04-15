@@ -1,31 +1,44 @@
 "use client";
-import React, { useMemo } from "react";
-import { useEffect, useState } from "react";
+import { fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
+import { useEffect, useMemo, useState } from "react";
 import { useInvoiceData } from "./data";
-import { fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
 
+import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
+import AreaChart from "@/app/components/dashboards/invoice/AreaChart";
+import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
-import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
+import MonthlyStoreChart from "@/app/components/dashboards/invoice/MonthlyStoreChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
+import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
+import StoreMetrics from "@/app/components/dashboards/invoice/StoreMetrics";
+import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
+import { OrderData } from '@/store/apps/Invoice/invoiceSlice';
 import {
-  Stack,
-  Grid,
   Box,
-  TextField,
-  MenuItem,
   Button,
   FormControl,
+  Grid,
   InputLabel,
+  MenuItem,
   Select,
-  Typography,
+  Stack,
+  TextField,
+  Typography
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import Loading from "@/app/(DashboardLayout)/loading";
-import { formatLargeNumber, formatCurrency } from "@/app/utils/formatNumber";
-import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
+
+interface StoreSummary {
+  storeName: string;
+  orderCount: number;
+  totalInvoice: number;
+  totalProfit: number;
+  averageOrderValue: number;
+  activeMonths: Set<string>;
+  orders: OrderData[];
+}
 
 export default function Dashboard() {
   // add data on peak hours. Average line length based on date. 12 - 4. download image functionality.
@@ -66,6 +79,10 @@ export default function Dashboard() {
     totalInvoice: number;
     totalProfit: number;
   }>>([]);
+
+  const [selectedArea, setSelectedArea] = useState<string>("");
+  const [area, setArea] = useState("");
+  const [areas, setAreas] = useState<string[]>([""]);
 
   const getDateRange = (period: string) => {
     const now = new Date();
@@ -126,6 +143,7 @@ export default function Dashboard() {
           startDate: dateRange.startDate,
           endDate: dateRange.endDate,
           sortTime,
+          area: "transarea",
         })
       );
 
@@ -145,15 +163,35 @@ export default function Dashboard() {
       const processed = processData(orders);
       setProcessedData(processed);
 
-      // Prepare chart data
-      const chartData = orders.map(order => ({
-        date: order.order_date,
-        totalInvoice: order.total_invoice,
-        totalProfit: order.total_invoice - order.total_pembayaran
-      }));
+      // Prepare chart data using the processed data
+      const chartData = orders.map(order => {
+        // Find the store summary for this order
+        const storeSummary = processed.storeSummaries[order.user_id];
+        const profit = storeSummary ? storeSummary.totalProfit / storeSummary.orderCount : 0;
+
+        return {
+          date: order.order_date,
+          totalInvoice: order.total_invoice,
+          totalProfit: profit
+        };
+      });
       setChartData(chartData);
     }
   }, [orders]);
+
+  useEffect(() => {
+    if (processedData) {
+      // Extract unique areas from the data
+      const uniqueAreas = Object.keys(processedData.areaSummaries);
+      setAreas(uniqueAreas);
+    }
+  }, [processedData]);
+
+  const filteredOrders = orders.filter((order) => {
+    if (selectedArea && order.area !== selectedArea) return false;
+    // ... existing filter conditions ...
+    return true;
+  });
 
   // Show loading screen while data is being fetched
   if (loading) {
@@ -161,7 +199,7 @@ export default function Dashboard() {
   }
 
   return (
-    <PageContainer title="Invoice Dashboard" description="Invoice dashboard">
+    <PageContainer title="Invoice Dashboard" description="Invoice dashboard with analytics">
       <>
         {/* Filter Section */}
         <Box
@@ -214,6 +252,24 @@ export default function Dashboard() {
               </Stack>
             )}
 
+            <TextField
+              label="Select Area"
+              select
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ flexBasis: "30%", flexGrow: 1 }}
+            >
+              <MenuItem value="">All Areas</MenuItem>
+              {areas
+                .filter((areaOption) => areaOption !== "")
+                .map((areaOption) => (
+                  <MenuItem key={areaOption} value={areaOption}>
+                    {areaOption}
+                  </MenuItem>
+                ))}
+            </TextField>
+
             <Button
               variant="contained"
               color="primary"
@@ -250,8 +306,35 @@ export default function Dashboard() {
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
+                      title="Total Stores"
+                      value={Object.keys(processedData.storeSummaries).length}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
                       title="Total Invoice"
                       value={processedData.overallTotalInvoice}
+                      isCurrency
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
+                      title="Total Profit"
+                      value={processedData.overallProfit}
+                      isCurrency
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
+                      title="Total Lunas"
+                      value={processedData.overallLunas}
+                      isCurrency
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <InvoiceSummaryCard
+                      title="Total Belum Lunas"
+                      value={processedData.overallBelumLunas}
                       isCurrency
                     />
                   </Grid>
@@ -273,11 +356,21 @@ export default function Dashboard() {
               </Box>
             )}
 
+            {/* Store Metrics */}
+            {processedData && (
+              <Box mb={4}>
+                <StoreMetrics storeSummaries={processedData.storeSummaries} />
+              </Box>
+            )}
+
             {/* Line Chart */}
             <Box mb={4}>
               <Grid container spacing={3}>
                 <Grid item xs={12} lg={8}>
                   <InvoiceLineChart data={chartData} timePeriod={timePeriod} />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <MonthlyStoreChart data={processedData?.monthlyStoreCounts || {}} />
                 </Grid>
               </Grid>
             </Box>
@@ -289,10 +382,28 @@ export default function Dashboard() {
               </Box>
             )}
 
+            {/* Product Summary Table */}
+            {processedData && (
+              <Box mb={4}>
+                <ProductSummaryTable productSummaries={processedData.productSummaries} />
+              </Box>
+            )}
+
+            {/* Area Chart */}
+            {processedData && (
+              <Box mb={4}>
+                <AreaChart
+                  areaData={processedData.areaSummaries}
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                />
+              </Box>
+            )}
+
             {/* Orders Table */}
             {orders && (
               <Box>
-                <OrdersTable orders={orders} />
+                <OrdersTable orders={filteredOrders} />
               </Box>
             )}
           </>

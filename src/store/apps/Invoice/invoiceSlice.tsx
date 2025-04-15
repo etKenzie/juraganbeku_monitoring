@@ -1,8 +1,8 @@
-import axios from "../../../utils/axios";
-import { createSlice } from "@reduxjs/toolkit";
-import { AppDispatch } from "../../store";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { getCookie } from "cookies-next";
+import axios from "../../../utils/axios";
+import { AppDispatch } from "../../store";
 
 const ORDER_DASHBOARD_URL = `http://192.168.13.4:9210/api/order/dashboard`;
 
@@ -60,19 +60,15 @@ export interface OrderData {
   order_code: string;
   reseller_name: string;
   store_name: string;
-  segment: string;
-  reseller_code: string;
-  phone_number: string;
-  status_order: string;
-  status_payment: string;
-  payment_type: string;
-  order_date: string;
-  faktur_date: string;
+  user_id: string;
   process_hub: string;
-  is_cross: number;
-  order_type: string;
   total_invoice: number;
   total_pembayaran: number;
+  payment_type: string;
+  status_order: string;
+  status_payment: string;
+  order_date: string;
+  area: string;
   detail_order: OrderDetail[];
 }
 
@@ -148,6 +144,7 @@ interface OrderQuery {
   startDate?: string;
   endDate?: string;
   sortTime?: 'desc' | 'asc';
+  area?: string;
 }
 
 export const fetchOrders = (params: OrderQuery) => async (dispatch: AppDispatch) => {

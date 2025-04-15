@@ -1,9 +1,34 @@
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import { ProcessedData } from "./types";
 
-
 export const useInvoiceData = () => {
   const processData = (orders: OrderData[]): ProcessedData => {
+    if (!orders || orders.length === 0) {
+      return {
+        overallTotalInvoice: 0,
+        overallTotalPembayaran: 0,
+        totalOrderCount: 0,
+        hubSummaries: {},
+        productSummaries: {},
+        categorySummaries: {},
+        storeSummaries: {},
+        areaSummaries: {},
+        overallTOP: 0,
+        overallCOD: 0,
+        overallProfit: 0,
+        overallLunas: 0,
+        overallBelumLunas: 0,
+        thisMonthMetrics: {
+          totalOrders: 0,
+          totalStores: 0,
+          totalInvoice: 0,
+          totalProfit: 0,
+          activationRate: 0
+        },
+        monthlyStoreCounts: {}
+      };
+    }
+
     const result: ProcessedData = {
       overallTotalInvoice: 0,
       overallTotalPembayaran: 0,
@@ -12,20 +37,77 @@ export const useInvoiceData = () => {
       productSummaries: {},
       categorySummaries: {},
       storeSummaries: {},
+      areaSummaries: {},
       overallTOP: 0,
       overallCOD: 0,
       overallProfit: 0,
+      overallLunas: 0,
+      overallBelumLunas: 0,
+      thisMonthMetrics: {
+        totalOrders: 0,
+        totalStores: 0,
+        totalInvoice: 0,
+        totalProfit: 0,
+        activationRate: 0
+      },
+      monthlyStoreCounts: {}
     };
 
-    orders.forEach(order => {
-      // Add to overall totals
-      result.overallTotalInvoice += order.total_invoice;
-      result.overallTotalPembayaran += order.total_pembayaran;
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const thisMonthStores = new Set<string>();
 
-      if (order.payment_type == "COD") {
-        result.overallCOD += order.total_invoice
-      }else if (order.payment_type == "TOP") {
-        result.overallTOP += order.total_invoice
+    orders.forEach(order => {
+      const orderDate = new Date(order.order_date);
+      const orderMonth = orderDate.getMonth();
+      const orderYear = orderDate.getFullYear();
+      const processedMonthKey = `${orderYear}-${String(orderMonth + 1).padStart(2, '0')}`;
+
+      // Initialize monthly store count if not exists
+      if (!result.monthlyStoreCounts[processedMonthKey]) {
+        result.monthlyStoreCounts[processedMonthKey] = new Set<string>();
+      }
+
+      // Add store to monthly count
+      result.monthlyStoreCounts[processedMonthKey].add(order.user_id);
+
+      // Calculate this month's metrics
+      if (orderMonth === currentMonth && orderYear === currentYear) {
+        thisMonthStores.add(order.user_id);
+        result.thisMonthMetrics.totalOrders++;
+        result.thisMonthMetrics.totalInvoice += order.total_invoice || 0;
+        
+        // Calculate profit for this order
+        let orderProfit = 0;
+        order.detail_order?.forEach(item => {
+          if (!item) return;
+          const price = (item.buy_price || 0) * (item.order_quantity || 0);
+          let profit = (item.total_invoice || 0) - price;
+          if (profit < 0) profit = 0;
+          orderProfit += profit;
+        });
+        result.thisMonthMetrics.totalProfit += orderProfit;
+      }
+
+      // Add to overall totals
+      result.overallTotalInvoice += order.total_invoice || 0;
+      result.overallTotalPembayaran += order.total_pembayaran || 0;
+
+      if(order.status_payment == "LUNAS") {
+        result.overallLunas += order.total_invoice || 0;
+      } else if (order.status_payment == "WAITING VALIDATION BY FINANCE") {
+        result.overallLunas += order.total_invoice || 0;
+      } else if (order.status_payment == "BELUM LUNAS") {
+        result.overallBelumLunas += order.total_invoice || 0;
+      } else if (order.status_payment == "PARTIAL") {
+        result.overallBelumLunas += order.total_invoice || 0;
+      }
+
+      if (order.payment_type === "COD") {
+        result.overallCOD += order.total_invoice || 0;
+      } else if (order.payment_type === "TOP") {
+        result.overallTOP += order.total_invoice || 0;
       }
 
       let gross_profit = 0;
@@ -34,36 +116,36 @@ export const useInvoiceData = () => {
   
 
       // Process product each invoice
-      order.detail_order.forEach(item => {
+      order.detail_order?.forEach(item => {
+        if (!item) return;
+
         if (!result.productSummaries[item.product_id]) {
           result.productSummaries[item.product_id] = {
-            name: item.product_name,
+            name: item.product_name || '',
             totalInvoice: 0,
             quantity: 0,
-            price: item.price,
+            price: item.price || 0,
             difPrice: 1,
+            profit: 0,
           };
         }
-        if (item.price != result.productSummaries[item.product_id].price && item.price) {
-          result.productSummaries[item.product_id].price += item.price
-          result.productSummaries[item.product_id].difPrice += 1
+
+        if (item.price !== result.productSummaries[item.product_id].price && item.price) {
+          result.productSummaries[item.product_id].price += item.price;
+          result.productSummaries[item.product_id].difPrice += 1;
         }
 
-        const price = item.buy_price * item.order_quantity
-        let profit = item.total_invoice - price
+        const price = (item.buy_price || 0) * (item.order_quantity || 0);
+        let profit = (item.total_invoice || 0) - price;
 
         if (profit < 0) {
-          // console.log(`Order_id: ${order.order_id} Total Invoice: ${item.total_invoice}, Buy Price: ${item.buy_price}, Quantity: ${item.quantity}, Profit: ${profit}`);
-          profit = 0
+          profit = 0;
         }
         
-        gross_profit += profit
-      
+        gross_profit += profit;
         
-        result.productSummaries[item.product_id].totalInvoice += item.total_invoice;
-       
-
-      
+        result.productSummaries[item.product_id].totalInvoice += item.total_invoice || 0;
+        result.productSummaries[item.product_id].profit += profit;
         
         if (item.quantity) {
           result.productSummaries[item.product_id].quantity += item.quantity;
@@ -83,7 +165,7 @@ export const useInvoiceData = () => {
             };
           }
           
-          result.categorySummaries[item.category].totalInvoice += item.total_invoice;
+          result.categorySummaries[item.category].totalInvoice += item.total_invoice || 0;
           result.categorySummaries[item.category].quantity += item.quantity || 1;
           result.categorySummaries[item.category].gross_profit += profit;
           if (item.price) {
@@ -93,26 +175,66 @@ export const useInvoiceData = () => {
         }
       });
 
-      // Process store-specific data
-      const storeName = order.store_name;
-      const orderMonth = new Date(order.order_date).toISOString().slice(0, 7); // YYYY-MM format
+      // Process area data
+      let area = order.area;
+      if (!result.areaSummaries[area]) {
+        result.areaSummaries[area] = {
+          name: "",
+          totalOrders: 0,
+          totalInvoice: 0,
+          totalProfit: 0,
+          totalCOD: 0,
+          totalTOP: 0,
+          totalLunas: 0,
+          totalBelumLunas: 0,
+          orders: [],
+        };
+      }
 
-      if (!result.storeSummaries[storeName]) {
-        result.storeSummaries[storeName] = {
+      const areaSummary = result.areaSummaries[area];
+      areaSummary.totalOrders++;
+      areaSummary.totalInvoice += order.total_invoice || 0;
+      areaSummary.orders.push(order);
+
+      if (order.payment_type === 'COD') {
+        areaSummary.totalCOD += order.total_invoice || 0;
+      } else if (order.payment_type === 'TOP') {
+        areaSummary.totalTOP += order.total_invoice || 0;
+      }
+
+      if (order.status_payment === 'LUNAS') {
+        areaSummary.totalLunas += order.total_invoice || 0;
+      } else {
+        areaSummary.totalBelumLunas += order.total_invoice || 0;
+      }
+
+      areaSummary.totalProfit += gross_profit
+
+      // Process store-specific data
+      const userId = order.user_id;
+      const storeName = order.store_name;
+      const activeMonthKey = new Date(order.order_date).toISOString().slice(0, 7); // YYYY-MM format
+
+      if (!result.storeSummaries[userId]) {
+        result.storeSummaries[userId] = {
+          storeName: storeName || '',
+          userId: userId,
           totalInvoice: 0,
           totalProfit: 0,
           orderCount: 0,
           activeMonths: new Set(),
-          averageOrderValue: 0
+          averageOrderValue: 0,
+          orders: []
         };
       }
 
-      result.storeSummaries[storeName].totalInvoice += order.total_invoice;
-      result.storeSummaries[storeName].totalProfit += gross_profit;
-      result.storeSummaries[storeName].orderCount++;
-      result.storeSummaries[storeName].activeMonths.add(orderMonth);
-      result.storeSummaries[storeName].averageOrderValue = 
-        result.storeSummaries[storeName].totalInvoice / result.storeSummaries[storeName].orderCount;
+      result.storeSummaries[userId].totalInvoice += order.total_invoice || 0;
+      result.storeSummaries[userId].totalProfit += gross_profit;
+      result.storeSummaries[userId].orderCount++;
+      result.storeSummaries[userId].activeMonths.add(activeMonthKey);
+      result.storeSummaries[userId].averageOrderValue = 
+        result.storeSummaries[userId].totalInvoice / result.storeSummaries[userId].orderCount;
+      result.storeSummaries[userId].orders.push(order);
 
       // Process hub-specific data
       const hub = order.process_hub;
@@ -125,15 +247,17 @@ export const useInvoiceData = () => {
         };
       }
 
-
-      result.hubSummaries[hub].totalInvoice += order.total_invoice;
+      result.hubSummaries[hub].totalInvoice += order.total_invoice || 0;
       result.hubSummaries[hub].totalProfit += gross_profit;
-      result.hubSummaries[hub].totalPembayaran += order.total_pembayaran;
+      result.hubSummaries[hub].totalPembayaran += order.total_pembayaran || 0;
       result.hubSummaries[hub].orderCount++;
 
       result.overallProfit += gross_profit;
     });
 
+    // Calculate this month's metrics
+    result.thisMonthMetrics.totalStores = thisMonthStores.size;
+    result.thisMonthMetrics.activationRate = thisMonthStores.size / Object.keys(result.storeSummaries).length * 100;
 
     return result;
   };

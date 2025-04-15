@@ -12,38 +12,51 @@ import {
   TableSortLabel,
   Box,
   Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
 } from "@mui/material";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
+import { formatCurrency } from "@/app/utils/formatNumber";
 
 type Order = "asc" | "desc";
 
+type SortableField = keyof OrderData | "order_date" | "profit";
+
 interface HeadCell {
-  id: keyof OrderData;
+  id: SortableField;
   label: string;
   numeric: boolean;
 }
 
 const headCells: HeadCell[] = [
   { id: "order_code", label: "Order Code", numeric: false },
+  { id: "order_date", label: "Order Date", numeric: false },
   { id: "reseller_name", label: "Reseller Name", numeric: false },
   { id: "store_name", label: "Store Name", numeric: false },
-  { id: "status_order", label: "Status", numeric: false },
+  { id: "status_order", label: "Status Order", numeric: false },
+  { id: "status_payment", label: "Status Payment", numeric: false },
   { id: "payment_type", label: "Payment Type", numeric: false },
-  { id: "order_date", label: "Order Date", numeric: false },
   { id: "total_invoice", label: "Total Invoice", numeric: true },
+  { id: "profit", label: "Profit", numeric: true },
 ];
 
 interface OrdersTableProps {
   orders: OrderData[];
 }
 
-export default function OrdersTable({ orders }: OrdersTableProps) {
-  const [orderBy, setOrderBy] = useState<keyof OrderData>("order_date");
+const OrdersTable = ({ orders }: OrdersTableProps) => {
+  const [orderBy, setOrderBy] = useState<SortableField>("order_date");
   const [order, setOrder] = useState<Order>("desc");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [statusOrderFilter, setStatusOrderFilter] = useState<string>("");
+  const [statusPaymentFilter, setStatusPaymentFilter] = useState<string>("");
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("");
 
-  const handleRequestSort = (property: keyof OrderData) => {
+  const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
@@ -58,17 +71,56 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     setPage(0);
   };
 
-  const formatCurrency = (value: number) => {
-    return `Rp ${value.toLocaleString()}`;
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const sortedOrders = [...orders].sort((a, b) => {
-    const aValue = a[orderBy];
-    const bValue = b[orderBy];
+  const calculateOrderProfit = (order: OrderData) => {
+    let totalProfit = 0;
+    order.detail_order?.forEach(item => {
+      if (!item) return;
+      const price = (item.buy_price || 0) * (item.order_quantity || 0);
+      let profit = (item.total_invoice || 0) - price;
+      if (profit < 0) {
+        profit = 0;
+      }
+      totalProfit += profit;
+    });
+    return totalProfit;
+  };
+
+  const filteredOrders = orders.filter((order) => {
+    if (statusOrderFilter && order.status_order !== statusOrderFilter) return false;
+    if (statusPaymentFilter && order.status_payment !== statusPaymentFilter) return false;
+    if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
+    return true;
+  });
+
+  const uniqueStatusOrders = Array.from(new Set(orders.map((order) => order.status_order)));
+  const uniqueStatusPayments = Array.from(new Set(orders.map((order) => order.status_payment)));
+  const uniquePaymentTypes = Array.from(new Set(orders.map((order) => order.payment_type)));
+
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    let aValue: any;
+    let bValue: any;
+
+    if (orderBy === "order_date") {
+      aValue = new Date(a.order_date).getTime();
+      bValue = new Date(b.order_date).getTime();
+    } else if (orderBy === "profit") {
+      aValue = calculateOrderProfit(a);
+      bValue = calculateOrderProfit(b);
+    } else {
+      aValue = a[orderBy as keyof OrderData];
+      bValue = b[orderBy as keyof OrderData];
+    }
+
     if (order === "asc") {
       return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
     } else {
@@ -79,6 +131,59 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   return (
     <Box>
       <Typography variant="h6" mb={2}>Orders</Typography>
+      <Grid container spacing={2} mb={3}>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth>
+            <InputLabel>Status Order</InputLabel>
+            <Select
+              value={statusOrderFilter}
+              label="Status Order"
+              onChange={(e) => setStatusOrderFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              {uniqueStatusOrders.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth>
+            <InputLabel>Status Payment</InputLabel>
+            <Select
+              value={statusPaymentFilter}
+              label="Status Payment"
+              onChange={(e) => setStatusPaymentFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              {uniqueStatusPayments.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth>
+            <InputLabel>Payment Type</InputLabel>
+            <Select
+              value={paymentTypeFilter}
+              label="Payment Type"
+              onChange={(e) => setPaymentTypeFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              {uniquePaymentTypes.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {type}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+      </Grid>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -106,12 +211,14 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
               .map((order) => (
                 <TableRow key={order.order_id}>
                   <TableCell>{order.order_code}</TableCell>
+                  <TableCell>{formatDate(order.order_date)}</TableCell>
                   <TableCell>{order.reseller_name}</TableCell>
                   <TableCell>{order.store_name}</TableCell>
                   <TableCell>{order.status_order}</TableCell>
+                  <TableCell>{order.status_payment}</TableCell>
                   <TableCell>{order.payment_type}</TableCell>
-                  <TableCell>{formatDate(order.order_date)}</TableCell>
                   <TableCell align="right">{formatCurrency(order.total_invoice)}</TableCell>
+                  <TableCell align="right">{formatCurrency(calculateOrderProfit(order))}</TableCell>
                 </TableRow>
               ))}
           </TableBody>
@@ -119,7 +226,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={orders.length}
+          count={filteredOrders.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -128,4 +235,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       </TableContainer>
     </Box>
   );
-} 
+};
+
+export default OrdersTable; 
