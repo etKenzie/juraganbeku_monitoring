@@ -380,7 +380,7 @@ export default function Dashboard() {
                 <Grid item xs={12} lg={8}>
                   <InvoiceLineChart data={chartData} timePeriod={timePeriod} />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} lg={4}>
                   <MonthlyStoreChart 
                     data={processedData?.monthlyStoreCounts || {}} 
                     monthlyOrders={processedData?.monthlyOrderCounts || {}}

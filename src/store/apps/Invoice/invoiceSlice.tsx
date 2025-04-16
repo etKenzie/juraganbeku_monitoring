@@ -4,7 +4,7 @@ import { getCookie } from "cookies-next";
 import axios from "../../../utils/axios";
 import { AppDispatch } from "../../store";
 
-const ORDER_DASHBOARD_URL = `http://192.168.13.4:9210/api/order/dashboard`;
+const ORDER_DASHBOARD_URL = `https://dev.tokopandai.id/api/order/dashboard`;
 
 // Combined interfaces
 interface DashboardData {

@@ -55,16 +55,21 @@ export const useInvoiceData = () => {
       monthlyOrderCounts: {}
     };
 
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
-    const thisMonthStores = new Set<string>();
+    // Find the most recent month in the data
+    let mostRecentMonth = '';
+    let mostRecentMonthStores = new Set<string>();
 
     orders.forEach(order => {
       const orderDate = new Date(order.order_date);
       const orderMonth = orderDate.getMonth();
       const orderYear = orderDate.getFullYear();
       const processedMonthKey = `${orderYear}-${String(orderMonth + 1).padStart(2, '0')}`;
+
+      // Update most recent month if this order is more recent
+      if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {
+        mostRecentMonth = processedMonthKey;
+        mostRecentMonthStores = new Set<string>();
+      }
 
       // Initialize monthly store count if not exists
       if (!result.monthlyStoreCounts[processedMonthKey]) {
@@ -82,9 +87,9 @@ export const useInvoiceData = () => {
       // Increment monthly order count
       result.monthlyOrderCounts[processedMonthKey]++;
 
-      // Calculate this month's metrics
-      if (orderMonth === currentMonth && orderYear === currentYear) {
-        thisMonthStores.add(order.user_id);
+      // Calculate most recent month's metrics
+      if (processedMonthKey === mostRecentMonth) {
+        mostRecentMonthStores.add(order.user_id);
         result.thisMonthMetrics.totalOrders++;
         result.thisMonthMetrics.totalInvoice += order.total_invoice || 0;
         
@@ -265,9 +270,9 @@ export const useInvoiceData = () => {
       result.overallProfit += gross_profit;
     });
 
-    // Calculate this month's metrics
-    result.thisMonthMetrics.totalStores = thisMonthStores.size;
-    result.thisMonthMetrics.activationRate = thisMonthStores.size / Object.keys(result.storeSummaries).length * 100;
+    // Calculate most recent month's metrics
+    result.thisMonthMetrics.totalStores = mostRecentMonthStores.size;
+    result.thisMonthMetrics.activationRate = mostRecentMonthStores.size / Object.keys(result.storeSummaries).length * 100;
 
     return result;
   };

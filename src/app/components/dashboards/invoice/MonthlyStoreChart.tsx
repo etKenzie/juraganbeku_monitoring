@@ -155,7 +155,7 @@ const MonthlyStoreChart = ({ isLoading, data, monthlyOrders }: MonthlyStoreChart
   };
 
   return (
-    <>
+    <Box sx={{ width: '100%' }}>
       {isLoading ? (
         <SkeletonEmployeeSalaryCard />
       ) : (
@@ -178,20 +178,29 @@ const MonthlyStoreChart = ({ isLoading, data, monthlyOrders }: MonthlyStoreChart
             </ToggleButtonGroup>
           }
         >
-          <Box height="300px">
+          <Box height="300px" width="100%">
             {isClient && (
               <Chart
-                options={optionscolumnchart}
+                options={{
+                  ...optionscolumnchart,
+                  chart: {
+                    ...optionscolumnchart.chart,
+                    width: '100%',
+                    toolbar: {
+                      show: false
+                    }
+                  }
+                }}
                 series={seriescolumnchart}
                 type="bar"
                 height={280}
-                width={"100%"}
+                width="100%"
               />
             )}
           </Box>
         </DashboardWidgetCard>
       )}
-    </>
+    </Box>
   );
 };
 

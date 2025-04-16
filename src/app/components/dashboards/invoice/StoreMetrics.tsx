@@ -1,13 +1,13 @@
 import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import {
-  Box,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Modal,
-  Paper,
-  Typography,
+    Box,
+    Grid,
+    List,
+    ListItem,
+    ListItemText,
+    Modal,
+    Paper,
+    Typography,
 } from "@mui/material";
 import { useState } from "react";
 
@@ -40,15 +40,19 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
     return date.toLocaleString('default', { month: 'long', year: 'numeric' });
   }
 
-  // Get current and previous months
-  const currentDate = new Date();
-  const currentMonth = getMonthString(currentDate);
-  const previousMonth = getMonthString(currentDate, -1);
-  const twoMonthsAgo = getMonthString(currentDate, -2);
+  // Get all months from store summaries
+  const allMonths = new Set<string>();
+  Object.values(storeSummaries).forEach(store => {
+    store.activeMonths.forEach(month => allMonths.add(month));
+  });
+
+  // Sort months and get the most recent three
+  const sortedMonths = Array.from(allMonths).sort().reverse();
+  const [mostRecentMonth, previousMonth, twoMonthsAgo] = sortedMonths;
 
   // Calculate activation rate
-  const currentMonthStores = Object.values(storeSummaries).filter(
-    (store) => store.activeMonths.has(currentMonth)
+  const mostRecentMonthStores = Object.values(storeSummaries).filter(
+    (store) => store.activeMonths.has(mostRecentMonth)
   ).length;
 
   const previousMonthStores = Object.values(storeSummaries).filter(
@@ -60,17 +64,15 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
   ).length;
 
   const activationRate = previousMonthStores > 0 
-    ? ((currentMonthStores / previousMonthStores) * 100).toFixed(1) 
+    ? ((mostRecentMonthStores / previousMonthStores) * 100).toFixed(1) 
     : "N/A";
 
-  // Calculate consecutive months (current + previous two)
-  const threeMonthsAgo = getMonthString(currentDate, -3);
-
+  // Calculate consecutive months (most recent + previous two)
   const storesByRecentActivity = {
     // Stores active in exactly 3 months
     exactlyThreeMonths: Object.entries(storeSummaries).filter(
       ([_, store]) => {
-        const activeCount = [currentMonth, previousMonth, twoMonthsAgo]
+        const activeCount = [mostRecentMonth, previousMonth, twoMonthsAgo]
           .filter(month => store.activeMonths.has(month)).length;
         return activeCount === 3;
       }
@@ -79,7 +81,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
     // Stores active in exactly 2 months
     exactlyTwoMonths: Object.entries(storeSummaries).filter(
       ([_, store]) => {
-        const activeCount = [currentMonth, previousMonth, twoMonthsAgo]
+        const activeCount = [mostRecentMonth, previousMonth, twoMonthsAgo]
           .filter(month => store.activeMonths.has(month)).length;
         return activeCount === 2;
       }
@@ -88,7 +90,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
     // Stores active in exactly 1 month
     exactlyOneMonth: Object.entries(storeSummaries).filter(
       ([_, store]) => {
-        const activeCount = [currentMonth, previousMonth, twoMonthsAgo]
+        const activeCount = [mostRecentMonth, previousMonth, twoMonthsAgo]
           .filter(month => store.activeMonths.has(month)).length;
         return activeCount === 1;
       }
