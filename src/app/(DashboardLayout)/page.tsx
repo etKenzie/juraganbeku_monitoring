@@ -1,13 +1,6 @@
 "use client";
-import React, { useEffect } from "react";
 
-import { getCookie } from "cookies-next";
-
-import { useRouter } from "next/navigation";
-import Loading from "@/app/(DashboardLayout)/loading";
-
-import TokopandaiDashboard from "./dashboards/tokopandai/Dashboard";
-import InvoiceDashboard from "./dashboards/Invoice/Dashboard"
+import InvoiceDashboard from "./dashboards/Invoice/Dashboard";
 
 
 export default function DashboardPage() {
