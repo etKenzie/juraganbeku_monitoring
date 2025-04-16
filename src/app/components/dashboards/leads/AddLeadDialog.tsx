@@ -12,6 +12,7 @@ import {
   MenuItem,
   Select,
   TextField,
+  Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
@@ -33,7 +34,7 @@ interface Lead {
 interface AddLeadDialogProps {
   open: boolean;
   onClose: () => void;
-  onAdd?: (lead: Lead) => void;
+  onAdd?: (lead: Lead | Omit<Lead, 'id'>) => void;
   initialData?: Lead;
 }
 
@@ -54,6 +55,31 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     deadline: '',
     feedback: '',
   });
+
+  const [errors, setErrors] = useState<Partial<Record<keyof Lead, string>>>({});
+
+  const validateForm = () => {
+    const newErrors: Partial<Record<keyof Lead, string>> = {};
+    
+    if (!lead.company_name.trim()) {
+      newErrors.company_name = 'Company name is required';
+    }
+    if (!lead.contact_person.trim()) {
+      newErrors.contact_person = 'Contact person is required';
+    }
+    if (!lead.category) {
+      newErrors.category = 'Category is required';
+    }
+    if (!lead.found_by) {
+      newErrors.found_by = 'Found by is required';
+    }
+    if (!lead.deadline) {
+      newErrors.deadline = 'Deadline is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -77,9 +103,17 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
   }, [initialData]);
 
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       if (onAdd) {
-        onAdd({ ...lead, id: initialData?.id || 0 });
+        if (initialData) {
+          onAdd({ ...lead, id: initialData.id });
+        } else {
+          onAdd(lead);
+        }
       } else {
         const { error } = await supabase
           .from('leads')
@@ -101,15 +135,19 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
           <TextField
-            label="Company Name"
+            label="Company Name *"
             value={lead.company_name}
             onChange={(e) => setLead({ ...lead, company_name: e.target.value })}
+            error={!!errors.company_name}
+            helperText={errors.company_name}
             fullWidth
           />
           <TextField
-            label="Contact Person"
+            label="Contact Person *"
             value={lead.contact_person}
             onChange={(e) => setLead({ ...lead, contact_person: e.target.value })}
+            error={!!errors.contact_person}
+            helperText={errors.contact_person}
             fullWidth
           />
           <TextField
@@ -124,11 +162,11 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
             onChange={(e) => setLead({ ...lead, area: e.target.value })}
             fullWidth
           />
-          <FormControl fullWidth>
-            <InputLabel>Category</InputLabel>
+          <FormControl fullWidth error={!!errors.category}>
+            <InputLabel>Category *</InputLabel>
             <Select
               value={lead.category}
-              label="Category"
+              label="Category *"
               onChange={(e) => setLead({ ...lead, category: e.target.value })}
             >
               {leadCategories.map((category) => (
@@ -137,6 +175,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
                 </MenuItem>
               ))}
             </Select>
+            {errors.category && <Typography color="error" variant="caption">{errors.category}</Typography>}
           </FormControl>
           <TextField
             label="Number of Branches"
@@ -151,11 +190,11 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
             onChange={(e) => setLead({ ...lead, source: e.target.value })}
             fullWidth
           />
-          <FormControl fullWidth>
-            <InputLabel>Found By</InputLabel>
+          <FormControl fullWidth error={!!errors.found_by}>
+            <InputLabel>Found By *</InputLabel>
             <Select
               value={lead.found_by}
-              label="Found By"
+              label="Found By *"
               onChange={(e) => setLead({ ...lead, found_by: e.target.value })}
             >
               {foundByOptions.map((name) => (
@@ -164,12 +203,15 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
                 </MenuItem>
               ))}
             </Select>
+            {errors.found_by && <Typography color="error" variant="caption">{errors.found_by}</Typography>}
           </FormControl>
           <TextField
-            label="Deadline"
+            label="Deadline *"
             type="date"
             value={lead.deadline}
             onChange={(e) => setLead({ ...lead, deadline: e.target.value })}
+            error={!!errors.deadline}
+            helperText={errors.deadline}
             InputLabelProps={{ shrink: true }}
             fullWidth
           />

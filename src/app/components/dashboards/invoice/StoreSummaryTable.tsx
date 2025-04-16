@@ -1,20 +1,20 @@
 "use client";
-import React, { useState } from "react";
+import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+import DownloadButton from "@/app/components/common/DownloadButton";
 import {
+  Box,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
   TablePagination,
+  TableRow,
   TableSortLabel,
-  Box,
   Typography,
 } from "@mui/material";
-import { ProcessedData, StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
-import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
+import React, { useState } from "react";
 import StoreDetailsModal from './StoreDetailsModal';
 
 type Order = "asc" | "desc";
@@ -108,7 +108,16 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
 
   return (
     <Box>
-      <Typography variant="h6" mb={2}>Store Summary</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">Store Summary</Typography>
+        <DownloadButton
+          data={Object.values(storeSummaries)}
+          filename="store_summary"
+          sheetName="Store Summary"
+          variant="outlined"
+          size="small"
+        />
+      </Box>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>

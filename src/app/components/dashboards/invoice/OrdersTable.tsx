@@ -1,25 +1,26 @@
 "use client";
-import React, { useState } from "react";
+import DownloadButton from "@/app/components/common/DownloadButton";
+import { formatCurrency } from "@/app/utils/formatNumber";
+import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
+  Box,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
   TablePagination,
+  TableRow,
   TableSortLabel,
-  Box,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
 } from "@mui/material";
-import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
-import { formatCurrency } from "@/app/utils/formatNumber";
+import React, { useState } from "react";
 
 type Order = "asc" | "desc";
 
@@ -130,7 +131,16 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
 
   return (
     <Box>
-      <Typography variant="h6" mb={2}>Orders</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">Orders Table</Typography>
+        <DownloadButton
+          data={filteredOrders}
+          filename="orders"
+          sheetName="Orders"
+          variant="outlined"
+          size="small"
+        />
+      </Box>
       <Grid container spacing={2} mb={3}>
         <Grid item xs={12} sm={4}>
           <FormControl fullWidth>

@@ -1,27 +1,28 @@
 "use client";
+import DownloadButton from "@/app/components/common/DownloadButton";
 import { supabase } from "@/lib/supabaseClient";
 import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
 import {
-    Box,
-    Button,
-    Chip,
-    FormControl,
-    Grid,
-    IconButton,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TableSortLabel,
-    Tooltip,
-    Typography,
+  Box,
+  Button,
+  Chip,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TableSortLabel,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import React, { useState } from "react";
 import AddLeadDialog from "./AddLeadDialog";
@@ -172,8 +173,12 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
     }
   };
 
-  const handleEditLead = async (updatedLead: Lead) => {
+  const handleEditLead = async (updatedLead: Lead | Omit<Lead, 'id'>) => {
     try {
+      if (!('id' in updatedLead)) {
+        throw new Error('Cannot edit lead without ID');
+      }
+
       const { error } = await supabase
         .from('leads')
         .update(updatedLead)
@@ -187,10 +192,45 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
     }
   };
 
+  const handleAddLead = async (newLead: Lead | Omit<Lead, 'id'>) => {
+    try {
+      if ('id' in newLead) {
+        // This is an edit operation
+        const { error } = await supabase
+          .from('leads')
+          .update(newLead)
+          .eq('id', newLead.id);
+
+        if (error) throw error;
+      } else {
+        // This is an add operation
+        const { error } = await supabase
+          .from('leads')
+          .insert([newLead]);
+
+        if (error) throw error;
+      }
+      
+      // Refresh the page after successful operation
+      window.location.reload();
+    } catch (error) {
+      console.error('Error saving lead:', error);
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Leads Table</Typography>
+        <Typography variant="h6">Leads</Typography>
+        <DownloadButton
+          data={filteredLeads}
+          filename="leads"
+          sheetName="Leads"
+          variant="outlined"
+          size="small"
+        />
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Button
           variant="contained"
           color="primary"
@@ -358,7 +398,7 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
           setAddDialogOpen(false);
           setEditingLead(undefined);
         }}
-        onAdd={editingLead ? handleEditLead : undefined}
+        onAdd={editingLead ? handleEditLead : handleAddLead}
         initialData={editingLead}
       />
     </Box>

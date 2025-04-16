@@ -1,19 +1,20 @@
 "use client";
-import React, { useState } from "react";
+import { ProductSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+import DownloadButton from "@/app/components/common/DownloadButton";
 import {
+  Box,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
   TablePagination,
+  TableRow,
   TableSortLabel,
-  Box,
   Typography,
 } from "@mui/material";
-import { ProductSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+import React, { useState } from "react";
 
 type Order = "asc" | "desc";
 
@@ -98,7 +99,16 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
 
   return (
     <Box>
-      <Typography variant="h6" mb={2}>Product Summary</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">Product Summary</Typography>
+        <DownloadButton
+          data={Object.values(productSummaries)}
+          filename="product_summary"
+          sheetName="Product Summary"
+          variant="outlined"
+          size="small"
+        />
+      </Box>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
