@@ -110,7 +110,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
               Monthly Metrics
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Invoice
                 </Typography>
@@ -118,7 +118,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
                   {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(monthlyMetrics.totalInvoice)}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Profit
                 </Typography>
@@ -126,7 +126,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
                   {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(monthlyMetrics.totalProfit)}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Orders
                 </Typography>
@@ -134,7 +134,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
                   {monthlyMetrics.totalOrders}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Stores
                 </Typography>
