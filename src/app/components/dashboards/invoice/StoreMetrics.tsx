@@ -1,21 +1,27 @@
-import { useState } from "react";
+import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import {
   Box,
   Grid,
-  Typography,
-  Modal,
   List,
   ListItem,
   ListItemText,
+  Modal,
   Paper,
+  Typography,
 } from "@mui/material";
-import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+import { useState } from "react";
 
 interface StoreMetricsProps {
   storeSummaries: { [key: string]: StoreSummary };
+  monthlyMetrics: {
+    totalInvoice: number;
+    totalProfit: number;
+    totalOrders: number;
+    totalStores: number;
+  };
 }
 
-const StoreMetrics = ({ storeSummaries }: StoreMetricsProps) => {
+const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => {
   const [openModal, setOpenModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalStores, setModalStores] = useState<string[]>([]);
@@ -101,28 +107,56 @@ const StoreMetrics = ({ storeSummaries }: StoreMetricsProps) => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
-              Activation Rate
+              Monthly Metrics
             </Typography>
-            <Typography variant="h4">
-              {activationRate}%
-            </Typography>
-            <Box mt={2}>
-              <Typography variant="h5" color="textSecondary">
-                {formatMonthDisplay(currentMonth)}: {currentMonthStores} stores
-              </Typography>
-              <Typography variant="h5" color="textSecondary">
-                {formatMonthDisplay(previousMonth)}: {previousMonthStores} stores
-              </Typography>
-              <Typography variant="h5" color="textSecondary">
-                {formatMonthDisplay(twoMonthsAgo)}: {twoMonthsAgoStores} stores
-              </Typography>
-            </Box>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total Invoice
+                </Typography>
+                <Typography variant="h4">
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(monthlyMetrics.totalInvoice)}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total Profit
+                </Typography>
+                <Typography variant="h4">
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(monthlyMetrics.totalProfit)}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total Orders
+                </Typography>
+                <Typography variant="h4">
+                  {monthlyMetrics.totalOrders}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total Stores
+                </Typography>
+                <Typography variant="h4">
+                  {monthlyMetrics.totalStores}
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Activation Rate
+                </Typography>
+                <Typography variant="h4">
+                  {activationRate}%
+                </Typography>
+              </Grid>
+            </Grid>
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
-              Monthly Active Stores
+              Store Activity
             </Typography>
             <Box mt={2}>
               <Box sx={{ cursor: "pointer" }} onClick={() => handleOpenModal("Active in 3 Months", storesByRecentActivity.exactlyThreeMonths)}>

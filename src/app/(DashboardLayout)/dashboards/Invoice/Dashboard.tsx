@@ -90,30 +90,24 @@ export default function Dashboard() {
 
     switch (period) {
       case "thisMonth":
-        startDate.setMonth(now.getMonth());
+        // For this month, show last 3 months including current month
+        startDate.setMonth(now.getMonth() - 2);
         startDate.setDate(1);
         break;
       case "lastMonth":
-        startDate.setMonth(now.getMonth() - 1);
+        // For last month, show the previous 3 months
+        startDate.setMonth(now.getMonth() - 3);
         startDate.setDate(1);
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0);
         lastMonthEnd.setHours(23, 59, 59, 999);
         return {
           startDate: startDate.toISOString().split("T")[0],
           endDate: lastMonthEnd.toISOString().split("T")[0],
         };
-      case "threeMonths":
-        startDate.setMonth(now.getMonth() - 2);
-        startDate.setDate(1);
-        break;
-      case "oneYear":
-        startDate.setFullYear(now.getFullYear() - 1);
-        startDate.setMonth(now.getMonth());
-        startDate.setDate(1);
-        break;
       case "custom":
+        // For custom, show 3 months from selected month
         startDate.setFullYear(customYear);
-        startDate.setMonth(customMonth);
+        startDate.setMonth(customMonth - 2); // Go back 2 months from selected month
         startDate.setDate(1);
         const customEnd = new Date(customYear, customMonth + 1, 0);
         return {
@@ -121,6 +115,7 @@ export default function Dashboard() {
           endDate: customEnd.toISOString().split("T")[0],
         };
       default:
+        startDate.setMonth(now.getMonth() - 2);
         startDate.setDate(1);
     }
 
@@ -198,6 +193,8 @@ export default function Dashboard() {
     return <Loading />;
   }
 
+  console.log(processedData)
+
   return (
     <PageContainer title="Invoice Dashboard" description="Invoice dashboard with analytics">
       <>
@@ -218,8 +215,6 @@ export default function Dashboard() {
               >
                 <MenuItem value="thisMonth">This Month</MenuItem>
                 <MenuItem value="lastMonth">Last Month</MenuItem>
-                <MenuItem value="threeMonths">Past 3 Months</MenuItem>
-                <MenuItem value="oneYear">Past Year</MenuItem>
                 <MenuItem value="custom">Custom</MenuItem>
               </Select>
             </FormControl>
@@ -228,7 +223,11 @@ export default function Dashboard() {
               <Stack direction="row" spacing={2} sx={{ flexBasis: "40%", flexGrow: 1 }}>
                 <FormControl fullWidth>
                   <InputLabel>Month</InputLabel>
-                  <Select value={customMonth} onChange={(e) => setCustomMonth(Number(e.target.value))} label="Month">
+                  <Select 
+                    value={customMonth} 
+                    onChange={(e) => setCustomMonth(Number(e.target.value))} 
+                    label="Month"
+                  >
                     {Array.from({ length: 12 }, (_, i) => (
                       <MenuItem key={i} value={i}>
                         {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
@@ -238,7 +237,11 @@ export default function Dashboard() {
                 </FormControl>
                 <FormControl fullWidth>
                   <InputLabel>Year</InputLabel>
-                  <Select value={customYear} onChange={(e) => setCustomYear(Number(e.target.value))} label="Year">
+                  <Select 
+                    value={customYear} 
+                    onChange={(e) => setCustomYear(Number(e.target.value))} 
+                    label="Year"
+                  >
                     {Array.from({ length: 5 }, (_, i) => {
                       const year = new Date().getFullYear() - i;
                       return (
@@ -359,7 +362,15 @@ export default function Dashboard() {
             {/* Store Metrics */}
             {processedData && (
               <Box mb={4}>
-                <StoreMetrics storeSummaries={processedData.storeSummaries} />
+                <StoreMetrics 
+                  storeSummaries={processedData.storeSummaries} 
+                  monthlyMetrics={{
+                    totalInvoice: processedData.thisMonthMetrics.totalInvoice,
+                    totalProfit: processedData.thisMonthMetrics.totalProfit,
+                    totalOrders: processedData.thisMonthMetrics.totalOrders,
+                    totalStores: processedData.thisMonthMetrics.totalStores
+                  }}
+                />
               </Box>
             )}
 
@@ -370,7 +381,10 @@ export default function Dashboard() {
                   <InvoiceLineChart data={chartData} timePeriod={timePeriod} />
                 </Grid>
                 <Grid item xs={12} md={4}>
-                  <MonthlyStoreChart data={processedData?.monthlyStoreCounts || {}} />
+                  <MonthlyStoreChart 
+                    data={processedData?.monthlyStoreCounts || {}} 
+                    monthlyOrders={processedData?.monthlyOrderCounts || {}}
+                  />
                 </Grid>
               </Grid>
             </Box>

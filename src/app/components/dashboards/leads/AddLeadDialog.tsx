@@ -1,17 +1,17 @@
 "use client";
 import { supabase } from "@/lib/supabaseClient";
 import {
-    Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    InputLabel,
-    MenuItem,
-    Select,
-    TextField,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
@@ -27,6 +27,7 @@ interface Lead {
   branch_count: number;
   deadline: string;
   feedback: string;
+  found_by: string;
 }
 
 interface AddLeadDialogProps {
@@ -37,6 +38,7 @@ interface AddLeadDialogProps {
 }
 
 const leadCategories = ['BELUM', 'HOT', 'WARM', 'COLD'];
+const foundByOptions = ['HARITZ', 'ZAHRO', 'MARDI', 'ADRIL', 'KENZIE'];
 
 const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps) => {
   const [lead, setLead] = useState<Omit<Lead, 'id'>>({
@@ -47,6 +49,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     category: '',
     branch_count: 0,
     source: '',
+    found_by: '',
     date_added: new Date().toISOString().split('T')[0],
     deadline: '',
     feedback: '',
@@ -65,6 +68,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
         category: '',
         branch_count: 0,
         source: '',
+        found_by: '',
         date_added: new Date().toISOString().split('T')[0],
         deadline: '',
         feedback: '',
@@ -147,6 +151,20 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
             onChange={(e) => setLead({ ...lead, source: e.target.value })}
             fullWidth
           />
+          <FormControl fullWidth>
+            <InputLabel>Found By</InputLabel>
+            <Select
+              value={lead.found_by}
+              label="Found By"
+              onChange={(e) => setLead({ ...lead, found_by: e.target.value })}
+            >
+              {foundByOptions.map((name) => (
+                <MenuItem key={name} value={name}>
+                  {name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <TextField
             label="Deadline"
             type="date"

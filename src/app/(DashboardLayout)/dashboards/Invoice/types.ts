@@ -60,6 +60,7 @@ export interface ProcessedData {
     activationRate: number;
   };
   monthlyStoreCounts: { [key: string]: Set<string> };
+  monthlyOrderCounts: { [key: string]: number };
 }
 
 export interface StoreSummary {

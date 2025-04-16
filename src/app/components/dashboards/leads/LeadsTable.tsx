@@ -39,6 +39,7 @@ interface Lead {
   branch_count: number;
   deadline: string;
   feedback: string;
+  found_by: string;
 }
 
 type Order = "asc" | "desc";
@@ -59,6 +60,7 @@ const headCells: HeadCell[] = [
   { id: "category", label: "Category", numeric: false },
   { id: "branch_count", label: "Branches", numeric: true },
   { id: "source", label: "Source", numeric: false },
+  { id: "found_by", label: "Found By", numeric: false },
   { id: "date_added", label: "Entry Date", numeric: false },
   { id: "deadline", label: "Deadline", numeric: false },
   { id: "feedback", label: "Feedback", numeric: false },
@@ -75,6 +77,7 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [areaFilter, setAreaFilter] = useState<string>("");
+  const [foundByFilter, setFoundByFilter] = useState<string>("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [followUpsOpen, setFollowUpsOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
@@ -116,9 +119,12 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
     }
   };
 
+  const foundByOptions = ['HARITZ', 'ZAHRO', 'MARDI', 'ADRIL', 'KENZIE'];
+
   const filteredLeads = leads.filter((lead) => {
     if (categoryFilter && lead.category !== categoryFilter) return false;
     if (areaFilter && lead.area !== areaFilter) return false;
+    if (foundByFilter && lead.found_by !== foundByFilter) return false;
     return true;
   });
 
@@ -194,7 +200,7 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
         </Button>
       </Box>
       <Grid container spacing={2} mb={3}>
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={4}>
           <FormControl fullWidth>
             <InputLabel>Category</InputLabel>
             <Select
@@ -211,7 +217,7 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={4}>
           <FormControl fullWidth>
             <InputLabel>Area</InputLabel>
             <Select
@@ -223,6 +229,23 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
               {uniqueAreas.map((area) => (
                 <MenuItem key={area} value={area}>
                   {area}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth>
+            <InputLabel>Found By</InputLabel>
+            <Select
+              value={foundByFilter}
+              label="Found By"
+              onChange={(e) => setFoundByFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              {foundByOptions.map((name) => (
+                <MenuItem key={name} value={name}>
+                  {name}
                 </MenuItem>
               ))}
             </Select>
@@ -269,6 +292,7 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
                   </TableCell>
                   <TableCell align="right">{lead.branch_count}</TableCell>
                   <TableCell>{lead.source}</TableCell>
+                  <TableCell>{lead.found_by}</TableCell>
                   <TableCell>{formatDate(lead.date_added)}</TableCell>
                   <TableCell>{lead.deadline ? formatDate(lead.deadline) : '-'}</TableCell>
                   <TableCell>{lead.feedback || '-'}</TableCell>

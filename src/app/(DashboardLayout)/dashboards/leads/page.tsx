@@ -18,6 +18,7 @@ interface Lead {
   branch_count: number;
   deadline: string;
   feedback: string;
+  found_by: string;
 }
 
 const LeadsPage = () => {

@@ -25,7 +25,8 @@ export const useInvoiceData = () => {
           totalProfit: 0,
           activationRate: 0
         },
-        monthlyStoreCounts: {}
+        monthlyStoreCounts: {},
+        monthlyOrderCounts: {}
       };
     }
 
@@ -50,7 +51,8 @@ export const useInvoiceData = () => {
         totalProfit: 0,
         activationRate: 0
       },
-      monthlyStoreCounts: {}
+      monthlyStoreCounts: {},
+      monthlyOrderCounts: {}
     };
 
     const currentDate = new Date();
@@ -69,8 +71,16 @@ export const useInvoiceData = () => {
         result.monthlyStoreCounts[processedMonthKey] = new Set<string>();
       }
 
+      // Initialize monthly order count if not exists
+      if (!result.monthlyOrderCounts[processedMonthKey]) {
+        result.monthlyOrderCounts[processedMonthKey] = 0;
+      }
+
       // Add store to monthly count
       result.monthlyStoreCounts[processedMonthKey].add(order.user_id);
+      
+      // Increment monthly order count
+      result.monthlyOrderCounts[processedMonthKey]++;
 
       // Calculate this month's metrics
       if (orderMonth === currentMonth && orderYear === currentYear) {
