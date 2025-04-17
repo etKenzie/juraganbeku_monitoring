@@ -138,7 +138,6 @@ export default function Dashboard() {
           startDate: dateRange.startDate,
           endDate: dateRange.endDate,
           sortTime,
-          area: "transarea",
         })
       );
 
