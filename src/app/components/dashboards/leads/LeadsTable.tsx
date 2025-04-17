@@ -39,7 +39,7 @@ interface Lead {
   category: string;
   branch_count: number;
   deadline: string;
-  feedback: string;
+  memo: string;
   found_by: string;
 }
 
@@ -64,7 +64,7 @@ const headCells: HeadCell[] = [
   { id: "found_by", label: "Found By", numeric: false },
   { id: "date_added", label: "Entry Date", numeric: false },
   { id: "deadline", label: "Deadline", numeric: false },
-  { id: "feedback", label: "Feedback", numeric: false },
+  { id: "memo", label: "Memo", numeric: false },
 ];
 
 interface LeadsTableProps {
@@ -318,7 +318,15 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
             {sortedLeads
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((lead) => (
-                <TableRow key={lead.id}>
+                <TableRow 
+                  key={lead.id}
+                  hover
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setSelectedLead(lead);
+                    setFollowUpsOpen(true);
+                  }}
+                >
                   <TableCell>{lead.company_name}</TableCell>
                   <TableCell>{lead.contact_person}</TableCell>
                   <TableCell>{lead.phone}</TableCell>
@@ -335,35 +343,28 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
                   <TableCell>{lead.found_by}</TableCell>
                   <TableCell>{formatDate(lead.date_added)}</TableCell>
                   <TableCell>{lead.deadline ? formatDate(lead.deadline) : '-'}</TableCell>
-                  <TableCell>{lead.feedback || '-'}</TableCell>
+                  <TableCell>{lead.memo || '-'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                    <Tooltip title="Add Follow-up">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setSelectedLead(lead);
-                            setFollowUpsOpen(true);
-                          }}
-                        >
-                          <AddIcon />
-                        </IconButton>
-                      </Tooltip>
                       <IconButton
                         size="small"
-                        onClick={() => setEditingLead(lead)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click event
+                          setEditingLead(lead);
+                        }}
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteLead(lead.id)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click event
+                          handleDeleteLead(lead.id);
+                        }}
                       >
                         <DeleteIcon />
                       </IconButton>
-                      
                     </Box>
                   </TableCell>
                 </TableRow>

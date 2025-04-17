@@ -27,7 +27,7 @@ interface Lead {
   category: string;
   branch_count: number;
   deadline: string;
-  feedback: string;
+  memo: string;
   found_by: string;
 }
 
@@ -38,7 +38,7 @@ interface AddLeadDialogProps {
   initialData?: Lead;
 }
 
-const leadCategories = ['BELUM', 'HOT', 'WARM', 'COLD'];
+const leadCategories = ['HOT', 'WARM', 'COLD'];
 const foundByOptions = ['HARITZ', 'ZAHRO', 'MARDI', 'ADRIL', 'KENZIE'];
 
 const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps) => {
@@ -53,7 +53,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     found_by: '',
     date_added: new Date().toISOString().split('T')[0],
     deadline: '',
-    feedback: '',
+    memo: '',
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof Lead, string>>>({});
@@ -97,7 +97,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
         found_by: '',
         date_added: new Date().toISOString().split('T')[0],
         deadline: '',
-        feedback: '',
+        memo: '',
       });
     }
   }, [initialData]);
@@ -216,9 +216,9 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
             fullWidth
           />
           <TextField
-            label="Feedback"
-            value={lead.feedback}
-            onChange={(e) => setLead({ ...lead, feedback: e.target.value })}
+            label="Memo"
+            value={lead.memo}
+            onChange={(e) => setLead({ ...lead, memo: e.target.value })}
             multiline
             rows={3}
             fullWidth

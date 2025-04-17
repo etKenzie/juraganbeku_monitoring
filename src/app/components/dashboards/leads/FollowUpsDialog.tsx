@@ -46,7 +46,7 @@ interface Lead {
   category: string;
   branch_count: number;
   deadline: string;
-  feedback: string;
+  memo: string;
 }
 
 const followUpStatuses = [
