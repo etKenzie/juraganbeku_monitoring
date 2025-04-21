@@ -8,6 +8,7 @@ import { useInvoiceData } from "./data";
 import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
 import AreaChart from "@/app/components/dashboards/invoice/AreaChart";
+import DueDateStatusChart from "@/app/components/dashboards/invoice/DueDateStatusChart";
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
 import MonthlyStoreChart from "@/app/components/dashboards/invoice/MonthlyStoreChart";
@@ -132,16 +133,14 @@ export default function Dashboard() {
 
   const handleApplyFilters = async () => {
     try {
-      console.log(dateRange);
       await dispatch(
         fetchOrders({
           startDate: dateRange.startDate,
           endDate: dateRange.endDate,
           sortTime,
+          area: area,
         })
       );
-
-      setIsDataEmpty(!orders || orders.length === 0);
     } catch (error) {
       console.error("Fetch error:", error);
       setIsDataEmpty(true);
@@ -149,17 +148,32 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    handleApplyFilters();
-  }, [dispatch]);
+    // Initial data fetch
+    const fetchInitialData = async () => {
+      try {
+        await dispatch(
+          fetchOrders({
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+            sortTime,
+          })
+        );
+      } catch (error) {
+        console.error("Fetch error:", error);
+      }
+    };
+
+    fetchInitialData();
+  }, [dispatch, dateRange, sortTime]);
 
   useEffect(() => {
-    if (orders) {
+    if (orders && orders.length > 0) {
       const processed = processData(orders);
       setProcessedData(processed);
+      setIsDataEmpty(false);
 
       // Prepare chart data using the processed data
       const chartData = orders.map(order => {
-        // Find the store summary for this order
         const storeSummary = processed.storeSummaries[order.user_id];
         const profit = storeSummary ? storeSummary.totalProfit / storeSummary.orderCount : 0;
 
@@ -170,6 +184,8 @@ export default function Dashboard() {
         };
       });
       setChartData(chartData);
+    } else {
+      setIsDataEmpty(true);
     }
   }, [orders]);
 
@@ -303,54 +319,54 @@ export default function Dashboard() {
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total Orders"
-                      value={processedData.totalOrderCount}
+                      value={processedData.thisMonthMetrics.totalOrders}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total Stores"
-                      value={Object.keys(processedData.storeSummaries).length}
+                      value={processedData.thisMonthMetrics.totalStores}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total Invoice"
-                      value={processedData.overallTotalInvoice}
+                      value={processedData.thisMonthMetrics.totalInvoice}
                       isCurrency
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total Profit"
-                      value={processedData.overallProfit}
+                      value={processedData.thisMonthMetrics.totalProfit}
                       isCurrency
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total Lunas"
-                      value={processedData.overallLunas}
+                      value={processedData.thisMonthMetrics.totalLunas}
                       isCurrency
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total Belum Lunas"
-                      value={processedData.overallBelumLunas}
+                      value={processedData.thisMonthMetrics.totalBelumLunas}
                       isCurrency
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total COD"
-                      value={processedData.overallCOD}
+                      value={processedData.thisMonthMetrics.totalCOD}
                       isCurrency
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <InvoiceSummaryCard
                       title="Total TOP"
-                      value={processedData.overallTOP}
+                      value={processedData.thisMonthMetrics.totalTOP}
                       isCurrency
                     />
                   </Grid>
@@ -364,10 +380,14 @@ export default function Dashboard() {
                 <StoreMetrics 
                   storeSummaries={processedData.storeSummaries} 
                   monthlyMetrics={{
-                    totalInvoice: processedData.thisMonthMetrics.totalInvoice,
-                    totalProfit: processedData.thisMonthMetrics.totalProfit,
-                    totalOrders: processedData.thisMonthMetrics.totalOrders,
-                    totalStores: processedData.thisMonthMetrics.totalStores
+                    totalInvoice: processedData.overallTotalInvoice,
+                    totalProfit: processedData.overallProfit,
+                    totalOrders: processedData.totalOrderCount,
+                    totalStores: Object.keys(processedData.storeSummaries).length,
+                    totalLunas: processedData.overallLunas,
+                    totalBelumLunas: processedData.overallBelumLunas,
+                    totalCOD: processedData.overallCOD,
+                    totalTOP: processedData.overallTOP
                   }}
                 />
               </Box>
@@ -416,6 +436,9 @@ export default function Dashboard() {
             {/* Orders Table */}
             {orders && (
               <Box>
+                {processedData && (
+                  <DueDateStatusChart data={processedData.dueDateStatusCounts} />
+                )}
                 <OrdersTable orders={filteredOrders} />
               </Box>
             )}

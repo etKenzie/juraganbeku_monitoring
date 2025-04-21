@@ -1,15 +1,17 @@
 import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+import { formatCurrency } from "@/app/utils/formatNumber";
 import {
-    Box,
-    Grid,
-    List,
-    ListItem,
-    ListItemText,
-    Modal,
-    Paper,
-    Typography,
+  Box,
+  Grid,
+  List,
+  ListItem,
+  ListItemText,
+  Modal,
+  Paper,
+  Typography,
 } from "@mui/material";
 import { useState } from "react";
+
 
 interface StoreMetricsProps {
   storeSummaries: { [key: string]: StoreSummary };
@@ -18,6 +20,10 @@ interface StoreMetricsProps {
     totalProfit: number;
     totalOrders: number;
     totalStores: number;
+    totalLunas: number;
+    totalBelumLunas: number;
+    totalCOD: number;
+    totalTOP: number;
   };
 }
 
@@ -109,7 +115,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
-              Monthly Metrics
+              Three Month Total
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -117,7 +123,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
                   Total Invoice
                 </Typography>
                 <Typography variant="h4">
-                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(monthlyMetrics.totalInvoice)}
+                  {formatCurrency(monthlyMetrics.totalInvoice)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -125,7 +131,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
                   Total Profit
                 </Typography>
                 <Typography variant="h4">
-                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(monthlyMetrics.totalProfit)}
+                  {formatCurrency(monthlyMetrics.totalProfit)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -138,13 +144,37 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="textSecondary">
-                  Total Stores
+                  Total Lunas
                 </Typography>
                 <Typography variant="h4">
-                  {monthlyMetrics.totalStores}
+                  {formatCurrency(monthlyMetrics.totalLunas)}
                 </Typography>
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total Belum Lunas
+                </Typography>
+                <Typography variant="h4">
+                  {formatCurrency(monthlyMetrics.totalBelumLunas)}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total COD
+                </Typography>
+                <Typography variant="h4">
+                  {formatCurrency(monthlyMetrics.totalCOD)}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total TOP
+                </Typography>
+                <Typography variant="h4">
+                  {formatCurrency(monthlyMetrics.totalTOP)}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Activation Rate
                 </Typography>
@@ -183,6 +213,14 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Stores active in exactly 1 month
+                </Typography>
+              </Box>
+              <Box sx={{ mt: 2 }} >
+                <Typography variant="h4">
+                  {monthlyMetrics.totalStores}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Total Stores over 3 months
                 </Typography>
               </Box>
             </Box>

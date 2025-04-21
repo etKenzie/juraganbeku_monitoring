@@ -58,9 +58,14 @@ export interface ProcessedData {
     totalInvoice: number;
     totalProfit: number;
     activationRate: number;
+    totalLunas: number;
+    totalBelumLunas: number;
+    totalCOD: number;
+    totalTOP: number;
   };
   monthlyStoreCounts: { [key: string]: Set<string> };
   monthlyOrderCounts: { [key: string]: number };
+  dueDateStatusCounts: { [key: string]: number };
 }
 
 export interface StoreSummary {

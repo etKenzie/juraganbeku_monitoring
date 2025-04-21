@@ -67,8 +67,10 @@ export interface OrderData {
   payment_type: string;
   status_order: string;
   status_payment: string;
+  payment_due_date: string;
   order_date: string;
   area: string;
+  // due_date_status: string;
   detail_order: OrderDetail[];
 }
 

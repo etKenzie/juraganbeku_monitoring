@@ -23,10 +23,22 @@ export const useInvoiceData = () => {
           totalStores: 0,
           totalInvoice: 0,
           totalProfit: 0,
-          activationRate: 0
+          activationRate: 0,
+          totalLunas: 0,
+          totalBelumLunas: 0,
+          totalCOD: 0,
+          totalTOP: 0
         },
         monthlyStoreCounts: {},
-        monthlyOrderCounts: {}
+        monthlyOrderCounts: {},
+        dueDateStatusCounts: {
+          current: 0,
+          below14DPD: 0,
+          dpd14: 0,
+          dpd30: 0,
+          dpd60: 0,
+          lunas: 0
+        }
       };
     }
 
@@ -49,21 +61,49 @@ export const useInvoiceData = () => {
         totalStores: 0,
         totalInvoice: 0,
         totalProfit: 0,
-        activationRate: 0
+        activationRate: 0,
+        totalLunas: 0,
+        totalBelumLunas: 0,
+        totalCOD: 0,
+        totalTOP: 0
       },
       monthlyStoreCounts: {},
-      monthlyOrderCounts: {}
+      monthlyOrderCounts: {},
+      dueDateStatusCounts: {
+        current: 0,
+        below14DPD: 0,
+        dpd14: 0,
+        dpd30: 0,
+        dpd60: 0,
+        lunas: 0
+      }
     };
 
     // Find the most recent month in the data
     let mostRecentMonth = '';
     let mostRecentMonthStores = new Set<string>();
 
+    const calculateDueDateStatus = (dueDate: string, paymentStatus: string): 'Current' | 'Below 14 DPD' | '14 DPD' | '30 DPD' | '60 DPD' | 'Lunas' => {
+      if (paymentStatus === 'LUNAS') return 'Lunas';
+      
+      const today = new Date();
+      const due = new Date(dueDate);
+      const diffTime = today.getTime() - due.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) return 'Current';
+      if (diffDays < 14) return 'Below 14 DPD';
+      if (diffDays === 14) return '14 DPD';
+      if (diffDays <= 30) return '30 DPD';
+      return '60 DPD';
+    };
+
     orders.forEach(order => {
       const orderDate = new Date(order.order_date);
       const orderMonth = orderDate.getMonth();
       const orderYear = orderDate.getFullYear();
       const processedMonthKey = `${orderYear}-${String(orderMonth + 1).padStart(2, '0')}`;
+      const dueDate = new Date(order.payment_due_date);
 
       // Update most recent month if this order is more recent
       if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {
@@ -103,6 +143,20 @@ export const useInvoiceData = () => {
           orderProfit += profit;
         });
         result.thisMonthMetrics.totalProfit += orderProfit;
+
+        if (order.status_payment == "LUNAS") {
+          result.thisMonthMetrics.totalLunas += order.total_invoice || 0;
+        } else if (order.status_payment == "WAITING VALIDATION BY FINANCE") {
+          result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
+        } else if (order.status_payment == "BELUM LUNAS") {
+          result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
+        }
+
+        if (order.payment_type === "COD") {
+          result.thisMonthMetrics.totalCOD += order.total_invoice || 0;
+        } else if (order.payment_type === "TOP") {
+          result.thisMonthMetrics.totalTOP += order.total_invoice || 0;
+        }
       }
 
       // Add to overall totals
@@ -268,6 +322,31 @@ export const useInvoiceData = () => {
       result.hubSummaries[hub].orderCount++;
 
       result.overallProfit += gross_profit;
+
+      const dueDateStatus = calculateDueDateStatus(order.payment_due_date, order.status_payment);
+      // order.due_date_status = dueDateStatus;
+
+      switch (dueDateStatus) {
+        case 'Lunas':
+          result.dueDateStatusCounts.lunas++;
+          break;
+        case 'Current':
+          result.dueDateStatusCounts.current++;
+          break;
+        case 'Below 14 DPD':
+          result.dueDateStatusCounts.below14DPD++;
+          break;
+        case '14 DPD':
+          result.dueDateStatusCounts.dpd14++;
+          break;
+        case '30 DPD':
+          result.dueDateStatusCounts.dpd30++;
+          break;
+        case '60 DPD':
+          result.dueDateStatusCounts.dpd60++;
+          break;
+    
+      }
     });
 
     // Calculate most recent month's metrics

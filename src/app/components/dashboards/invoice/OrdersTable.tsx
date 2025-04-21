@@ -24,7 +24,7 @@ import React, { useState } from "react";
 
 type Order = "asc" | "desc";
 
-type SortableField = keyof OrderData | "order_date" | "profit";
+type SortableField = keyof OrderData | "order_date" | "profit" | "due_date_status";
 
 interface HeadCell {
   id: SortableField;
@@ -35,11 +35,13 @@ interface HeadCell {
 const headCells: HeadCell[] = [
   { id: "order_code", label: "Order Code", numeric: false },
   { id: "order_date", label: "Order Date", numeric: false },
+  { id: "payment_due_date", label: "Due Date", numeric: false },
   { id: "reseller_name", label: "Reseller Name", numeric: false },
   { id: "store_name", label: "Store Name", numeric: false },
   { id: "status_order", label: "Status Order", numeric: false },
   { id: "status_payment", label: "Status Payment", numeric: false },
   { id: "payment_type", label: "Payment Type", numeric: false },
+  { id: "due_date_status", label: "Due Date Status", numeric: false },
   { id: "total_invoice", label: "Total Invoice", numeric: true },
   { id: "profit", label: "Profit", numeric: true },
 ];
@@ -56,6 +58,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
   const [statusOrderFilter, setStatusOrderFilter] = useState<string>("");
   const [statusPaymentFilter, setStatusPaymentFilter] = useState<string>("");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("");
+  const [dueDateStatusFilter, setDueDateStatusFilter] = useState<string>("");
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -96,16 +99,33 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
     return totalProfit;
   };
 
+  const calculateDueDateStatus = (order: OrderData): string => {
+    if (order.status_payment === 'LUNAS') return 'Lunas';
+    
+    const today = new Date();
+    const due = new Date(order.payment_due_date);
+    const diffTime = today.getTime() - due.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return 'Current';
+    if (diffDays < 14) return 'Below 14 DPD';
+    if (diffDays === 14) return '14 DPD';
+    if (diffDays <= 30) return '30 DPD';
+    return '60 DPD';
+  };
+
   const filteredOrders = orders.filter((order) => {
     if (statusOrderFilter && order.status_order !== statusOrderFilter) return false;
     if (statusPaymentFilter && order.status_payment !== statusPaymentFilter) return false;
     if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
+    if (dueDateStatusFilter && calculateDueDateStatus(order) !== dueDateStatusFilter) return false;
     return true;
   });
 
   const uniqueStatusOrders = Array.from(new Set(orders.map((order) => order.status_order)));
   const uniqueStatusPayments = Array.from(new Set(orders.map((order) => order.status_payment)));
   const uniquePaymentTypes = Array.from(new Set(orders.map((order) => order.payment_type)));
+  const uniqueDueDateStatuses = ['Current', 'Below 14 DPD', '14 DPD', '30 DPD', '60 DPD', 'Lunas'];
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     let aValue: any;
@@ -142,7 +162,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
         />
       </Box>
       <Grid container spacing={2} mb={3}>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Status Order</InputLabel>
             <Select
@@ -159,7 +179,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Status Payment</InputLabel>
             <Select
@@ -176,7 +196,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Payment Type</InputLabel>
             <Select
@@ -188,6 +208,23 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
               {uniquePaymentTypes.map((type) => (
                 <MenuItem key={type} value={type}>
                   {type}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControl fullWidth>
+            <InputLabel>Due Date Status</InputLabel>
+            <Select
+              value={dueDateStatusFilter}
+              label="Due Date Status"
+              onChange={(e) => setDueDateStatusFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              {uniqueDueDateStatuses.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
                 </MenuItem>
               ))}
             </Select>
@@ -222,11 +259,13 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
                 <TableRow key={order.order_id}>
                   <TableCell>{order.order_code}</TableCell>
                   <TableCell>{formatDate(order.order_date)}</TableCell>
+                  <TableCell>{formatDate(order.payment_due_date)}</TableCell>
                   <TableCell>{order.reseller_name}</TableCell>
                   <TableCell>{order.store_name}</TableCell>
                   <TableCell>{order.status_order}</TableCell>
                   <TableCell>{order.status_payment}</TableCell>
                   <TableCell>{order.payment_type}</TableCell>
+                  <TableCell>{calculateDueDateStatus(order)}</TableCell>
                   <TableCell align="right">{formatCurrency(order.total_invoice)}</TableCell>
                   <TableCell align="right">{formatCurrency(calculateOrderProfit(order))}</TableCell>
                 </TableRow>
