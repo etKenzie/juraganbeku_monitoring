@@ -1,11 +1,14 @@
 "use client";
+import { calculateDueDateStatus } from "@/app/(DashboardLayout)/dashboards/Invoice/data";
 import DownloadButton from "@/app/components/common/DownloadButton";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   FormControl,
   Grid,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
@@ -18,6 +21,7 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
+  TextField,
   Typography,
 } from "@mui/material";
 import React, { useState } from "react";
@@ -59,6 +63,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
   const [statusPaymentFilter, setStatusPaymentFilter] = useState<string>("");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("");
   const [dueDateStatusFilter, setDueDateStatusFilter] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -99,26 +104,24 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
     return totalProfit;
   };
 
-  const calculateDueDateStatus = (order: OrderData): string => {
-    if (order.status_payment === 'LUNAS') return 'Lunas';
-    
-    const today = new Date();
-    const due = new Date(order.payment_due_date);
-    const diffTime = today.getTime() - due.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return 'Current';
-    if (diffDays < 14) return 'Below 14 DPD';
-    if (diffDays === 14) return '14 DPD';
-    if (diffDays <= 30) return '30 DPD';
-    return '60 DPD';
-  };
-
   const filteredOrders = orders.filter((order) => {
     if (statusOrderFilter && order.status_order !== statusOrderFilter) return false;
     if (statusPaymentFilter && order.status_payment !== statusPaymentFilter) return false;
     if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
-    if (dueDateStatusFilter && calculateDueDateStatus(order) !== dueDateStatusFilter) return false;
+    if (dueDateStatusFilter && calculateDueDateStatus(order.payment_due_date, order.status_payment) !== dueDateStatusFilter) return false;
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        order.order_code.toLowerCase().includes(query) ||
+        order.reseller_name.toLowerCase().includes(query) ||
+        order.store_name.toLowerCase().includes(query) ||
+        order.status_order.toLowerCase().includes(query) ||
+        order.status_payment.toLowerCase().includes(query) ||
+        order.payment_type.toLowerCase().includes(query) ||
+        calculateDueDateStatus(order.payment_due_date, order.status_payment).toLowerCase().includes(query)
+      );
+    }
     return true;
   });
 
@@ -162,6 +165,22 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
         />
       </Box>
       <Grid container spacing={2} mb={3}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search orders..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
         <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Status Order</InputLabel>
@@ -265,7 +284,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
                   <TableCell>{order.status_order}</TableCell>
                   <TableCell>{order.status_payment}</TableCell>
                   <TableCell>{order.payment_type}</TableCell>
-                  <TableCell>{calculateDueDateStatus(order)}</TableCell>
+                  <TableCell>{calculateDueDateStatus(order.payment_due_date, order.status_payment)}</TableCell>
                   <TableCell align="right">{formatCurrency(order.total_invoice)}</TableCell>
                   <TableCell align="right">{formatCurrency(calculateOrderProfit(order))}</TableCell>
                 </TableRow>

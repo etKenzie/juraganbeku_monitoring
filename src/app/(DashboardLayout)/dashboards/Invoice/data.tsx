@@ -1,6 +1,21 @@
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import { ProcessedData } from "./types";
 
+export const calculateDueDateStatus = (dueDate: string, paymentStatus: string): 'Current' | 'Below 14 DPD' | '14 DPD' | '30 DPD' | '60 DPD' | 'Lunas' => {
+  if (paymentStatus === 'LUNAS') return 'Lunas';
+  
+  const today = new Date();
+  const due = new Date(dueDate);
+  const diffTime = today.getTime() - due.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return 'Current';
+  if (diffDays < 14) return 'Below 14 DPD';
+  if (diffDays < 30) return '14 DPD';
+  if (diffDays < 60) return '30 DPD';
+  return '60 DPD';
+};
+
 export const useInvoiceData = () => {
   const processData = (orders: OrderData[]): ProcessedData => {
     if (!orders || orders.length === 0) {
@@ -82,21 +97,6 @@ export const useInvoiceData = () => {
     // Find the most recent month in the data
     let mostRecentMonth = '';
     let mostRecentMonthStores = new Set<string>();
-
-    const calculateDueDateStatus = (dueDate: string, paymentStatus: string): 'Current' | 'Below 14 DPD' | '14 DPD' | '30 DPD' | '60 DPD' | 'Lunas' => {
-      if (paymentStatus === 'LUNAS') return 'Lunas';
-      
-      const today = new Date();
-      const due = new Date(dueDate);
-      const diffTime = today.getTime() - due.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays < 0) return 'Current';
-      if (diffDays < 14) return 'Below 14 DPD';
-      if (diffDays === 14) return '14 DPD';
-      if (diffDays <= 30) return '30 DPD';
-      return '60 DPD';
-    };
 
     orders.forEach(order => {
       const orderDate = new Date(order.order_date);
@@ -324,7 +324,6 @@ export const useInvoiceData = () => {
       result.overallProfit += gross_profit;
 
       const dueDateStatus = calculateDueDateStatus(order.payment_due_date, order.status_payment);
-      // order.due_date_status = dueDateStatus;
 
       switch (dueDateStatus) {
         case 'Lunas':
@@ -345,7 +344,6 @@ export const useInvoiceData = () => {
         case '60 DPD':
           result.dueDateStatusCounts.dpd60++;
           break;
-    
       }
     });
 

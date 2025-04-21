@@ -1,18 +1,22 @@
 "use client";
 import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import DownloadButton from "@/app/components/common/DownloadButton";
+import SearchIcon from "@mui/icons-material/Search";
 import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-  Typography,
+    Box,
+    Grid,
+    InputAdornment,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TablePagination,
+    TableRow,
+    TableSortLabel,
+    TextField,
+    Typography,
 } from "@mui/material";
 import React, { useState } from "react";
 import StoreDetailsModal from './StoreDetailsModal';
@@ -55,6 +59,7 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedStore, setSelectedStore] = useState<StoreSummary | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   
 
   const handleRequestSort = (property: keyof DisplayStoreSummary) => {
@@ -76,11 +81,26 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
     return `Rp ${value.toLocaleString()}`;
   };
 
-  const sortedStores: DisplayStoreSummary[] = Object.entries(storeSummaries)
-    .map(([storeName, data]) => ({
-      ...data,
-      activeMonths: data.activeMonths.size,
-    } as DisplayStoreSummary))
+  const filteredStores = Object.entries(storeSummaries)
+    .filter(([_, summary]) => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          summary.storeName.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    })
+    .map(([id, summary]) => ({
+      id,
+      storeName: summary.storeName,
+      orderCount: summary.orderCount,
+      totalInvoice: summary.totalInvoice,
+      totalProfit: summary.totalProfit,
+      activeMonths: summary.activeMonths.size,
+      averageOrderValue: summary.averageOrderValue,
+      userId: summary.userId,
+    }))
     .sort((a, b) => {
       const aValue = a[orderBy];
       const bValue = b[orderBy];
@@ -111,13 +131,31 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Store Summary</Typography>
         <DownloadButton
-          data={Object.values(storeSummaries)}
+          data={filteredStores}
           filename="store_summary"
           sheetName="Store Summary"
           variant="outlined"
           size="small"
         />
       </Box>
+      <Grid container spacing={2} mb={3}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search stores..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+      </Grid>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -140,11 +178,11 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedStores
+            {filteredStores
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((store) => (
                 <TableRow 
-                  key={store.storeName}
+                  key={store.id}
                   onClick={() => {
                     const fullStore = storeSummaries[store.userId];
                     if (fullStore) {
@@ -167,7 +205,7 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={Object.keys(storeSummaries).length}
+          count={filteredStores.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}

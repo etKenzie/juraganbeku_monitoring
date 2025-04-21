@@ -1,18 +1,22 @@
 "use client";
 import { ProductSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import DownloadButton from "@/app/components/common/DownloadButton";
+import SearchIcon from "@mui/icons-material/Search";
 import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-  Typography,
+    Box,
+    Grid,
+    InputAdornment,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TablePagination,
+    TableRow,
+    TableSortLabel,
+    TextField,
+    Typography,
 } from "@mui/material";
 import React, { useState } from "react";
 
@@ -49,6 +53,7 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
   const [orderBy, setOrderBy] = useState<keyof DisplayProductSummary>("totalInvoice");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const handleRequestSort = (property: keyof DisplayProductSummary) => {
     const isAsc = orderBy === property && order === "asc";
@@ -69,14 +74,23 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
     return `Rp ${value.toLocaleString()}`;
   };
 
-
-  const sortedProducts: DisplayProductSummary[] = Object.entries(productSummaries)
-    .map(([_, data]) => ({
-      name: data.name,
-      totalInvoice: data.totalInvoice,
-      quantity: data.quantity,
-      averagePrice: data.price / data.difPrice,
-      totalProfit: data.profit,
+  const filteredProducts = Object.entries(productSummaries)
+    .filter(([_, summary]) => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          summary.name.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    })
+    .map(([id, summary]) => ({
+      id,
+      name: summary.name,
+      totalInvoice: summary.totalInvoice,
+      quantity: summary.quantity,
+      averagePrice: summary.price / summary.difPrice,
+      totalProfit: summary.profit,
     }))
     .sort((a, b) => {
       const aValue = a[orderBy];
@@ -102,13 +116,31 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Product Summary</Typography>
         <DownloadButton
-          data={Object.values(productSummaries)}
+          data={filteredProducts}
           filename="product_summary"
           sheetName="Product Summary"
           variant="outlined"
           size="small"
         />
       </Box>
+      <Grid container spacing={2} mb={3}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+      </Grid>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -131,10 +163,10 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedProducts
+            {filteredProducts
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((product) => (
-                <TableRow key={product.name}>
+                <TableRow key={product.id}>
                   <TableCell>{product.name}</TableCell>
                   <TableCell align="right">{product.quantity}</TableCell>
                   <TableCell align="right">{formatCurrency(product.averagePrice)}</TableCell>
@@ -147,7 +179,7 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={Object.keys(productSummaries).length}
+          count={filteredProducts.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
