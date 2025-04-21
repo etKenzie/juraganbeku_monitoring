@@ -1,7 +1,8 @@
 "use client";
 import DownloadButton from "@/app/components/common/DownloadButton";
+import { Lead } from "@/app/types/leads";
 import { supabase } from "@/lib/supabaseClient";
-import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import { Delete as DeleteIcon, Edit as EditIcon, Search as SearchIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -9,6 +10,7 @@ import {
   FormControl,
   Grid,
   IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
@@ -20,28 +22,12 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TableSortLabel,
-  Tooltip,
-  Typography,
+  TextField,
+  Typography
 } from "@mui/material";
 import React, { useState } from "react";
 import AddLeadDialog from "./AddLeadDialog";
 import FollowUpsDialog from "./FollowUpsDialog";
-
-interface Lead {
-  id: number;
-  source: string;
-  date_added: string;
-  company_name: string;
-  area: string;
-  phone: string;
-  contact_person: string;
-  category: string;
-  branch_count: number;
-  deadline: string;
-  memo: string;
-  found_by: string;
-}
 
 type Order = "asc" | "desc";
 
@@ -54,13 +40,17 @@ interface HeadCell {
 }
 
 const headCells: HeadCell[] = [
+  { id: "brand_name", label: "Brand Name", numeric: false },
   { id: "company_name", label: "Company Name", numeric: false },
   { id: "contact_person", label: "Contact Person", numeric: false },
   { id: "phone", label: "Phone", numeric: false },
   { id: "area", label: "Area", numeric: false },
-  { id: "category", label: "Category", numeric: false },
-  { id: "branch_count", label: "Branches", numeric: true },
   { id: "source", label: "Source", numeric: false },
+  { id: "lead_category", label: "Category", numeric: false },
+  { id: "branch_count", label: "Branch Count", numeric: true },
+  { id: "service", label: "Services", numeric: false },
+  { id: "outlet_type", label: "Outlet Types", numeric: false },
+  { id: "priority", label: "Priority", numeric: true },
   { id: "found_by", label: "Found By", numeric: false },
   { id: "date_added", label: "Entry Date", numeric: false },
   { id: "deadline", label: "Deadline", numeric: false },
@@ -69,9 +59,15 @@ const headCells: HeadCell[] = [
 
 interface LeadsTableProps {
   leads: Lead[];
+  onEdit: (lead: Lead) => void;
+  onDelete: (id: string) => void;
 }
 
-const LeadsTable = ({ leads }: LeadsTableProps) => {
+const serviceOptions = ["Cash Pick Up", "Misteri Shopper", "Store Monitoring", "Akumaju"];
+const outletTypeOptions = ["outlet", "bike", "cloud kitchen"];
+const foundByOptions = ['HARITZ', 'ZAHRO', 'MARDI', 'ADRIL', 'KENZIE'];
+
+const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
   const [orderBy, setOrderBy] = useState<SortableField>("date_added");
   const [order, setOrder] = useState<Order>("desc");
   const [page, setPage] = useState(0);
@@ -83,6 +79,10 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
   const [followUpsOpen, setFollowUpsOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [selectedOutletType, setSelectedOutletType] = useState<string>("");
+  const [selectedPriority, setSelectedPriority] = useState<string>("");
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -109,28 +109,48 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'HOT':
+      case 'Hot':
         return 'error';
-      case 'WARM':
+      case 'Warm':
         return 'warning';
-      case 'COLD':
+      case 'Cold':
         return 'info';
       default:
         return 'default';
     }
   };
 
-  const foundByOptions = ['HARITZ', 'ZAHRO', 'MARDI', 'ADRIL', 'KENZIE'];
-
   const filteredLeads = leads.filter((lead) => {
-    if (categoryFilter && lead.category !== categoryFilter) return false;
-    if (areaFilter && lead.area !== areaFilter) return false;
-    if (foundByFilter && lead.found_by !== foundByFilter) return false;
-    return true;
+    const matchesSearch = 
+      lead.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.area.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesService = selectedService ? lead.service.includes(selectedService) : true;
+    const matchesOutletType = selectedOutletType ? lead.outlet_type.includes(selectedOutletType) : true;
+    const matchesPriority = selectedPriority ? lead.priority === selectedPriority : true;
+    const matchesCategory = categoryFilter ? lead.lead_category === categoryFilter : true;
+    const matchesArea = areaFilter ? lead.area === areaFilter : true;
+    const matchesFoundBy = foundByFilter ? lead.found_by.includes(foundByFilter) : true;
+
+    return matchesSearch && 
+           matchesService && 
+           matchesOutletType && 
+           matchesPriority && 
+           matchesCategory && 
+           matchesArea && 
+           matchesFoundBy;
   });
 
-  const uniqueCategories = Array.from(new Set(leads.map((lead) => lead.category)));
-  const uniqueAreas = Array.from(new Set(leads.map((lead) => lead.area)));
+  const uniqueAreas = leads.reduce<string[]>((acc, lead) => {
+    if (!acc.includes(lead.area)) {
+      acc.push(lead.area);
+    }
+    return acc;
+  }, []);
+
+  const uniqueCategories = ['Hot', 'Warm', 'Cold'];
 
   const sortedLeads = [...filteredLeads].sort((a, b) => {
     let aValue: any = a[orderBy];
@@ -148,7 +168,7 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
     }
   });
 
-  const handleDeleteLead = async (leadId: number) => {
+  const handleDeleteLead = async (leadId: string) => {
     try {
       // First delete all follow-ups for this lead
       const { error: followUpsError } = await supabase
@@ -239,6 +259,65 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
           Add New Lead
         </Button>
       </Box>
+      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+        <TextField
+          label="Search"
+          variant="outlined"
+          size="small"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Service</InputLabel>
+          <Select
+            value={selectedService}
+            onChange={(e) => setSelectedService(e.target.value)}
+            label="Service"
+          >
+            <MenuItem value="">All Services</MenuItem>
+            {serviceOptions.map((service) => (
+              <MenuItem key={service} value={service}>
+                {service}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Outlet Type</InputLabel>
+          <Select
+            value={selectedOutletType}
+            onChange={(e) => setSelectedOutletType(e.target.value)}
+            label="Outlet Type"
+          >
+            <MenuItem value="">All Types</MenuItem>
+            {outletTypeOptions.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Priority</InputLabel>
+          <Select
+            value={selectedPriority}
+            onChange={(e) => setSelectedPriority(e.target.value)}
+            label="Priority"
+          >
+            <MenuItem value="">All Priorities</MenuItem>
+            <MenuItem value="1">1</MenuItem>
+            <MenuItem value="2">2</MenuItem>
+            <MenuItem value="3">3</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
       <Grid container spacing={2} mb={3}>
         <Grid item xs={12} sm={4}>
           <FormControl fullWidth>
@@ -296,21 +375,21 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
         <Table>
           <TableHead>
             <TableRow>
-              {headCells.map((headCell) => (
-                <TableCell
-                  key={headCell.id}
-                  align={headCell.numeric ? "right" : "left"}
-                  sortDirection={orderBy === headCell.id ? order : false}
-                >
-                  <TableSortLabel
-                    active={orderBy === headCell.id}
-                    direction={orderBy === headCell.id ? order : "asc"}
-                    onClick={() => handleRequestSort(headCell.id)}
-                  >
-                    {headCell.label}
-                  </TableSortLabel>
-                </TableCell>
-              ))}
+              <TableCell>Brand Name</TableCell>
+              <TableCell>Company Name</TableCell>
+              <TableCell>Contact Person</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell>Area</TableCell>
+              <TableCell>Source</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Branch Count</TableCell>
+              <TableCell>Services</TableCell>
+              <TableCell>Outlet Types</TableCell>
+              <TableCell>Priority</TableCell>
+              <TableCell>Found By</TableCell>
+              <TableCell>Entry Date</TableCell>
+              <TableCell>Deadline</TableCell>
+              <TableCell>Memo</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -327,29 +406,63 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
                     setFollowUpsOpen(true);
                   }}
                 >
+                  <TableCell>{lead.brand_name}</TableCell>
                   <TableCell>{lead.company_name}</TableCell>
                   <TableCell>{lead.contact_person}</TableCell>
                   <TableCell>{lead.phone}</TableCell>
                   <TableCell>{lead.area}</TableCell>
+                  <TableCell>{lead.source}</TableCell>
                   <TableCell>
                     <Chip
-                      label={lead.category}
-                      color={getCategoryColor(lead.category)}
+                      label={lead.lead_category}
                       size="small"
+                      color={getCategoryColor(lead.lead_category)}
                     />
                   </TableCell>
-                  <TableCell align="right">{lead.branch_count}</TableCell>
-                  <TableCell>{lead.source}</TableCell>
-                  <TableCell>{lead.found_by}</TableCell>
-                  <TableCell>{formatDate(lead.date_added)}</TableCell>
-                  <TableCell>{lead.deadline ? formatDate(lead.deadline) : '-'}</TableCell>
-                  <TableCell>{lead.memo || '-'}</TableCell>
+                  <TableCell>{lead.branch_count}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {lead.service.map((service) => (
+                        <Chip key={service} label={service} size="small" />
+                      ))}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {lead.outlet_type.map((type) => (
+                        <Chip key={type} label={type} size="small" />
+                      ))}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={`${lead.priority}`}
+                      size="small"
+                      color={
+                        lead.priority === "1"
+                          ? "error"
+                          : lead.priority === "2"
+                          ? "warning"
+                          : "success"
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {lead.found_by.map((source) => (
+                        <Chip key={source} label={source} size="small" />
+                      ))}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{new Date(lead.date_added).toLocaleDateString()}</TableCell>
+                  <TableCell>{lead.deadline ? new Date(lead.deadline).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell>{lead.memo}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                       <IconButton
                         size="small"
                         onClick={(e) => {
-                          e.stopPropagation(); // Prevent row click event
+                          e.stopPropagation();
                           setEditingLead(lead);
                         }}
                       >
@@ -359,8 +472,8 @@ const LeadsTable = ({ leads }: LeadsTableProps) => {
                         size="small"
                         color="error"
                         onClick={(e) => {
-                          e.stopPropagation(); // Prevent row click event
-                          handleDeleteLead(lead.id);
+                          e.stopPropagation();
+                          onDelete(lead.id.toString());
                         }}
                       >
                         <DeleteIcon />

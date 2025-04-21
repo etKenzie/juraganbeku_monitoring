@@ -2,24 +2,10 @@
 import PageContainer from "@/app/components/container/PageContainer";
 import AddLeadDialog from "@/app/components/dashboards/leads/AddLeadDialog";
 import LeadsTable from "@/app/components/dashboards/leads/LeadsTable";
+import { Lead } from "@/app/types/leads";
 import { supabase } from "@/lib/supabaseClient";
 import { Box, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-
-interface Lead {
-  id: number;
-  source: string;
-  date_added: string;
-  company_name: string;
-  area: string;
-  phone: string;
-  contact_person: string;
-  category: string;
-  branch_count: number;
-  deadline: string;
-  memo: string;
-  found_by: string;
-}
 
 const LeadsPage = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -60,23 +46,46 @@ const LeadsPage = () => {
 
   const handleAddLead = async (newLead: Omit<Lead, 'id'>) => {
     try {
-      console.log('Adding new lead:', newLead);
       const { data, error } = await supabase
         .from('leads')
-        .insert([newLead]);
+        .insert([{
+          ...newLead,
+          date_added: new Date().toISOString().split('T')[0]
+        }]);
 
-      if (error) {
-        console.error('Error adding lead:', error);
-        setError(error.message);
-        return;
-      }
-
-      console.log('Successfully added lead:', data);
+      if (error) throw error;
       setOpen(false);
       fetchLeads();
     } catch (err) {
-      console.error('Unexpected error while adding lead:', err);
-      setError('An unexpected error occurred while adding the lead');
+      console.error('Error adding lead:', err);
+    }
+  };
+
+  const handleEditLead = async (lead: Lead) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update(lead)
+        .eq('id', lead.id);
+      
+      if (error) throw error;
+      fetchLeads();
+    } catch (err) {
+      console.error('Error updating lead:', err);
+    }
+  };
+
+  const handleDeleteLead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      fetchLeads();
+    } catch (err) {
+      console.error('Error deleting lead:', err);
     }
   };
 
@@ -110,7 +119,11 @@ const LeadsPage = () => {
           </Button> */}
         </Box>
 
-        <LeadsTable leads={leads} />
+        <LeadsTable 
+          leads={leads} 
+          onEdit={handleEditLead}
+          onDelete={handleDeleteLead}
+        />
         <AddLeadDialog 
           open={open} 
           onClose={() => setOpen(false)} 

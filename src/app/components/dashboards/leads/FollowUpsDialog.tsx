@@ -1,62 +1,36 @@
 "use client";
+import { FollowUp, FollowUpStatus, Lead } from "@/app/types/leads";
 import { supabase } from "@/lib/supabaseClient";
 import { Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
 import {
-    Box,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    Grid,
-    IconButton,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  FormGroup,
+  FormLabel,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-
-interface FollowUp {
-  id: number;
-  lead_id: number;
-  date: string;
-  status: string;
-  memo: string;
-}
-
-interface Lead {
-  id: number;
-  source: string;
-  date_added: string;
-  company_name: string;
-  area: string;
-  phone: string;
-  contact_person: string;
-  category: string;
-  branch_count: number;
-  deadline: string;
-  memo: string;
-}
-
-const followUpStatuses = [
-  'tersambung',
-  'tersambung via WA',
-  'tersambung via LinkedIn',
-  'Tidak Dijawab',
-  'Tidak Aktif',
-  'Tersambung via DM'
-];
 
 interface FollowUpsDialogProps {
   open: boolean;
@@ -64,14 +38,26 @@ interface FollowUpsDialogProps {
   lead: Lead;
 }
 
+const followUpStatuses: FollowUpStatus[] = [
+  "tersambung",
+  "tersambung via WA",
+  "tersambung via LinkedIn",
+  "Tidak Dijawab",
+  "Tidak Aktif",
+  "Tersambung via DM"
+];
+
+const foundByOptions = ['HARITZ', 'ZAHRO', 'MARDI', 'ADRIL', 'KENZIE'];
+
 const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
-  const [newFollowUp, setNewFollowUp] = useState({
-    date: new Date().toISOString().split('T')[0],
-    status: 'tersambung',
-    memo: '',
-  });
   const [loading, setLoading] = useState(true);
+  const [newFollowUp, setNewFollowUp] = useState<Omit<FollowUp, 'id' | 'lead_id' | 'created_at' | 'updated_at'>>({
+    date: new Date().toISOString().split('T')[0],
+    status: "tersambung",
+    memo: "",
+    followed_by: []
+  });
   const [editingFollowUp, setEditingFollowUp] = useState<FollowUp | null>(null);
 
   const fetchFollowUps = async () => {
@@ -85,8 +71,8 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
 
       if (error) throw error;
       setFollowUps(data || []);
-    } catch (error) {
-      console.error('Error fetching follow-ups:', error);
+    } catch (err) {
+      console.error('Error fetching follow-ups:', err);
     } finally {
       setLoading(false);
     }
@@ -102,18 +88,30 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
     try {
       const { error } = await supabase
         .from('follow_ups')
-        .insert([{ ...newFollowUp, lead_id: lead.id }]);
+        .insert([{
+          ...newFollowUp,
+          lead_id: lead.id
+        }]);
 
       if (error) throw error;
 
+      // Refresh follow-ups
+      const { data, error: fetchError } = await supabase
+        .from('follow_ups')
+        .select('*')
+        .eq('lead_id', lead.id)
+        .order('date', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setFollowUps(data || []);
       setNewFollowUp({
         date: new Date().toISOString().split('T')[0],
-        status: 'tersambung',
-        memo: '',
+        status: "tersambung",
+        memo: "",
+        followed_by: []
       });
-      fetchFollowUps();
-    } catch (error) {
-      console.error('Error adding follow-up:', error);
+    } catch (err) {
+      console.error('Error adding follow-up:', err);
     }
   };
 
@@ -192,13 +190,29 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
     }
   };
 
+  const handleCheckboxChange = (field: 'followed_by', value: string) => {
+    if (editingFollowUp) {
+      const currentValues = editingFollowUp[field] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter(v => v !== value)
+        : [...currentValues, value];
+      setEditingFollowUp({ ...editingFollowUp, [field]: newValues });
+    } else {
+      const currentValues = newFollowUp[field] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter(v => v !== value)
+        : [...currentValues, value];
+      setNewFollowUp({ ...newFollowUp, [field]: newValues });
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
             <Typography variant="h6">Lead Details</Typography>
-            <Typography variant="subtitle1">{lead.company_name}</Typography>
+            <Typography variant="subtitle1">{lead.brand_name}</Typography>
           </Box>
           <Button
             variant="contained"
@@ -215,14 +229,19 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
           <Typography variant="h6" gutterBottom>Lead Information</Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Typography><strong>Contact:</strong> {lead.contact_person}</Typography>
+              <Typography><strong>Brand Name:</strong> {lead.brand_name}</Typography>
+              <Typography><strong>Company Name:</strong> {lead.company_name}</Typography>
+              <Typography><strong>Contact Person:</strong> {lead.contact_person}</Typography>
               <Typography><strong>Phone:</strong> {lead.phone}</Typography>
               <Typography><strong>Area:</strong> {lead.area}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography><strong>Category:</strong> {lead.category}</Typography>
-              <Typography><strong>Branches:</strong> {lead.branch_count}</Typography>
               <Typography><strong>Source:</strong> {lead.source}</Typography>
+              <Typography><strong>Category:</strong> {lead.lead_category}</Typography>
+              <Typography><strong>Branch Count:</strong> {lead.branch_count}</Typography>
+              <Typography><strong>Services:</strong> {lead.service.join(', ')}</Typography>
+              <Typography><strong>Outlet Types:</strong> {lead.outlet_type.join(', ')}</Typography>
+              <Typography><strong>Found By:</strong> {lead.found_by.join(', ')}</Typography>
             </Grid>
           </Grid>
         </Box>
@@ -253,9 +272,9 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
                 label="Status"
                 onChange={(e) => {
                   if (editingFollowUp) {
-                    setEditingFollowUp({ ...editingFollowUp, status: e.target.value });
+                    setEditingFollowUp({ ...editingFollowUp, status: e.target.value as FollowUpStatus });
                   } else {
-                    setNewFollowUp({ ...newFollowUp, status: e.target.value });
+                    setNewFollowUp({ ...newFollowUp, status: e.target.value as FollowUpStatus });
                   }
                 }}
               >
@@ -265,6 +284,23 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
                   </MenuItem>
                 ))}
               </Select>
+            </FormControl>
+            <FormControl component="fieldset">
+              <FormLabel component="legend">Followed By</FormLabel>
+              <FormGroup>
+                {foundByOptions.map(name => (
+                  <FormControlLabel
+                    key={name}
+                    control={
+                      <Checkbox
+                        checked={(editingFollowUp ? editingFollowUp.followed_by : newFollowUp.followed_by).includes(name)}
+                        onChange={() => handleCheckboxChange('followed_by', name)}
+                      />
+                    }
+                    label={name}
+                  />
+                ))}
+              </FormGroup>
             </FormControl>
             <TextField
               label="Memo"
@@ -315,6 +351,7 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
               <TableRow>
                 <TableCell>Date</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Followed By</TableCell>
                 <TableCell>Memo</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -329,6 +366,13 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
                       color={getStatusColor(followUp.status)}
                       size="small"
                     />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {followUp.followed_by.map((name) => (
+                        <Chip key={name} label={name} size="small" />
+                      ))}
+                    </Box>
                   </TableCell>
                   <TableCell>{followUp.memo}</TableCell>
                   <TableCell>
