@@ -84,6 +84,7 @@ export default function Dashboard() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [area, setArea] = useState("");
   const [areas, setAreas] = useState<string[]>([""]);
+  const [segment, setSegment] = useState<string>("");
 
   const getDateRange = (period: string) => {
     const now = new Date();
@@ -139,6 +140,7 @@ export default function Dashboard() {
           endDate: dateRange.endDate,
           sortTime,
           area: area,
+          segment: segment,
         })
       );
     } catch (error) {
@@ -286,6 +288,20 @@ export default function Dashboard() {
                     {areaOption}
                   </MenuItem>
                 ))}
+            </TextField>
+
+            <TextField
+              label="Select Segment"
+              select
+              value={segment}
+              onChange={(e) => setSegment(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ flexBasis: "30%", flexGrow: 1 }}
+            >
+              <MenuItem value="">All Segments</MenuItem>
+              <MenuItem value="HORECA">HORECA</MenuItem>
+              <MenuItem value="RESELLER">RESELLER</MenuItem>
+              <MenuItem value="OTHER">OTHER</MenuItem>
             </TextField>
 
             <Button

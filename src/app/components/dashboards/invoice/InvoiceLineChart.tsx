@@ -1,19 +1,19 @@
 "use client";
-import dynamic from "next/dynamic";
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
-import { useTheme } from "@mui/material/styles";
-import React from "react";
+import DashboardCard from "@/app/components/shared/DashboardCard";
+import { formatCurrency } from "@/app/utils/formatNumber";
 import {
+  Box,
+  IconButton,
   ToggleButton,
   ToggleButtonGroup,
-  IconButton,
   Tooltip,
-  Box,
 } from "@mui/material";
-import DashboardCard from "@/app/components/shared/DashboardCard";
+import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
 import { format } from "date-fns";
-import { formatCurrency } from "@/app/utils/formatNumber";
+import dynamic from "next/dynamic";
+import React from "react";
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 interface InvoiceLineChartProps {
   data: {
@@ -62,9 +62,9 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
       return result;
     }, [data, viewType]);
 
-    const categories = Object.keys(groupedData);
-    const invoiceData = Object.values(groupedData).map(d => d.totalInvoice);
-    const profitData = Object.values(groupedData).map(d => d.totalProfit);
+    const categories = Object.keys(groupedData).reverse();
+    const invoiceData = Object.values(groupedData).map(d => d.totalInvoice).reverse();
+    const profitData = Object.values(groupedData).map(d => d.totalProfit).reverse();
 
     const handleDownload = () => {
       if (typeof window === "undefined") return;

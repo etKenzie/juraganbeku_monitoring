@@ -154,7 +154,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, mt: 4}}>
         <Typography variant="h6">Orders Table</Typography>
         <DownloadButton
           data={filteredOrders}
