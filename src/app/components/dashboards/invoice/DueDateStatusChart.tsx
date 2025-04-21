@@ -99,7 +99,7 @@ const DueDateStatusChart = ({ data }: DueDateStatusChartProps) => {
   ];
 
   return (
-    <DashboardCard title="Days Past Due Status">
+    <DashboardCard title="Days Past Due Status (Three Months)">
       <>
         <Box height="300px">
           {isClient && (

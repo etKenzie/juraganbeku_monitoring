@@ -149,24 +149,30 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    // Initial data fetch
-    const fetchInitialData = async () => {
-      try {
-        await dispatch(
-          fetchOrders({
-            startDate: dateRange.startDate,
-            endDate: dateRange.endDate,
-            sortTime,
-          })
-        );
-      } catch (error) {
-        console.error("Fetch error:", error);
-      }
-    };
+  // Remove the useEffect that automatically fetches data
+  // useEffect(() => {
+  //   // Initial data fetch
+  //   const fetchInitialData = async () => {
+  //     try {
+  //       await dispatch(
+  //         fetchOrders({
+  //           startDate: dateRange.startDate,
+  //           endDate: dateRange.endDate,
+  //           sortTime,
+  //         })
+  //       );
+  //     } catch (error) {
+  //       console.error("Fetch error:", error);
+  //     }
+  //   };
 
-    fetchInitialData();
-  }, [dispatch, dateRange, sortTime]);
+  //   fetchInitialData();
+  // }, [dispatch, dateRange, sortTime]);
+
+  // Add initial data fetch when component mounts
+  useEffect(() => {
+    handleApplyFilters();
+  }, []); // Empty dependency array means this only runs once on mount
 
   useEffect(() => {
     if (orders && orders.length > 0) {

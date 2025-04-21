@@ -2,18 +2,18 @@
 import { AreaData } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
-    Box,
-    Dialog,
-    DialogContent,
-    Grid,
-    IconButton,
-    MenuItem,
-    Paper,
-    Select,
-    Stack,
-    Tooltip,
-    Typography,
-    useMediaQuery
+  Box,
+  Dialog,
+  DialogContent,
+  Grid,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
@@ -180,7 +180,7 @@ const AreaChart = ({
   return (
     <>
       <DashboardCard
-        title="Area Performance"
+        title="Area Performance (Three Months)"
         action={
           <Box display="flex" alignItems="center" gap={2}>
             <Tooltip title="Download Chart">
