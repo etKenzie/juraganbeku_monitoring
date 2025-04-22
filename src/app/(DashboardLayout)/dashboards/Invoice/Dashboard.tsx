@@ -96,22 +96,23 @@ export default function Dashboard() {
         startDate.setMonth(now.getMonth() - 2);
         startDate.setDate(1);
         break;
-      case "lastMonth":
-        // For last month, show the previous 3 months
-        startDate.setMonth(now.getMonth() - 3);
-        startDate.setDate(1);
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0);
-        lastMonthEnd.setHours(23, 59, 59, 999);
-        return {
-          startDate: startDate.toISOString().split("T")[0],
-          endDate: lastMonthEnd.toISOString().split("T")[0],
-        };
+      // case "lastMonth":
+      //   // For last month, show the previous 3 months
+      //   startDate.setMonth(now.getMonth() - 2);
+      //   startDate.setDate(1);
+      //   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0);
+      //   lastMonthEnd.setHours(23, 59, 59, 999);
+      //   return {
+      //     startDate: startDate.toISOString().split("T")[0],
+      //     endDate: lastMonthEnd.toISOString().split("T")[0],
+      //   };
       case "custom":
         // For custom, show 3 months from selected month
         startDate.setFullYear(customYear);
         startDate.setMonth(customMonth - 2); // Go back 2 months from selected month
         startDate.setDate(1);
         const customEnd = new Date(customYear, customMonth + 1, 0);
+        // customEnd.setHours(23, 59, 59, 999);
         return {
           startDate: startDate.toISOString().split("T")[0],
           endDate: customEnd.toISOString().split("T")[0],
@@ -122,7 +123,7 @@ export default function Dashboard() {
     }
 
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    endDate.setHours(23, 59, 59, 999);
+    // endDate.setHours(23, 59, 59, 999);
 
     return {
       startDate: startDate.toISOString().split("T")[0],
@@ -176,7 +177,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (orders && orders.length > 0) {
-      const processed = processData(orders);
+      // Get the target month - either customMonth for custom period, or current month for "thisMonth"
+      // const targetMonth = period === "custom" ? customMonth : new Date().getMonth();
+      // const targetYear = period === "custom" ? customYear : new Date().getFullYear();
+
+      // console.log(targetMonth)
+      
+      const processed = processData(orders, customMonth, customYear);
       setProcessedData(processed);
       setIsDataEmpty(false);
 
@@ -227,6 +234,7 @@ export default function Dashboard() {
     return <Loading />;
   }
 
+  console.log(dateRange)
   console.log(processedData)
 
   return (
@@ -248,7 +256,7 @@ export default function Dashboard() {
                 label="Time Period"
               >
                 <MenuItem value="thisMonth">This Month</MenuItem>
-                <MenuItem value="lastMonth">Last Month</MenuItem>
+                {/* <MenuItem value="lastMonth">Last Month</MenuItem> */}
                 <MenuItem value="custom">Custom</MenuItem>
               </Select>
             </FormControl>

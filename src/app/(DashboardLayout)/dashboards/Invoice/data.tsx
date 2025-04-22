@@ -17,7 +17,7 @@ export const calculateDueDateStatus = (dueDate: string, paymentStatus: string): 
 };
 
 export const useInvoiceData = () => {
-  const processData = (orders: OrderData[]): ProcessedData => {
+  const processData = (orders: OrderData[], targetMonth: number, targetYear: number): ProcessedData => {
     if (!orders || orders.length === 0) {
       return {
         overallTotalInvoice: 0,
@@ -100,9 +100,20 @@ export const useInvoiceData = () => {
     let mostRecentMonth = '';
     let mostRecentMonthStores = new Set<string>();
 
+    // Use the target month and year passed from Dashboard
+    const intendedMonth = targetMonth;
+    // console.log(intendedMonth)
+    const intendedYear = targetYear;
+    const intendedMonthKey = `${intendedYear}-${String(intendedMonth + 1).padStart(2, '0')}`;
+
     orders.forEach(order => {
       const orderDate = new Date(order.order_date);
-      const orderMonth = orderDate.getMonth();
+      // Force the month to be the intended month if it's off due to timezone
+      
+      let orderMonth = orderDate.getMonth();
+      if (orderMonth > intendedMonth) {
+        orderMonth = intendedMonth;
+      }
       const orderYear = orderDate.getFullYear();
       const processedMonthKey = `${orderYear}-${String(orderMonth + 1).padStart(2, '0')}`;
       const dueDate = new Date(order.payment_due_date);
@@ -111,9 +122,17 @@ export const useInvoiceData = () => {
       if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {
         mostRecentMonth = processedMonthKey;
         mostRecentMonthStores = new Set<string>();
-        result.productSummaries = {}
-        result.areaSummaries = {}
-        // result.dueDateStatusCounts = {}
+        // Reset summaries when we find a new most recent month
+        result.productSummaries = {};
+        result.areaSummaries = {};
+        result.dueDateStatusCounts = {
+          current: 0,
+          below14DPD: 0,
+          dpd14: 0,
+          dpd30: 0,
+          dpd60: 0,
+          lunas: 0
+        };
       }
 
       // Initialize monthly store count if not exists
@@ -283,14 +302,31 @@ export const useInvoiceData = () => {
         }
 
         areaSummary.totalProfit += gross_profit
+
+        // DUE DATE STATUS COUNTING
+        const dueDateStatus = calculateDueDateStatus(order.payment_due_date, order.status_payment);
+
+        switch (dueDateStatus) {
+          case 'Lunas':
+            result.dueDateStatusCounts.lunas++;
+            break;
+          case 'Current':
+            result.dueDateStatusCounts.current++;
+            break;
+          case 'Below 14 DPD':
+            result.dueDateStatusCounts.below14DPD++;
+            break;
+          case '14 DPD':
+            result.dueDateStatusCounts.dpd14++;
+            break;
+          case '30 DPD':
+            result.dueDateStatusCounts.dpd30++;
+            break;
+          case '60 DPD':
+            result.dueDateStatusCounts.dpd60++;
+            break;
+        }
       } 
-      
-
-  
-
-      
-
-      
 
       // Process store-specific data
       const userId = order.user_id;
@@ -334,30 +370,7 @@ export const useInvoiceData = () => {
       result.hubSummaries[hub].totalPembayaran += order.total_pembayaran || 0;
       result.hubSummaries[hub].orderCount++;
 
-      result.overallProfit += gross_profit;
-
-      const dueDateStatus = calculateDueDateStatus(order.payment_due_date, order.status_payment);
-
-      switch (dueDateStatus) {
-        case 'Lunas':
-          result.dueDateStatusCounts.lunas++;
-          break;
-        case 'Current':
-          result.dueDateStatusCounts.current++;
-          break;
-        case 'Below 14 DPD':
-          result.dueDateStatusCounts.below14DPD++;
-          break;
-        case '14 DPD':
-          result.dueDateStatusCounts.dpd14++;
-          break;
-        case '30 DPD':
-          result.dueDateStatusCounts.dpd30++;
-          break;
-        case '60 DPD':
-          result.dueDateStatusCounts.dpd60++;
-          break;
-      }
+      result.overallProfit += gross_profit;      
     });
 
     // Calculate most recent month's metrics
