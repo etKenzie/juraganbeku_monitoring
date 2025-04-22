@@ -180,7 +180,7 @@ const AreaChart = ({
   return (
     <>
       <DashboardCard
-        title="Area Performance (Three Months)"
+        title="Area Performance"
         action={
           <Box display="flex" alignItems="center" gap={2}>
             <Tooltip title="Download Chart">

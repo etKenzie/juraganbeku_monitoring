@@ -207,6 +207,17 @@ export default function Dashboard() {
 
   const filteredOrders = orders.filter((order) => {
     if (selectedArea && order.area !== selectedArea) return false;
+
+    const endDateObj = new Date(dateRange.endDate);
+    const lastMonth = endDateObj.getMonth(); // 0-indexed (0 = Jan)
+
+    const orderDate = new Date(order.order_date);
+    const orderMonth = orderDate.getMonth();
+
+    if (orderMonth !== lastMonth) {
+      return false;
+    }
+
     // ... existing filter conditions ...
     return true;
   });

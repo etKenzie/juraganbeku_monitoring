@@ -94,6 +94,8 @@ export const useInvoiceData = () => {
       }
     };
 
+  
+
     // Find the most recent month in the data
     let mostRecentMonth = '';
     let mostRecentMonthStores = new Set<string>();
@@ -109,6 +111,9 @@ export const useInvoiceData = () => {
       if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {
         mostRecentMonth = processedMonthKey;
         mostRecentMonthStores = new Set<string>();
+        result.productSummaries = {}
+        result.areaSummaries = {}
+        // result.dueDateStatusCounts = {}
       }
 
       // Initialize monthly store count if not exists
@@ -180,104 +185,112 @@ export const useInvoiceData = () => {
       }
 
       let gross_profit = 0;
+
+      if (processedMonthKey === mostRecentMonth) {
+        // Process product each invoice
+        order.detail_order?.forEach(item => {
+          if (!item) return;
+
+          if (!result.productSummaries[item.product_id]) {
+            result.productSummaries[item.product_id] = {
+              name: item.product_name || '',
+              totalInvoice: 0,
+              quantity: 0,
+              price: item.price || 0,
+              difPrice: 1,
+              profit: 0,
+            };
+          }
+
+          if (item.price !== result.productSummaries[item.product_id].price && item.price) {
+            result.productSummaries[item.product_id].price += item.price;
+            result.productSummaries[item.product_id].difPrice += 1;
+          }
+
+          const price = (item.buy_price || 0) * (item.order_quantity || 0);
+          let profit = (item.total_invoice || 0) - price;
+
+          if (profit < 0) {
+            profit = 0;
+          }
+          
+          gross_profit += profit;
+          
+          result.productSummaries[item.product_id].totalInvoice += item.total_invoice || 0;
+          result.productSummaries[item.product_id].profit += profit;
+          
+          if (item.quantity) {
+            result.productSummaries[item.product_id].quantity += item.quantity;
+          } else {
+            result.productSummaries[item.product_id].quantity += 1;
+          }
+          
+          // Process category data
+          if (item.category) {
+            if (!result.categorySummaries[item.category]) {
+              result.categorySummaries[item.category] = {
+                totalInvoice: 0,
+                gross_profit: 0,
+                quantity: 0,
+                totalPrice: 0,
+                itemCount: 0
+              };
+            }
+            
+            result.categorySummaries[item.category].totalInvoice += item.total_invoice || 0;
+            result.categorySummaries[item.category].quantity += item.quantity || 1;
+            result.categorySummaries[item.category].gross_profit += profit;
+            if (item.price) {
+              result.categorySummaries[item.category].totalPrice += item.price;
+              result.categorySummaries[item.category].itemCount += 1;
+            }
+          }
+        });
+
+        console.log(mostRecentMonth)
+
+        // Process area data
+        let area = order.area;
+        if (!result.areaSummaries[area]) {
+          result.areaSummaries[area] = {
+            name: "",
+            totalOrders: 0,
+            totalInvoice: 0,
+            totalProfit: 0,
+            totalCOD: 0,
+            totalTOP: 0,
+            totalLunas: 0,
+            totalBelumLunas: 0,
+            orders: [],
+          };
+        }
+
+        const areaSummary = result.areaSummaries[area];
+        areaSummary.totalOrders++;
+        areaSummary.totalInvoice += order.total_invoice || 0;
+        areaSummary.orders.push(order);
+
+        if (order.payment_type === 'COD') {
+          areaSummary.totalCOD += order.total_invoice || 0;
+        } else if (order.payment_type === 'TOP') {
+          areaSummary.totalTOP += order.total_invoice || 0;
+        }
+
+        if (order.status_payment === 'LUNAS') {
+          areaSummary.totalLunas += order.total_invoice || 0;
+        } else {
+          areaSummary.totalBelumLunas += order.total_invoice || 0;
+        }
+
+        areaSummary.totalProfit += gross_profit
+      } 
       
 
   
 
-      // Process product each invoice
-      order.detail_order?.forEach(item => {
-        if (!item) return;
+      
 
-        if (!result.productSummaries[item.product_id]) {
-          result.productSummaries[item.product_id] = {
-            name: item.product_name || '',
-            totalInvoice: 0,
-            quantity: 0,
-            price: item.price || 0,
-            difPrice: 1,
-            profit: 0,
-          };
-        }
-
-        if (item.price !== result.productSummaries[item.product_id].price && item.price) {
-          result.productSummaries[item.product_id].price += item.price;
-          result.productSummaries[item.product_id].difPrice += 1;
-        }
-
-        const price = (item.buy_price || 0) * (item.order_quantity || 0);
-        let profit = (item.total_invoice || 0) - price;
-
-        if (profit < 0) {
-          profit = 0;
-        }
-        
-        gross_profit += profit;
-        
-        result.productSummaries[item.product_id].totalInvoice += item.total_invoice || 0;
-        result.productSummaries[item.product_id].profit += profit;
-        
-        if (item.quantity) {
-          result.productSummaries[item.product_id].quantity += item.quantity;
-        } else {
-          result.productSummaries[item.product_id].quantity += 1;
-        }
-        
-        // Process category data
-        if (item.category) {
-          if (!result.categorySummaries[item.category]) {
-            result.categorySummaries[item.category] = {
-              totalInvoice: 0,
-              gross_profit: 0,
-              quantity: 0,
-              totalPrice: 0,
-              itemCount: 0
-            };
-          }
-          
-          result.categorySummaries[item.category].totalInvoice += item.total_invoice || 0;
-          result.categorySummaries[item.category].quantity += item.quantity || 1;
-          result.categorySummaries[item.category].gross_profit += profit;
-          if (item.price) {
-            result.categorySummaries[item.category].totalPrice += item.price;
-            result.categorySummaries[item.category].itemCount += 1;
-          }
-        }
-      });
-
-      // Process area data
-      let area = order.area;
-      if (!result.areaSummaries[area]) {
-        result.areaSummaries[area] = {
-          name: "",
-          totalOrders: 0,
-          totalInvoice: 0,
-          totalProfit: 0,
-          totalCOD: 0,
-          totalTOP: 0,
-          totalLunas: 0,
-          totalBelumLunas: 0,
-          orders: [],
-        };
-      }
-
-      const areaSummary = result.areaSummaries[area];
-      areaSummary.totalOrders++;
-      areaSummary.totalInvoice += order.total_invoice || 0;
-      areaSummary.orders.push(order);
-
-      if (order.payment_type === 'COD') {
-        areaSummary.totalCOD += order.total_invoice || 0;
-      } else if (order.payment_type === 'TOP') {
-        areaSummary.totalTOP += order.total_invoice || 0;
-      }
-
-      if (order.status_payment === 'LUNAS') {
-        areaSummary.totalLunas += order.total_invoice || 0;
-      } else {
-        areaSummary.totalBelumLunas += order.total_invoice || 0;
-      }
-
-      areaSummary.totalProfit += gross_profit
+      
 
       // Process store-specific data
       const userId = order.user_id;
