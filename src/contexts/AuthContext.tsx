@@ -10,7 +10,6 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -60,34 +59,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
 
     // Listen for changes on auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session);
+    // const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    //   console.log('Auth state changed:', event, session);
 
-      if (!mounted) return;
+    //   if (!mounted) return;
 
-      if (session) {
-        setSession(session);
-        setUser(session.user);
+    //   if (session) {
+    //     setSession(session);
+    //     setUser(session.user);
         
-        if (event === 'SIGNED_IN') {
-          // Ensure the session is refreshed and cookies are set
-          await supabase.auth.getSession();
-          router.refresh(); // Refresh the page to ensure middleware picks up the new session
-          router.push(DASHBOARD_PATH);
-        }
-      } else {
-        setSession(null);
-        setUser(null);
+    //     if (event === 'SIGNED_IN') {
+    //       // Ensure the session is refreshed and cookies are set
+    //       await supabase.auth.getSession();
+    //       router.refresh(); // Refresh the page to ensure middleware picks up the new session
+    //       router.push(DASHBOARD_PATH);
+    //     }
+    //   } else {
+    //     setSession(null);
+    //     setUser(null);
         
-        if (event === 'SIGNED_OUT') {
-          router.push('/auth/signin');
-        }
-      }
-    });
+    //     if (event === 'SIGNED_OUT') {
+    //       router.push('/auth/signin');
+    //     }
+    //   }
+    // });
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      // subscription.unsubscribe();
     };
   }, [router, supabase]);
 
@@ -118,36 +117,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
-    try {
-      console.log('Attempting to sign up...');
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (error) throw error;
-      console.log('Sign up successful:', data);
-      router.push('/auth/signin');
-    } catch (error) {
-      console.error('Error signing up:', error);
-      throw error;
-    }
-  };
-
   const signOut = async () => {
     try {
       console.log('Attempting to sign out...');
+
+      // Then perform the sign out
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      setSession(null);
-      setUser(null);
+  
       console.log('Sign out successful');
+  
+      // Clear local state
+      setUser(null);
+      setSession(null);
+      
+      // Force refresh and redirect
+      router.refresh();
       router.push('/auth/signin');
+      
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
     }
   };
+  
 
   return (
     <AuthContext.Provider 
@@ -155,7 +148,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         session,
         signIn,
-        signUp,
         signOut,
         loading
       }}

@@ -19,9 +19,6 @@ export async function middleware(req: NextRequest) {
     // Get the pathname of the request
     const path = req.nextUrl.pathname;
 
-    console.log('Middleware - Current path:', path);
-    console.log('Middleware - Session status:', session ? 'exists' : 'none', session?.user?.email);
-
     // Public routes that don't require authentication
     const isPublicRoute = 
       path.startsWith('/auth/') || 
@@ -29,14 +26,20 @@ export async function middleware(req: NextRequest) {
       path.startsWith('/public/') ||
       path === '/favicon.ico';
 
+    // Handle sign-out explicitly
+    if (path === '/auth/signout') {
+      // console.log('Middleware - Processing sign-out');
+      return res;
+    }
+
     if (!session && !isPublicRoute) {
-      console.log('Middleware - No session, redirecting to signin');
+      // console.log('Middleware - No session, redirecting to signin');
       const redirectUrl = new URL('/auth/signin', req.url);
       return NextResponse.redirect(redirectUrl);
     }
 
     if (session && path.startsWith('/auth/')) {
-      console.log('Middleware - Has session, redirecting to dashboard');
+      // console.log('Middleware - Has session, redirecting to dashboard');
       const redirectUrl = new URL('/', req.url);
       return NextResponse.redirect(redirectUrl);
     }
