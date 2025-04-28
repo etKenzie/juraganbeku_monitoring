@@ -214,14 +214,14 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
             <Typography variant="h6">Lead Details</Typography>
             <Typography variant="subtitle1">{lead.brand_name}</Typography>
           </Box>
-          <Button
+          {/* <Button
             variant="contained"
             color="error"
             onClick={handleDeleteLead}
             startIcon={<DeleteIcon />}
           >
             Delete Lead
-          </Button>
+          </Button> */}
         </Box>
       </DialogTitle>
       <DialogContent>

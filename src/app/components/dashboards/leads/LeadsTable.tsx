@@ -7,6 +7,10 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   Grid,
   IconButton,
@@ -83,6 +87,8 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
   const [selectedService, setSelectedService] = useState<string>("");
   const [selectedOutletType, setSelectedOutletType] = useState<string>("");
   const [selectedPriority, setSelectedPriority] = useState<string>("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -236,6 +242,25 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
     } catch (error) {
       console.error('Error saving lead:', error);
     }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, lead: Lead) => {
+    e.stopPropagation();
+    setLeadToDelete(lead);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (leadToDelete) {
+      onDelete(leadToDelete.id.toString());
+      setDeleteConfirmOpen(false);
+      setLeadToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setLeadToDelete(null);
   };
 
   return (
@@ -471,10 +496,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(lead.id.toString());
-                        }}
+                        onClick={(e) => handleDeleteClick(e, lead)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -494,6 +516,28 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </TableContainer>
+
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography id="delete-dialog-description">
+            Are you sure you want to delete the lead for {leadToDelete?.company_name}? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {selectedLead && (
         <FollowUpsDialog
