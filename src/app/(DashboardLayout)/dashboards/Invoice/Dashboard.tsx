@@ -30,6 +30,8 @@ import {
   Typography
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+
 
 interface StoreSummary {
   storeName: string;
@@ -52,6 +54,11 @@ export default function Dashboard() {
 
   const router = useRouter();
   const dispatch = useDispatch();
+
+  // const { role } = useAuth();
+  // console.log(role)
+
+
   
   // Get orders from the Redux store
   const { orders, loading, error } = useSelector(

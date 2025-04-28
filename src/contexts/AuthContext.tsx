@@ -12,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
+  role: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,30 +23,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClientComponentClient<Database>();
+
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
+
+      //@ts-ignore
+      return data?.role || null;
+    } catch (error) {
+      console.error('Error in fetchUserRole:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
 
-    // Check active sessions and sets the user
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('Initial session check:', session);
         
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
         if (session && mounted) {
           console.log('Valid session found:', session);
           setSession(session);
           setUser(session.user);
+          const userRole = await fetchUserRole(session.user.id);
+          setRole(userRole);
         } else {
           console.log('No valid session found');
           setSession(null);
           setUser(null);
+          setRole(null);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -58,35 +81,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     initializeAuth();
 
-    // Listen for changes on auth state
-    // const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-    //   console.log('Auth state changed:', event, session);
-
-    //   if (!mounted) return;
-
-    //   if (session) {
-    //     setSession(session);
-    //     setUser(session.user);
-        
-    //     if (event === 'SIGNED_IN') {
-    //       // Ensure the session is refreshed and cookies are set
-    //       await supabase.auth.getSession();
-    //       router.refresh(); // Refresh the page to ensure middleware picks up the new session
-    //       router.push(DASHBOARD_PATH);
-    //     }
-    //   } else {
-    //     setSession(null);
-    //     setUser(null);
-        
-    //     if (event === 'SIGNED_OUT') {
-    //       router.push('/auth/signin');
-    //     }
-    //   }
-    // });
-
     return () => {
       mounted = false;
-      // subscription.unsubscribe();
     };
   }, [router, supabase]);
 
@@ -105,10 +101,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.session) {
         setSession(data.session);
         setUser(data.session.user);
+        const userRole = await fetchUserRole(data.session.user.id);
+        setRole(userRole);
         
-        // Ensure session is properly set in cookies
         await supabase.auth.getSession();
-        router.refresh(); // Refresh the page to ensure middleware picks up the new session
+        router.refresh();
         router.push(DASHBOARD_PATH);
       }
     } catch (error) {
@@ -120,18 +117,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       console.log('Attempting to sign out...');
-
-      // Then perform the sign out
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
   
       console.log('Sign out successful');
-  
-      // Clear local state
       setUser(null);
       setSession(null);
+      setRole(null);
       
-      // Force refresh and redirect
       router.refresh();
       router.push('/auth/signin');
       
@@ -140,7 +133,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw error;
     }
   };
-  
 
   return (
     <AuthContext.Provider 
@@ -149,7 +141,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         session,
         signIn,
         signOut,
-        loading
+        loading,
+        role
       }}
     >
       {children}
