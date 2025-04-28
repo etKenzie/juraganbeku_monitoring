@@ -25,6 +25,8 @@
     "@mui/x-date-pickers": "^5.0.20",
     "@mui/x-tree-view": "^6.17.0",
     "@reduxjs/toolkit": "^1.9.7",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/supabase-js": "^2.49.4",
     "@tabler/icons-react": "^2.39.0",
     "@tanstack/react-table": "^8.20.1",
