@@ -109,6 +109,7 @@ export const useInvoiceData = () => {
     orders.forEach(order => {
       const orderDate = new Date(order.order_date);
       // Force the month to be the intended month if it's off due to timezone
+     
       
       let orderMonth = orderDate.getMonth();
       if (orderMonth > intendedMonth) {

@@ -59,7 +59,7 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({ open, onClose, st
           totalProfit
         };
       });
-      setChartData(data);
+      setChartData(data.reverse());
     }
   }, [store]);
 

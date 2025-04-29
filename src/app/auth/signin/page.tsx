@@ -3,13 +3,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Box, Button, Container, TextField, Typography, Alert, Link } from '@mui/material';
 import NextLink from 'next/link';
 import { useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/types/supabase';
 
 export default function SignIn() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const supabase = createClientComponentClient<Database>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +26,31 @@ export default function SignIn() {
       setError(error.message || 'Failed to sign in');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    try {
+      setError('');
+      setIsResetting(true);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password?type=recovery`,
+      });
+
+      if (error) throw error;
+
+      setMessage('Password reset instructions have been sent to your email');
+    } catch (error: any) {
+      setError(error.message || 'Failed to send reset password email');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -40,6 +70,11 @@ export default function SignIn() {
         {error && (
           <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
             {error}
+          </Alert>
+        )}
+        {message && (
+          <Alert severity="success" sx={{ width: '100%', mt: 2 }}>
+            {message}
           </Alert>
         )}
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
@@ -77,9 +112,15 @@ export default function SignIn() {
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
           <Box sx={{ textAlign: 'center' }}>
-            {/* <Link component={NextLink} href="/auth/signup" variant="body2">
-              Don't have an account? Sign up
-            </Link> */}
+            <Link
+              component="button"
+              variant="body2"
+              onClick={handleForgotPassword}
+              disabled={isResetting}
+              sx={{ cursor: 'pointer' }}
+            >
+              {isResetting ? 'Sending reset instructions...' : 'Forgot Password?'}
+            </Link>
           </Box>
         </Box>
       </Box>

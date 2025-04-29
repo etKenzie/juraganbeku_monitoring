@@ -55,8 +55,8 @@ export default function Dashboard() {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  // const { role } = useAuth();
-  // console.log(role)
+  const { role } = useAuth();
+  console.log(role)
 
 
   
@@ -100,8 +100,9 @@ export default function Dashboard() {
     switch (period) {
       case "thisMonth":
         // For this month, show last 3 months including current month
-        startDate.setMonth(now.getMonth() - 2);
         startDate.setDate(1);
+        startDate.setMonth(now.getMonth() - 2);
+        
         break;
       // case "lastMonth":
       //   // For last month, show the previous 3 months
