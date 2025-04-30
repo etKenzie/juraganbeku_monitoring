@@ -233,6 +233,7 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
               <Typography><strong>Company Name:</strong> {lead.company_name}</Typography>
               <Typography><strong>Contact Person:</strong> {lead.contact_person}</Typography>
               <Typography><strong>Phone:</strong> {lead.phone}</Typography>
+              <Typography><strong>Email:</strong> {lead.email}</Typography>
               <Typography><strong>Area:</strong> {lead.area}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>

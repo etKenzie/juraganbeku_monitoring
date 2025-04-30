@@ -1,6 +1,7 @@
 "use client";
 import DownloadButton from "@/app/components/common/DownloadButton";
 import { Lead } from "@/app/types/leads";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Delete as DeleteIcon, Edit as EditIcon, Search as SearchIcon } from "@mui/icons-material";
 import {
@@ -48,6 +49,7 @@ const headCells: HeadCell[] = [
   { id: "company_name", label: "Company Name", numeric: false },
   { id: "contact_person", label: "Contact Person", numeric: false },
   { id: "phone", label: "Phone", numeric: false },
+  { id: "email", label: "Email", numeric: false },
   { id: "area", label: "Area", numeric: false },
   { id: "source", label: "Source", numeric: false },
   { id: "lead_category", label: "Category", numeric: false },
@@ -131,6 +133,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
       lead.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.area.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesService = selectedService ? lead.service.includes(selectedService) : true;
@@ -262,6 +265,8 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
     setDeleteConfirmOpen(false);
     setLeadToDelete(null);
   };
+
+  const { role } = useAuth();
 
   return (
     <Box>
@@ -404,6 +409,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
               <TableCell>Company Name</TableCell>
               <TableCell>Contact Person</TableCell>
               <TableCell>Phone</TableCell>
+              <TableCell>Email</TableCell>
               <TableCell>Area</TableCell>
               <TableCell>Source</TableCell>
               <TableCell>Category</TableCell>
@@ -415,7 +421,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
               <TableCell>Entry Date</TableCell>
               <TableCell>Deadline</TableCell>
               <TableCell>Memo</TableCell>
-              <TableCell>Actions</TableCell>
+              { role === "admin" && <TableCell>Actions</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -435,6 +441,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                   <TableCell>{lead.company_name}</TableCell>
                   <TableCell>{lead.contact_person}</TableCell>
                   <TableCell>{lead.phone}</TableCell>
+                  <TableCell>{lead.email}</TableCell>
                   <TableCell>{lead.area}</TableCell>
                   <TableCell>{lead.source}</TableCell>
                   <TableCell>
@@ -482,26 +489,28 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                   <TableCell>{new Date(lead.date_added).toLocaleDateString()}</TableCell>
                   <TableCell>{lead.deadline ? new Date(lead.deadline).toLocaleDateString() : '-'}</TableCell>
                   <TableCell>{lead.memo}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingLead(lead);
-                        }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={(e) => handleDeleteClick(e, lead)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
+                  {role === 'admin' && (
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingLead(lead);
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => handleDeleteClick(e, lead)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
           </TableBody>

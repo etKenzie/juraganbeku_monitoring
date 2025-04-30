@@ -5,6 +5,7 @@ export interface Lead {
   contact_person: string;
   area: string;
   phone: string;
+  email: string;
   lead_category: string;
   branch_count: number;
   deadline: string;

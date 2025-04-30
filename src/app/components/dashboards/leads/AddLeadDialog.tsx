@@ -1,5 +1,6 @@
 "use client";
 import { Lead } from "@/app/types/leads";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Button,
   Checkbox,
@@ -36,6 +37,7 @@ const sourceOptions = [
   'LinkedIn',
   'Instagram',
   'Google',
+  'Referal',
   'Website Company',
   'A&B Association',
   'Pameran Franchise'
@@ -48,6 +50,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     brand_name: initialData?.brand_name || '',
     contact_person: initialData?.contact_person || '',
     phone: initialData?.phone || '',
+    email: initialData?.email || '',
     area: initialData?.area || '',
     lead_category: initialData?.lead_category || '',
     branch_count: initialData?.branch_count || 0,
@@ -68,6 +71,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
       brand_name: initialData?.brand_name || '',
       contact_person: initialData?.contact_person || '',
       phone: initialData?.phone || '',
+      email: initialData?.email || '',
       area: initialData?.area || '',
       lead_category: initialData?.lead_category || '',
       branch_count: initialData?.branch_count || 0,
@@ -123,6 +127,9 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     }
   };
 
+  const { role } = useAuth();
+
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>{initialData ? 'Edit Lead' : 'Add New Lead'}</DialogTitle>
@@ -166,7 +173,17 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                required
+                
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                
               />
             </Grid>
             <Grid item xs={12} sm={6}>

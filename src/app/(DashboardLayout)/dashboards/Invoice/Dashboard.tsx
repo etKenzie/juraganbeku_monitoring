@@ -16,6 +16,7 @@ import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
 import StoreMetrics from "@/app/components/dashboards/invoice/StoreMetrics";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
+import { useAuth } from "@/contexts/AuthContext";
 import { OrderData } from '@/store/apps/Invoice/invoiceSlice';
 import {
   Box,
@@ -30,7 +31,6 @@ import {
   Typography
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 
 
 interface StoreSummary {
@@ -248,251 +248,263 @@ export default function Dashboard() {
   return (
     <PageContainer title="Invoice Dashboard" description="Invoice dashboard with analytics">
       <>
-        {/* Filter Section */}
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={3}
-        >
-          <Box display="flex" gap={2} alignItems="center" width="100%">
-            <FormControl sx={{ flexBasis: "40%", flexGrow: 1 }}>
-              <InputLabel>Time Period</InputLabel>
-              <Select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                label="Time Period"
-              >
-                <MenuItem value="thisMonth">This Month</MenuItem>
-                {/* <MenuItem value="lastMonth">Last Month</MenuItem> */}
-                <MenuItem value="custom">Custom</MenuItem>
-              </Select>
-            </FormControl>
-
-            {period === "custom" && (
-              <Stack direction="row" spacing={2} sx={{ flexBasis: "40%", flexGrow: 1 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Month</InputLabel>
-                  <Select 
-                    value={customMonth} 
-                    onChange={(e) => setCustomMonth(Number(e.target.value))} 
-                    label="Month"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <MenuItem key={i} value={i}>
-                        {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel>Year</InputLabel>
-                  <Select 
-                    value={customYear} 
-                    onChange={(e) => setCustomYear(Number(e.target.value))} 
-                    label="Year"
-                  >
-                    {Array.from({ length: 5 }, (_, i) => {
-                      const year = new Date().getFullYear() - i;
-                      return (
-                        <MenuItem key={year} value={year}>
-                          {year}
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                </FormControl>
-              </Stack>
-            )}
-
-            <TextField
-              label="Select Area"
-              select
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ flexBasis: "30%", flexGrow: 1 }}
-            >
-              <MenuItem value="">All Areas</MenuItem>
-              {areas
-                .filter((areaOption) => areaOption !== "")
-                .map((areaOption) => (
-                  <MenuItem key={areaOption} value={areaOption}>
-                    {areaOption}
-                  </MenuItem>
-                ))}
-            </TextField>
-
-            <TextField
-              label="Select Segment"
-              select
-              value={segment}
-              onChange={(e) => setSegment(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ flexBasis: "30%", flexGrow: 1 }}
-            >
-              <MenuItem value="">All Segments</MenuItem>
-              <MenuItem value="HORECA">HORECA</MenuItem>
-              <MenuItem value="RESELLER">RESELLER</MenuItem>
-              <MenuItem value="OTHER">OTHER</MenuItem>
-            </TextField>
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleApplyFilters}
-              sx={{ flexBasis: "20%", flexGrow: 1 }}
-            >
-              Apply Filters
-            </Button>
-          </Box>
-        </Box>
-
-        {isDataEmpty ? (
+      {role !== 'admin' ? (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="60vh"
+      >
+        <Typography variant="h5" color="error">
+          You don't have access to this page.
+        </Typography>
+      </Box>
+    ) : <>
           <Box
             display="flex"
-            justifyContent="center"
+            justifyContent="space-between"
             alignItems="center"
-            height="50vh"
+            mb={3}
           >
-            <Typography variant="h6" color="textSecondary">
-              Data tidak tersedia untuk periode ini.
-            </Typography>
+            <Box display="flex" gap={2} alignItems="center" width="100%">
+              <FormControl sx={{ flexBasis: "40%", flexGrow: 1 }}>
+                <InputLabel>Time Period</InputLabel>
+                <Select
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  label="Time Period"
+                >
+                  <MenuItem value="thisMonth">This Month</MenuItem>
+                  {/* <MenuItem value="lastMonth">Last Month</MenuItem> */}
+                  <MenuItem value="custom">Custom</MenuItem>
+                </Select>
+              </FormControl>
+
+              {period === "custom" && (
+                <Stack direction="row" spacing={2} sx={{ flexBasis: "40%", flexGrow: 1 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Month</InputLabel>
+                    <Select 
+                      value={customMonth} 
+                      onChange={(e) => setCustomMonth(Number(e.target.value))} 
+                      label="Month"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <MenuItem key={i} value={i}>
+                          {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <InputLabel>Year</InputLabel>
+                    <Select 
+                      value={customYear} 
+                      onChange={(e) => setCustomYear(Number(e.target.value))} 
+                      label="Year"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return (
+                          <MenuItem key={year} value={year}>
+                            {year}
+                          </MenuItem>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
+                </Stack>
+              )}
+
+              <TextField
+                label="Select Area"
+                select
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ flexBasis: "30%", flexGrow: 1 }}
+              >
+                <MenuItem value="">All Areas</MenuItem>
+                {areas
+                  .filter((areaOption) => areaOption !== "")
+                  .map((areaOption) => (
+                    <MenuItem key={areaOption} value={areaOption}>
+                      {areaOption}
+                    </MenuItem>
+                  ))}
+              </TextField>
+
+              <TextField
+                label="Select Segment"
+                select
+                value={segment}
+                onChange={(e) => setSegment(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ flexBasis: "30%", flexGrow: 1 }}
+              >
+                <MenuItem value="">All Segments</MenuItem>
+                <MenuItem value="HORECA">HORECA</MenuItem>
+                <MenuItem value="RESELLER">RESELLER</MenuItem>
+                <MenuItem value="OTHER">OTHER</MenuItem>
+              </TextField>
+
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleApplyFilters}
+                sx={{ flexBasis: "20%", flexGrow: 1 }}
+              >
+                Apply Filters
+              </Button>
+            </Box>
           </Box>
-        ) : (
-          <>
-            {/* Summary Cards */}
-            {processedData && (
+
+          {isDataEmpty ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              height="50vh"
+            >
+              <Typography variant="h6" color="textSecondary">
+                Data tidak tersedia untuk periode ini.
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {/* Summary Cards */}
+              {processedData && (
+                <Box mb={4}>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total Orders"
+                        value={processedData.thisMonthMetrics.totalOrders}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total Stores"
+                        value={processedData.thisMonthMetrics.totalStores}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total Invoice"
+                        value={processedData.thisMonthMetrics.totalInvoice}
+                        isCurrency
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total Profit"
+                        value={processedData.thisMonthMetrics.totalProfit}
+                        isCurrency
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total Lunas"
+                        value={processedData.thisMonthMetrics.totalLunas}
+                        isCurrency
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total Belum Lunas"
+                        value={processedData.thisMonthMetrics.totalBelumLunas}
+                        isCurrency
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total COD"
+                        value={processedData.thisMonthMetrics.totalCOD}
+                        isCurrency
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <InvoiceSummaryCard
+                        title="Total TOP"
+                        value={processedData.thisMonthMetrics.totalTOP}
+                        isCurrency
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
+
+              {/* Store Metrics */}
+              {processedData && (
+                <Box mb={4}>
+                  <StoreMetrics 
+                    storeSummaries={processedData.storeSummaries} 
+                    monthlyMetrics={{
+                      totalInvoice: processedData.overallTotalInvoice,
+                      totalProfit: processedData.overallProfit,
+                      totalOrders: processedData.totalOrderCount,
+                      totalStores: Object.keys(processedData.storeSummaries).length,
+                      totalLunas: processedData.overallLunas,
+                      totalBelumLunas: processedData.overallBelumLunas,
+                      totalCOD: processedData.overallCOD,
+                      totalTOP: processedData.overallTOP
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Line Chart */}
               <Box mb={4}>
                 <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total Orders"
-                      value={processedData.thisMonthMetrics.totalOrders}
-                    />
+                  <Grid item xs={12} lg={8}>
+                    <InvoiceLineChart data={chartData} timePeriod={timePeriod} />
                   </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total Stores"
-                      value={processedData.thisMonthMetrics.totalStores}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total Invoice"
-                      value={processedData.thisMonthMetrics.totalInvoice}
-                      isCurrency
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total Profit"
-                      value={processedData.thisMonthMetrics.totalProfit}
-                      isCurrency
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total Lunas"
-                      value={processedData.thisMonthMetrics.totalLunas}
-                      isCurrency
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total Belum Lunas"
-                      value={processedData.thisMonthMetrics.totalBelumLunas}
-                      isCurrency
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total COD"
-                      value={processedData.thisMonthMetrics.totalCOD}
-                      isCurrency
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <InvoiceSummaryCard
-                      title="Total TOP"
-                      value={processedData.thisMonthMetrics.totalTOP}
-                      isCurrency
+                  <Grid item xs={12} lg={4}>
+                    <MonthlyStoreChart 
+                      data={processedData?.monthlyStoreCounts || {}} 
+                      monthlyOrders={processedData?.monthlyOrderCounts || {}}
                     />
                   </Grid>
                 </Grid>
               </Box>
-            )}
 
-            {/* Store Metrics */}
-            {processedData && (
-              <Box mb={4}>
-                <StoreMetrics 
-                  storeSummaries={processedData.storeSummaries} 
-                  monthlyMetrics={{
-                    totalInvoice: processedData.overallTotalInvoice,
-                    totalProfit: processedData.overallProfit,
-                    totalOrders: processedData.totalOrderCount,
-                    totalStores: Object.keys(processedData.storeSummaries).length,
-                    totalLunas: processedData.overallLunas,
-                    totalBelumLunas: processedData.overallBelumLunas,
-                    totalCOD: processedData.overallCOD,
-                    totalTOP: processedData.overallTOP
-                  }}
-                />
-              </Box>
-            )}
+              {/* Store Summary Table */}
+              {processedData && (
+                <Box mb={4}>
+                  <StoreSummaryTable storeSummaries={processedData.storeSummaries} />
+                </Box>
+              )}
 
-            {/* Line Chart */}
-            <Box mb={4}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} lg={8}>
-                  <InvoiceLineChart data={chartData} timePeriod={timePeriod} />
-                </Grid>
-                <Grid item xs={12} lg={4}>
-                  <MonthlyStoreChart 
-                    data={processedData?.monthlyStoreCounts || {}} 
-                    monthlyOrders={processedData?.monthlyOrderCounts || {}}
+              {/* Product Summary Table */}
+              {processedData && (
+                <Box mb={4}>
+                  <ProductSummaryTable productSummaries={processedData.productSummaries} />
+                </Box>
+              )}
+
+              {/* Area Chart */}
+              {processedData && (
+                <Box mb={4}>
+                  <AreaChart
+                    areaData={processedData.areaSummaries}
+                    startDate={dateRange.startDate}
+                    endDate={dateRange.endDate}
                   />
-                </Grid>
-              </Grid>
-            </Box>
-
-            {/* Store Summary Table */}
-            {processedData && (
-              <Box mb={4}>
-                <StoreSummaryTable storeSummaries={processedData.storeSummaries} />
-              </Box>
-            )}
-
-            {/* Product Summary Table */}
-            {processedData && (
-              <Box mb={4}>
-                <ProductSummaryTable productSummaries={processedData.productSummaries} />
-              </Box>
-            )}
-
-            {/* Area Chart */}
-            {processedData && (
-              <Box mb={4}>
-                <AreaChart
-                  areaData={processedData.areaSummaries}
-                  startDate={dateRange.startDate}
-                  endDate={dateRange.endDate}
-                />
-              </Box>
-            )}
-
-            {/* Orders Table */}
-            {orders && (
-              <Box>
-                {processedData && (
-                  <DueDateStatusChart data={processedData.dueDateStatusCounts} />
-                )}
-                <OrdersTable orders={filteredOrders} />
-              </Box>
-            )}
-          </>
-        )}
+                </Box>
+              )}
+              
+              {/* Orders Table */}
+              {orders && (
+                <Box>
+                  {processedData && (
+                    <DueDateStatusChart data={processedData.dueDateStatusCounts} />
+                  )}
+                  <OrdersTable orders={filteredOrders} />
+                </Box>
+              )}
+            </>
+          )}
+        </>}
       </>
     </PageContainer>
   );
