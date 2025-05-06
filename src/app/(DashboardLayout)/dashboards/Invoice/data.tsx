@@ -102,22 +102,14 @@ export const useInvoiceData = () => {
 
     // Use the target month and year passed from Dashboard
     const intendedMonth = targetMonth;
+    // console.log('here')
     // console.log(intendedMonth)
     const intendedYear = targetYear;
     const intendedMonthKey = `${intendedYear}-${String(intendedMonth + 1).padStart(2, '0')}`;
 
-    orders.forEach(order => {
-      const orderDate = new Date(order.order_date);
-      // Force the month to be the intended month if it's off due to timezone
-     
-      
-      let orderMonth = orderDate.getMonth();
-      if (orderMonth > intendedMonth) {
-        orderMonth = intendedMonth;
-      }
-      const orderYear = orderDate.getFullYear();
-      const processedMonthKey = `${orderYear}-${String(orderMonth + 1).padStart(2, '0')}`;
-      const dueDate = new Date(order.payment_due_date);
+    orders.forEach(order => {  
+      // const processedMonthKey = `${orderYear}-${String(orderMonth + 1).padStart(2, '0')}`;
+      const processedMonthKey = order.month
 
       // Update most recent month if this order is more recent
       if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {
@@ -159,21 +151,18 @@ export const useInvoiceData = () => {
         result.thisMonthMetrics.totalInvoice += order.total_invoice || 0;
         
         // Calculate profit for this order
-        let orderProfit = 0;
-        order.detail_order?.forEach(item => {
-          if (!item) return;
-          const price = (item.buy_price || 0) * (item.order_quantity || 0);
-          let profit = (item.total_invoice || 0) - price;
-          if (profit < 0) profit = 0;
-          orderProfit += profit;
-        });
-        result.thisMonthMetrics.totalProfit += orderProfit;
+        if (order.profit > 0) {
+          result.thisMonthMetrics.totalProfit += order.profit;
+        }
+        
 
         if (order.status_payment == "LUNAS") {
           result.thisMonthMetrics.totalLunas += order.total_invoice || 0;
         } else if (order.status_payment == "WAITING VALIDATION BY FINANCE") {
           result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
         } else if (order.status_payment == "BELUM LUNAS") {
+          result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
+        } else if (order.status_payment == "PARTIAL") {
           result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
         }
 
@@ -226,18 +215,13 @@ export const useInvoiceData = () => {
             result.productSummaries[item.product_id].price += item.price;
             result.productSummaries[item.product_id].difPrice += 1;
           }
-
-          const price = (item.buy_price || 0) * (item.order_quantity || 0);
-          let profit = (item.total_invoice || 0) - price;
-
-          if (profit < 0) {
-            profit = 0;
+          if (order.profit > 0 ) {
+            gross_profit += order.profit;
+            result.productSummaries[item.product_id].profit += order.profit;
           }
           
-          gross_profit += profit;
-          
           result.productSummaries[item.product_id].totalInvoice += item.total_invoice || 0;
-          result.productSummaries[item.product_id].profit += profit;
+          
           
           if (item.quantity) {
             result.productSummaries[item.product_id].quantity += item.quantity;
@@ -259,7 +243,7 @@ export const useInvoiceData = () => {
             
             result.categorySummaries[item.category].totalInvoice += item.total_invoice || 0;
             result.categorySummaries[item.category].quantity += item.quantity || 1;
-            result.categorySummaries[item.category].gross_profit += profit;
+            result.categorySummaries[item.category].gross_profit += order.profit;
             if (item.price) {
               result.categorySummaries[item.category].totalPrice += item.price;
               result.categorySummaries[item.category].itemCount += 1;

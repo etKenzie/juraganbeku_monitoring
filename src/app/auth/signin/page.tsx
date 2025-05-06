@@ -111,7 +111,7 @@ export default function SignIn() {
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
-          <Box sx={{ textAlign: 'center' }}>
+          {/* <Box sx={{ textAlign: 'center' }}>
             <Link
               component="button"
               variant="body2"
@@ -121,7 +121,7 @@ export default function SignIn() {
             >
               {isResetting ? 'Sending reset instructions...' : 'Forgot Password?'}
             </Link>
-          </Box>
+          </Box> */}
         </Box>
       </Box>
     </Container>

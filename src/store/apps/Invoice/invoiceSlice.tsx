@@ -64,6 +64,8 @@ export interface OrderData {
   process_hub: string;
   total_invoice: number;
   total_pembayaran: number;
+  profit: number;
+  month: string;
   payment_type: string;
   status_order: string;
   status_payment: string;

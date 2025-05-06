@@ -124,6 +124,8 @@ export default function Dashboard() {
         return {
           startDate: startDate.toISOString().split("T")[0],
           endDate: customEnd.toISOString().split("T")[0],
+          month: "March 2025",
+          status_payment: "BELUM LUNAS"
         };
       default:
         startDate.setMonth(now.getMonth() - 2);
