@@ -38,6 +38,12 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     id: uniqueId(),
+    title: "Pending",
+    icon: IconList,
+    href: "/dashboards/pending",
+  },
+  {
+    id: uniqueId(),
     title: "Leads",
     icon: IconList,
     href: "/dashboards/leads",

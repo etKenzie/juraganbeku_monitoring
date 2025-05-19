@@ -18,6 +18,7 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 interface InvoiceLineChartProps {
   data: {
     date: string;
+    month: string;
     totalInvoice: number;
     totalProfit: number;
   }[];
@@ -39,13 +40,14 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
     // Group data by month or week
     const groupedData = React.useMemo(() => {
       const result: Record<string, { totalInvoice: number; totalProfit: number }> = {};
-      
+      console.log(data)
       data.forEach(item => {
         const date = new Date(item.date);
+  
         let key: string;
         
         if (viewType === "monthly") {
-          key = format(date, "MMM yyyy");
+          key = item.month;
         } else {
           const weekNumber = Math.ceil(date.getDate() / 7);
           key = `Week ${weekNumber} ${format(date, "MMM yyyy")}`;

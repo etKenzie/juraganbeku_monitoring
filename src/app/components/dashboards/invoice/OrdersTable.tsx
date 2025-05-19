@@ -286,7 +286,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
                   <TableCell>{order.payment_type}</TableCell>
                   <TableCell>{calculateDueDateStatus(order.payment_due_date, order.status_payment)}</TableCell>
                   <TableCell align="right">{formatCurrency(order.total_invoice)}</TableCell>
-                  <TableCell align="right">{formatCurrency(calculateOrderProfit(order))}</TableCell>
+                  <TableCell align="right">{formatCurrency(order.profit)}</TableCell>
                 </TableRow>
               ))}
           </TableBody>

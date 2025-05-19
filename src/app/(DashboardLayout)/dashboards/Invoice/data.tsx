@@ -316,7 +316,7 @@ export const useInvoiceData = () => {
       // Process store-specific data
       const userId = order.user_id;
       const storeName = order.store_name;
-      const activeMonthKey = new Date(order.order_date).toISOString().slice(0, 7); // YYYY-MM format
+      const activeMonthKey = order.month; // YYYY-MM format
 
       if (!result.storeSummaries[userId]) {
         result.storeSummaries[userId] = {

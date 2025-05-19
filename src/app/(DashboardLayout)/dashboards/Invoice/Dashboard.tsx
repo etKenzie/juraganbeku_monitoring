@@ -80,14 +80,13 @@ export default function Dashboard() {
   const [customMonth, setCustomMonth] = useState(new Date().getMonth());
   const [customYear, setCustomYear] = useState(new Date().getFullYear());
   const [sortTime, setSortTime] = useState<'asc' | 'desc'>('desc');
-
   const [timePeriod, setTimePeriod] = useState("Last 30 Days");
   const [chartData, setChartData] = useState<Array<{
     date: string;
+    month: string;
     totalInvoice: number;
     totalProfit: number;
   }>>([]);
-
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [area, setArea] = useState("");
   const [areas, setAreas] = useState<string[]>([""]);
@@ -95,50 +94,43 @@ export default function Dashboard() {
 
   const getDateRange = (period: string) => {
     const now = new Date();
-    const startDate = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
     switch (period) {
       case "thisMonth":
         // For this month, show last 3 months including current month
-        startDate.setDate(1);
-        startDate.setMonth(now.getMonth() - 2);
-        
-        break;
-      // case "lastMonth":
-      //   // For last month, show the previous 3 months
-      //   startDate.setMonth(now.getMonth() - 2);
-      //   startDate.setDate(1);
-      //   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0);
-      //   lastMonthEnd.setHours(23, 59, 59, 999);
-      //   return {
-      //     startDate: startDate.toISOString().split("T")[0],
-      //     endDate: lastMonthEnd.toISOString().split("T")[0],
-      //   };
+        const months = [];
+        for (let i = -2; i <= 0; i++) {
+          const monthDate = new Date(currentYear, currentMonth + i, 1);
+          const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+          months.push(`${monthName} ${monthDate.getFullYear()}`);
+        }
+        return {
+          month: months.join(','),
+        };
       case "custom":
         // For custom, show 3 months from selected month
-        startDate.setFullYear(customYear);
-        startDate.setMonth(customMonth - 2); // Go back 2 months from selected month
-        startDate.setDate(1);
-        const customEnd = new Date(customYear, customMonth + 1, 0);
-        // customEnd.setHours(23, 59, 59, 999);
+        const customMonths = [];
+        for (let i = -2; i <= 0; i++) {
+          const monthDate = new Date(customYear, customMonth + i, 1);
+          const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+          customMonths.push(`${monthName} ${monthDate.getFullYear()}`);
+        }
         return {
-          startDate: startDate.toISOString().split("T")[0],
-          endDate: customEnd.toISOString().split("T")[0],
-          month: "March 2025",
-          status_payment: "BELUM LUNAS"
+          month: customMonths.join(','),
         };
       default:
-        startDate.setMonth(now.getMonth() - 2);
-        startDate.setDate(1);
+        const defaultMonths = [];
+        for (let i = -2; i <= 0; i++) {
+          const monthDate = new Date(currentYear, currentMonth + i, 1);
+          const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+          defaultMonths.push(`${monthName} ${monthDate.getFullYear()}`);
+        }
+        return {
+          month: defaultMonths.join(','),
+        };
     }
-
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    // endDate.setHours(23, 59, 59, 999);
-
-    return {
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
-    };
   };
 
   const dateRange = useMemo(() => getDateRange(period), [period, customMonth, customYear]);
@@ -147,9 +139,8 @@ export default function Dashboard() {
     try {
       await dispatch(
         fetchOrders({
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
           sortTime,
+          month: dateRange.month,
           area: area,
           segment: segment,
         })
@@ -160,26 +151,6 @@ export default function Dashboard() {
     }
   };
 
-  // Remove the useEffect that automatically fetches data
-  // useEffect(() => {
-  //   // Initial data fetch
-  //   const fetchInitialData = async () => {
-  //     try {
-  //       await dispatch(
-  //         fetchOrders({
-  //           startDate: dateRange.startDate,
-  //           endDate: dateRange.endDate,
-  //           sortTime,
-  //         })
-  //       );
-  //     } catch (error) {
-  //       console.error("Fetch error:", error);
-  //     }
-  //   };
-
-  //   fetchInitialData();
-  // }, [dispatch, dateRange, sortTime]);
-
   // Add initial data fetch when component mounts
   useEffect(() => {
     handleApplyFilters();
@@ -187,12 +158,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (orders && orders.length > 0) {
-      // Get the target month - either customMonth for custom period, or current month for "thisMonth"
-      // const targetMonth = period === "custom" ? customMonth : new Date().getMonth();
-      // const targetYear = period === "custom" ? customYear : new Date().getFullYear();
-
-      // console.log(targetMonth)
-      
       const processed = processData(orders, customMonth, customYear);
       setProcessedData(processed);
       setIsDataEmpty(false);
@@ -204,6 +169,7 @@ export default function Dashboard() {
 
         return {
           date: order.order_date,
+          month: order.month,
           totalInvoice: order.total_invoice,
           totalProfit: profit
         };
@@ -225,18 +191,14 @@ export default function Dashboard() {
   const filteredOrders = orders.filter((order) => {
     if (selectedArea && order.area !== selectedArea) return false;
 
-    const endDateObj = new Date(dateRange.endDate);
-    const lastMonth = endDateObj.getMonth(); // 0-indexed (0 = Jan)
-
     const orderDate = new Date(order.order_date);
-    const orderMonth = orderDate.getMonth();
+    const orderMonth = orderDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+    const orderYear = orderDate.getFullYear();
+    const orderMonthYear = `${orderMonth} ${orderYear}`;
 
-    if (orderMonth !== lastMonth) {
-      return false;
-    }
-
-    // ... existing filter conditions ...
-    return true;
+    // Check if the order's month is in the selected months
+    const selectedMonths = dateRange.month.split(',');
+    return selectedMonths.includes(orderMonthYear);
   });
 
   // Show loading screen while data is being fetched
@@ -244,24 +206,21 @@ export default function Dashboard() {
     return <Loading />;
   }
 
-  console.log(dateRange)
-  console.log(processedData)
-
   return (
     <PageContainer title="Invoice Dashboard" description="Invoice dashboard with analytics">
       <>
       {role !== 'admin' ? (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="60vh"
-      >
-        <Typography variant="h5" color="error">
-          You don't have access to this page.
-        </Typography>
-      </Box>
-    ) : <>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="60vh"
+        >
+          <Typography variant="h5" color="error">
+            You don't have access to this page.
+          </Typography>
+        </Box>
+      ) : <>
           <Box
             display="flex"
             justifyContent="space-between"
@@ -277,7 +236,6 @@ export default function Dashboard() {
                   label="Time Period"
                 >
                   <MenuItem value="thisMonth">This Month</MenuItem>
-                  {/* <MenuItem value="lastMonth">Last Month</MenuItem> */}
                   <MenuItem value="custom">Custom</MenuItem>
                 </Select>
               </FormControl>
@@ -489,8 +447,7 @@ export default function Dashboard() {
                 <Box mb={4}>
                   <AreaChart
                     areaData={processedData.areaSummaries}
-                    startDate={dateRange.startDate}
-                    endDate={dateRange.endDate}
+                    selectedMonths={dateRange.month}
                   />
                 </Box>
               )}

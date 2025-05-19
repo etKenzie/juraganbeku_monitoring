@@ -2,18 +2,18 @@
 import { AreaData } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
-  Box,
-  Dialog,
-  DialogContent,
-  Grid,
-  IconButton,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Tooltip,
-  Typography,
-  useMediaQuery
+    Box,
+    Dialog,
+    DialogContent,
+    Grid,
+    IconButton,
+    MenuItem,
+    Paper,
+    Select,
+    Stack,
+    Tooltip,
+    Typography,
+    useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
@@ -25,8 +25,7 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 interface AreaChartProps {
   isLoading?: boolean;
   areaData: Record<string, AreaData>;
-  startDate: string;
-  endDate: string;
+  selectedMonths: string;
 }
 
 type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP";
@@ -34,8 +33,7 @@ type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "to
 const AreaChart = ({
   isLoading,
   areaData,
-  startDate,
-  endDate,
+  selectedMonths,
 }: AreaChartProps) => {
   const theme = useTheme();
   const [selectedArea, setSelectedArea] = React.useState<AreaData | null>(null);
@@ -146,7 +144,7 @@ const AreaChart = ({
     if (!isClient) return;
 
     const ApexCharts = (await import("apexcharts")).default;
-    const dateRange = `from ${startDate} to ${endDate}`;
+    const dateRange = `for ${selectedMonths}`;
 
     ApexCharts.exec("area-performance-chart", "updateOptions", {
       title: {

@@ -148,8 +148,10 @@ interface OrderQuery {
   startDate?: string;
   endDate?: string;
   sortTime?: 'desc' | 'asc';
+  month?: string;
   area?: string;
   segment?: string;
+  payment?: string;
 }
 
 export const fetchOrders = (params: OrderQuery) => async (dispatch: AppDispatch) => {

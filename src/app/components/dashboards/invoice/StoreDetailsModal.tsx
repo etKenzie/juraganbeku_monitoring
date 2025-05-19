@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { StoreSummary } from '@/app/(DashboardLayout)/dashboards/Invoice/types';
+import { formatCurrency } from '@/app/utils/formatNumber';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
+  Paper,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Tabs,
-  Tab,
+  Typography,
 } from '@mui/material';
-import { StoreSummary } from '@/app/(DashboardLayout)/dashboards/Invoice/types';
-import { formatCurrency } from '@/app/utils/formatNumber';
+import React, { useEffect, useState } from 'react';
 import InvoiceLineChart from './InvoiceLineChart';
 
 interface StoreDetailsModalProps {
@@ -33,41 +33,49 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({ open, onClose, st
   const [activeTab, setActiveTab] = useState(0);
   const [chartData, setChartData] = useState<Array<{
     date: string;
+    month: string;
     totalInvoice: number;
     totalProfit: number;
   }>>([]);
 
   useEffect(() => {
-    if (store?.activeMonths) {
-      const data = Array.from(store.activeMonths).sort().map(month => {
-        const monthOrders = store.orders?.filter(order => 
-          order?.order_date && new Date(order.order_date).toISOString().slice(0, 7) === month
-        ) || [];
+    if (store?.orders) {
+      // Group orders by month
+      const ordersByMonth = store.orders.reduce((acc: Record<string, any[]>, order) => {
+        if (!order.month) return acc;
+        if (!acc[order.month]) {
+          acc[order.month] = [];
+        }
+        acc[order.month].push(order);
+        return acc;
+      }, {});
 
-        const totalInvoice = monthOrders.reduce((sum, order) => sum + (order?.total_invoice || 0), 0);
-        const totalProfit = monthOrders.reduce((sum, order) => {
-          const profit = order?.detail_order?.reduce((total, item) => {
-            const itemProfit = (item?.total_invoice || 0) - ((item?.buy_price || 0) * (item?.order_quantity || 0));
-            return total + (itemProfit > 0 ? itemProfit : 0);
-          }, 0) || 0;
-          return sum + profit;
-        }, 0);
+      // Convert to chart data format
+      const data = Object.entries(ordersByMonth).map(([month, orders]) => {
+        const totalInvoice = orders.reduce((sum, order) => sum + (order.total_invoice || 0), 0);
+        const totalProfit = orders.reduce((sum, order) => sum + (order.profit || 0), 0);
+
+        // Extract date from month string (e.g., "May 2025" -> "2025-05")
+        const [monthName, year] = month.split(' ');
+        const monthIndex = new Date(`${monthName} 1, ${year}`).getMonth() + 1;
+        const date = `${year}-${monthIndex.toString().padStart(2, '0')}`;
 
         return {
-          date: month,
+          date,
+          month,
           totalInvoice,
           totalProfit
         };
       });
-      setChartData(data.reverse());
+
+      // Sort by date
+      setChartData(data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
     }
   }, [store]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
-  
 
   if (!store) {
     console.warn('StoreDetailsModal: No store data provided');
@@ -130,23 +138,16 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({ open, onClose, st
                 </TableRow>
               </TableHead>
               <TableBody>
-                {store.orders?.map((order) => {
-                  const profit = order.detail_order?.reduce((total, item) => {
-                    const itemProfit = (item?.total_invoice || 0) - ((item?.buy_price || 0) * (item?.order_quantity || 0));
-                    return total + (itemProfit > 0 ? itemProfit : 0);
-                  }, 0) || 0;
-
-                  return (
-                    <TableRow key={order.order_id}>
-                      <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{order.order_code}</TableCell>
-                      <TableCell>{order.payment_type}</TableCell>
-                      <TableCell>{formatCurrency(order.total_invoice)}</TableCell>
-                      <TableCell>{formatCurrency(order.total_pembayaran)}</TableCell>
-                      <TableCell>{formatCurrency(profit)}</TableCell>
-                    </TableRow>
-                  );
-                })}
+                {store.orders?.map((order) => (
+                  <TableRow key={order.order_id}>
+                    <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{order.order_code}</TableCell>
+                    <TableCell>{order.payment_type}</TableCell>
+                    <TableCell>{formatCurrency(order.total_invoice)}</TableCell>
+                    <TableCell>{formatCurrency(order.total_pembayaran)}</TableCell>
+                    <TableCell>{formatCurrency(order.profit)}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
