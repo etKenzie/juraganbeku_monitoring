@@ -1,6 +1,5 @@
 "use client";
 import { Lead } from "@/app/types/leads";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   Button,
   Checkbox,
@@ -127,7 +126,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     }
   };
 
-  const { role } = useAuth();
+  
 
 
   return (

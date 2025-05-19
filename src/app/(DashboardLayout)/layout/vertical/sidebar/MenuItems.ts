@@ -1,6 +1,7 @@
 import { getTitleKey } from "@/utils/brands/brandUtils";
 import {
   IconAlignBoxBottomCenter,
+  IconClock,
   IconList
 } from "@tabler/icons-react";
 import { getCookie } from "cookies-next";
@@ -39,7 +40,7 @@ const Menuitems: MenuitemsType[] = [
   {
     id: uniqueId(),
     title: "Pending",
-    icon: IconList,
+    icon: IconClock,
     href: "/dashboards/pending",
   },
   {

@@ -5,6 +5,7 @@ import axios from "../../../utils/axios";
 import { AppDispatch } from "../../store";
 
 const ORDER_DASHBOARD_URL = `https://dev.tokopandai.id/api/order/dashboard`;
+const ORDER_NOO_URL = "https://dev.tokopandai.id/api/order/stores-order-once"
 
 // Combined interfaces
 interface DashboardData {
@@ -84,6 +85,8 @@ export interface StateType {
   totalItems: number;
   meta: { totalItems: number } | null;
   orders: OrderData[];
+  nooData: OrderData[];
+  pendingRequests: number;
 }
 
 const initialState: StateType = {
@@ -94,6 +97,8 @@ const initialState: StateType = {
   totalItems: 0,
   meta: null,
   orders: [],
+  nooData: [],
+  pendingRequests: 0,
 };
 
 const invoiceSlice = createSlice({
@@ -101,11 +106,21 @@ const invoiceSlice = createSlice({
   initialState,
   reducers: {
     startLoading(state) {
+      state.pendingRequests += 1;
       state.loading = true;
       state.error = null;
     },
+    endLoading(state) {
+      state.pendingRequests -= 1;
+      if (state.pendingRequests === 0) {
+        state.loading = false;
+      }
+    },
     hasError(state, action: PayloadAction<string>) {
-      state.loading = false;
+      state.pendingRequests -= 1;
+      if (state.pendingRequests === 0) {
+        state.loading = false;
+      }
       state.error = action.payload;
     },
     // getDashboardData(
@@ -130,18 +145,22 @@ const invoiceSlice = createSlice({
     //   state.meta = action.payload.meta;
     // },
     getOrdersSuccess(state, action: PayloadAction<OrderData[]>) {
-      state.loading = false;
       state.orders = action.payload;
+    },
+    getNOOSuccess(state, action: PayloadAction<OrderData[]>) {
+      state.nooData = action.payload;
     },
   },
 });
 
 export const { 
   startLoading, 
+  endLoading,
   hasError, 
 //   getDashboardData, 
 //   getGeraiData,
-  getOrdersSuccess 
+  getOrdersSuccess,
+  getNOOSuccess
 } = invoiceSlice.actions;
 
 interface OrderQuery {
@@ -176,11 +195,44 @@ export const fetchOrders = (params: OrderQuery) => async (dispatch: AppDispatch)
 
     if (response.data.code === 200) {
       dispatch(getOrdersSuccess(response.data.data));
+      dispatch(endLoading());
     } else {
       dispatch(hasError(response.data.message || "Failed to fetch orders"));
     }
   } catch (error: any) {
     dispatch(hasError(error.message || "Failed to fetch orders"));
+    throw new Error("AUTH_ERROR");
+  }
+};
+
+export const fetchNOO = (params: OrderQuery) => async (dispatch: AppDispatch) => {
+  dispatch(startLoading());
+  try {
+    const AUTH_TOKEN = getCookie("token");
+
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) searchParams.append(key, value.toString());
+    });
+
+    const request = `${ORDER_NOO_URL}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
+    console.log(request);
+
+    const response = await axios.get(
+      request,
+      {
+        // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+      }
+    );
+
+    if (response.data.code === 200) {
+      dispatch(getNOOSuccess(response.data.data));
+      dispatch(endLoading());
+    } else {
+      dispatch(hasError(response.data.message || "Failed to fetch NOO data"));
+    }
+  } catch (error: any) {
+    dispatch(hasError(error.message || "Failed to fetch NOO data"));
     throw new Error("AUTH_ERROR");
   }
 };

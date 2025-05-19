@@ -1,5 +1,5 @@
 "use client";
-import { fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
+import { fetchNOO, fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
 import { useEffect, useMemo, useState } from "react";
@@ -12,6 +12,7 @@ import DueDateStatusChart from "@/app/components/dashboards/invoice/DueDateStatu
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
 import MonthlyStoreChart from "@/app/components/dashboards/invoice/MonthlyStoreChart";
+import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
 import StoreMetrics from "@/app/components/dashboards/invoice/StoreMetrics";
@@ -61,9 +62,10 @@ export default function Dashboard() {
 
   
   // Get orders from the Redux store
-  const { orders, loading, error } = useSelector(
+  const { orders, nooData, loading, error } = useSelector(
     (state: RootState) => ({
       orders: state.invoiceReducer.orders,
+      nooData: state.invoiceReducer.nooData,
       loading: state.invoiceReducer.loading,
       error: state.invoiceReducer.error
     })
@@ -71,6 +73,8 @@ export default function Dashboard() {
   // const { dashboardData, geraiData, totalItems, meta, loading } = useSelector(
   //   (state: RootState) => state.dashboardReducer
   // );
+
+  console.log(orders, nooData)
 
   const { processData } = useInvoiceData();
   const [processedData, setProcessedData] = useState<any>(null);
@@ -137,14 +141,26 @@ export default function Dashboard() {
 
   const handleApplyFilters = async () => {
     try {
-      await dispatch(
-        fetchOrders({
-          sortTime,
-          month: dateRange.month,
-          area: area,
-          segment: segment,
-        })
-      );
+      await Promise.all([
+        dispatch(
+          fetchOrders({
+            sortTime,
+            month: dateRange.month,
+            area: area,
+            segment: segment,
+          })
+        ),
+        dispatch(
+          fetchNOO({
+            sortTime,
+            month: dateRange.month,
+            // startDate: "2025-03-01",
+            // endDate: "2025-05-30",
+            area: area,
+            segment: segment,
+          })
+        )
+      ]);
     } catch (error) {
       console.error("Fetch error:", error);
       setIsDataEmpty(true);
@@ -426,6 +442,11 @@ export default function Dashboard() {
                     />
                   </Grid>
                 </Grid>
+              </Box>
+
+              {/* NOO Chart */}
+              <Box mb={4}>
+                <NOOChart data={nooData} />
               </Box>
 
               {/* Store Summary Table */}

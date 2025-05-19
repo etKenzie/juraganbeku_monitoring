@@ -23,8 +23,15 @@ const MonthlyStoreChart = ({ isLoading, data, monthlyOrders }: MonthlyStoreChart
     setIsClient(true);
   }, []);
 
-  // Sort entries by month
-  const sortedEntries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+  // Sort entries by month in reverse chronological order (latest to earliest)
+  const sortedEntries = Object.entries(data).sort(([a], [b]) => {
+    const [monthA, yearA] = a.split(' ');
+    const [monthB, yearB] = b.split(' ');
+    const dateA = new Date(`${monthA} 1, ${yearA}`);
+    const dateB = new Date(`${monthB} 1, ${yearB}`);
+    return dateB.getTime() - dateA.getTime(); // Reverse the order
+  });
+
   const categories = sortedEntries.map(([key]) => key);
   const storeCounts = sortedEntries.map(([, stores]) => stores.size);
   const orderCounts = monthlyOrders ? categories.map(month => monthlyOrders[month] || 0) : [];
