@@ -26,7 +26,7 @@ interface NOOAreaChartProps {
   data: OrderData[];
 }
 
-type MetricKey =  "totalInvoice" | "totalOrders" | "averageInvoice";
+type MetricKey = "totalInvoice" | "totalOrders" | "averageInvoice" | "totalProfit" | "averageProfit";
 
 const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   const theme = useTheme();
@@ -41,6 +41,14 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
 
   // Process data to get first orders per store and group by area
   const areaData = React.useMemo(() => {
+    // Find the most recent month
+    let mostRecentMonth = '';
+    data.forEach(order => {
+      if (!mostRecentMonth || order.month > mostRecentMonth) {
+        mostRecentMonth = order.month;
+      }
+    });
+
     // First, get the first order date for each store
     const storeFirstOrders = data.reduce((acc: Record<string, { month: string, order: OrderData }>, order) => {
       const storeId = order.user_id;
@@ -52,23 +60,29 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
       return acc;
     }, {});
 
-    // Then, group by area and calculate metrics
+    // Then, group by area and calculate metrics for most recent month only
     const areaGroups = Object.values(storeFirstOrders).reduce((acc: Record<string, {
       stores: OrderData[];
       totalInvoice: number;
       totalOrders: number;
+      totalProfit: number;
     }>, { order }) => {
+      // Only include orders from the most recent month
+      if (order.month !== mostRecentMonth) return acc;
+
       const area = order.area || 'Unknown';
       if (!acc[area]) {
         acc[area] = {
           stores: [],
           totalInvoice: 0,
-          totalOrders: 0
+          totalOrders: 0,
+          totalProfit: 0
         };
       }
       acc[area].stores.push(order);
       acc[area].totalInvoice += order.total_invoice;
       acc[area].totalOrders += 1;
+      acc[area].totalProfit += order.profit || 0;
       return acc;
     }, {});
 
@@ -96,6 +110,10 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
           return b.totalOrders - a.totalOrders;
         case "averageInvoice":
           return (b.totalInvoice / b.stores.length) - (a.totalInvoice / a.stores.length);
+        case "totalProfit":
+          return b.totalProfit - a.totalProfit;
+        case "averageProfit":
+          return (b.totalProfit / b.stores.length) - (a.totalProfit / a.stores.length);
         default:
           return 0;
       }
@@ -112,6 +130,10 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
         return data.totalOrders;
       case "averageInvoice":
         return data.totalInvoice / data.stores.length;
+      case "totalProfit":
+        return data.totalProfit;
+      case "averageProfit":
+        return data.totalProfit / data.stores.length;
       default:
         return 0;
     }
@@ -127,6 +149,10 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
         return "Total Orders";
       case "averageInvoice":
         return "Average Invoice";
+      case "totalProfit":
+        return "Total Profit";
+      case "averageProfit":
+        return "Average Profit";
       default:
         return "";
     }
@@ -159,7 +185,8 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
     dataLabels: {
       enabled: true,
       formatter: (val: number) => {
-        if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice") {
+        if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice" || 
+            selectedMetric === "totalProfit" || selectedMetric === "averageProfit") {
           return formatCurrency(val);
         }
         return val;
@@ -188,7 +215,8 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
     yaxis: {
       labels: {
         formatter: (val: number) => {
-          if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice") {
+          if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice" || 
+              selectedMetric === "totalProfit" || selectedMetric === "averageProfit") {
             return formatCurrency(val);
           }
           return val;
@@ -205,7 +233,8 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
       },
       y: {
         formatter: (val: number) => {
-          if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice") {
+          if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice" || 
+              selectedMetric === "totalProfit" || selectedMetric === "averageProfit") {
             return formatCurrency(val);
           }
           return val;
@@ -271,10 +300,11 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
               onChange={(e) => setSelectedMetric(e.target.value as MetricKey)}
               size="small"
             >
-          
               <MenuItem value="totalInvoice">Total Invoice</MenuItem>
               <MenuItem value="totalOrders">Total Orders</MenuItem>
               <MenuItem value="averageInvoice">Average Invoice</MenuItem>
+              <MenuItem value="totalProfit">Total Profit</MenuItem>
+              <MenuItem value="averageProfit">Average Profit</MenuItem>
             </Select>
           </Box>
         }

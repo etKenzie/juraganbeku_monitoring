@@ -2,18 +2,18 @@
 import { AreaData } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
-    Box,
-    Dialog,
-    DialogContent,
-    Grid,
-    IconButton,
-    MenuItem,
-    Paper,
-    Select,
-    Stack,
-    Tooltip,
-    Typography,
-    useMediaQuery
+  Box,
+  Dialog,
+  DialogContent,
+  Grid,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
@@ -28,7 +28,7 @@ interface AreaChartProps {
   selectedMonths: string;
 }
 
-type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP";
+type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP" | "averageInvoice" | "averageProfit";
 
 const AreaChart = ({
   isLoading,
@@ -59,13 +59,73 @@ const AreaChart = ({
 
   // Sort areas based on selected key
   const sortedAreas = Object.entries(areaData)
-    .sort(([, a], [, b]) => b[sortKey] - a[sortKey])
+    .sort(([, a], [, b]) => {
+      switch (sortKey) {
+        case "totalInvoice":
+          return b.totalInvoice - a.totalInvoice;
+        case "totalProfit":
+          return b.totalProfit - a.totalProfit;
+        case "totalOrders":
+          return b.totalOrders - a.totalOrders;
+        case "totalCOD":
+          return b.totalCOD - a.totalCOD;
+        case "totalTOP":
+          return b.totalTOP - a.totalTOP;
+        case "averageInvoice":
+          return (b.totalInvoice / b.totalOrders) - (a.totalInvoice / a.totalOrders);
+        case "averageProfit":
+          return (b.totalProfit / b.totalOrders) - (a.totalProfit / a.totalOrders);
+        default:
+          return 0;
+      }
+    })
     .map(([key]) => key);
 
   const areas = sortedAreas;
-  const values = areas.map((area) => areaData[area][sortKey]);
+  const values = areas.map((area) => {
+    const data = areaData[area];
+    switch (sortKey) {
+      case "totalInvoice":
+        return data.totalInvoice;
+      case "totalProfit":
+        return data.totalProfit;
+      case "totalOrders":
+        return data.totalOrders;
+      case "totalCOD":
+        return data.totalCOD;
+      case "totalTOP":
+        return data.totalTOP;
+      case "averageInvoice":
+        return data.totalInvoice / data.totalOrders;
+      case "averageProfit":
+        return data.totalProfit / data.totalOrders;
+      default:
+        return 0;
+    }
+  });
 
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("lg"));
+
+  const getMetricLabel = (metric: SortKey) => {
+    switch (metric) {
+      case "totalInvoice":
+        return "Total Invoice";
+      case "totalProfit":
+        return "Total Profit";
+      case "totalOrders":
+        return "Total Orders";
+      case "totalCOD":
+        return "Total COD";
+      case "totalTOP":
+        return "Total TOP";
+      case "averageInvoice":
+        return "Average Invoice";
+      case "averageProfit":
+        return "Average Profit";
+      default:
+        return "";
+    }
+  };
 
   const optionscolumnchart: any = {
     chart: {
@@ -92,7 +152,14 @@ const AreaChart = ({
     },
     colors: [theme.palette.primary.main],
     dataLabels: {
-      formatter: (val: number) => formatCurrency(val),
+      formatter: (val: number) => {
+        if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
+            sortKey === "totalCOD" || sortKey === "totalTOP" ||
+            sortKey === "averageInvoice" || sortKey === "averageProfit") {
+          return formatCurrency(val);
+        }
+        return val;
+      },
       style: {
         fontSize: "12px",
         colors: [theme.palette.mode === "dark" ? "#fff" : "#111"],
@@ -116,7 +183,14 @@ const AreaChart = ({
     },
     yaxis: {
       labels: {
-        formatter: (val: number) => formatCurrency(val),
+        formatter: (val: number) => {
+          if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
+              sortKey === "totalCOD" || sortKey === "totalTOP" ||
+              sortKey === "averageInvoice" || sortKey === "averageProfit") {
+            return formatCurrency(val);
+          }
+          return val;
+        },
         style: {
           colors: theme.palette.mode === "dark" ? "#adb0bb" : "#111",
         },
@@ -128,14 +202,21 @@ const AreaChart = ({
         fontSize: "12px",
       },
       y: {
-        formatter: (val: number) => formatCurrency(val),
+        formatter: (val: number) => {
+          if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
+              sortKey === "totalCOD" || sortKey === "totalTOP" ||
+              sortKey === "averageInvoice" || sortKey === "averageProfit") {
+            return formatCurrency(val);
+          }
+          return val;
+        },
       },
     },
   };
 
   const seriescolumnchart = [
     {
-      name: "Value",
+      name: getMetricLabel(sortKey),
       data: values,
     },
   ];
@@ -196,6 +277,8 @@ const AreaChart = ({
               <MenuItem value="totalOrders">Total Orders</MenuItem>
               <MenuItem value="totalCOD">Total COD</MenuItem>
               <MenuItem value="totalTOP">Total TOP</MenuItem>
+              <MenuItem value="averageInvoice">Average Invoice</MenuItem>
+              <MenuItem value="averageProfit">Average Profit</MenuItem>
             </Select>
           </Box>
         }
@@ -231,6 +314,8 @@ const AreaChart = ({
                       <Typography>Total Orders: {selectedArea.totalOrders}</Typography>
                       <Typography>Total Invoice: {formatCurrency(selectedArea.totalInvoice)}</Typography>
                       <Typography>Total Profit: {formatCurrency(selectedArea.totalProfit)}</Typography>
+                      <Typography>Average Invoice: {formatCurrency(selectedArea.totalInvoice / selectedArea.totalOrders)}</Typography>
+                      <Typography>Average Profit: {formatCurrency(selectedArea.totalProfit / selectedArea.totalOrders)}</Typography>
                     </Stack>
                   </Paper>
                 </Grid>
