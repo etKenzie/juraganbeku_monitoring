@@ -57,46 +57,45 @@ const NOOChart = ({ data }: NOOChartProps) => {
   // Process data to count unique stores per month
   const monthlyData = React.useMemo(() => {
     // First, get the first order date for each store
-    const storeFirstOrders = data.reduce((acc: Record<string, string>, order) => {
+    const storeFirstOrders = data.reduce((acc: Record<string, { month: string, order: OrderData }>, order) => {
       const storeId = order.user_id;
-      const orderDate = new Date(order.order_date);
-      const monthYear = orderDate.toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase();
+      const monthYear = order.month.toLowerCase();
       
-      if (!acc[storeId] || new Date(order.order_date) < new Date(acc[storeId])) {
-        acc[storeId] = monthYear;
+      if (!acc[storeId] || new Date(order.order_date) < new Date(acc[storeId].order.order_date)) {
+        acc[storeId] = { month: monthYear, order };
       }
       return acc;
     }, {});
 
     // Then, count stores per month
-    const monthlyCounts = Object.values(storeFirstOrders).reduce((acc: Record<string, number>, month) => {
+    const monthlyCounts = Object.values(storeFirstOrders).reduce((acc: Record<string, number>, { month }) => {
       acc[month] = (acc[month] || 0) + 1;
       return acc;
     }, {});
 
-    return monthlyCounts;
+    return { monthlyCounts, storeFirstOrders };
   }, [data]);
 
-  const months = Object.keys(monthlyData).sort((a, b) => {
+  const months = Object.keys(monthlyData.monthlyCounts).sort((a, b) => {
     const [monthA, yearA] = a.split(' ');
     const [monthB, yearB] = b.split(' ');
     const dateA = new Date(`${monthA} 1, ${yearA}`);
     const dateB = new Date(`${monthB} 1, ${yearB}`);
-    return dateA.getTime() - dateB.getTime();
+    return dateA.getTime() - dateB.getTime(); // Earliest to latest
   });
 
-  const nooCounts = months.map(month => monthlyData[month]);
+  const nooCounts = months.map(month => monthlyData.monthlyCounts[month]);
 
   // Calculate average and find max count
   const average = nooCounts.reduce((acc, curr) => acc + curr, 0) / nooCounts.length;
   const maxCount = Math.max(...nooCounts);
-  const mostRecentMonth = months[months.length - 1];
-  const mostRecentCount = monthlyData[mostRecentMonth] || 0;
+  const mostRecentMonth = months[months.length - 1]; // Changed back to last item
+  const mostRecentCount = monthlyData.monthlyCounts[mostRecentMonth] || 0;
 
   const neutral = theme.palette.grey[300];
   const highlightColor = theme.palette.primary.main;
   const colors = months.map((month) =>
-    monthlyData[month] === maxCount ? highlightColor : neutral
+    monthlyData.monthlyCounts[month] === maxCount ? highlightColor : neutral
   );
 
   const insightText = (
@@ -244,18 +243,7 @@ const NOOChart = ({ data }: NOOChartProps) => {
 
   // Get unique store names for selected month with additional details
   const getStoresForMonth = (month: string) => {
-    const storeFirstOrders = data.reduce((acc: Record<string, { month: string, order: OrderData }>, order) => {
-      const storeId = order.user_id;
-      const orderDate = new Date(order.order_date);
-      const monthYear = orderDate.toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase();
-      
-      if (!acc[storeId] || new Date(order.order_date) < new Date(acc[storeId].order.order_date)) {
-        acc[storeId] = { month: monthYear, order };
-      }
-      return acc;
-    }, {});
-
-    return Object.values(storeFirstOrders)
+    return Object.values(monthlyData.storeFirstOrders)
       .filter(store => store.month === month)
       .map(store => store.order)
       .sort((a, b) => a.store_name.localeCompare(b.store_name));

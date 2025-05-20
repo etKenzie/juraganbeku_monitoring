@@ -12,6 +12,7 @@ import DueDateStatusChart from "@/app/components/dashboards/invoice/DueDateStatu
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
 import MonthlyStoreChart from "@/app/components/dashboards/invoice/MonthlyStoreChart";
+import NOOAreaChart from "@/app/components/dashboards/invoice/NOOAreaChart";
 import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
@@ -447,6 +448,11 @@ export default function Dashboard() {
               {/* NOO Chart */}
               <Box mb={4}>
                 <NOOChart data={nooData} />
+              </Box>
+
+              {/* NOO Area Chart */}
+              <Box mb={4}>
+                <NOOAreaChart data={nooData} />
               </Box>
 
               {/* Store Summary Table */}
