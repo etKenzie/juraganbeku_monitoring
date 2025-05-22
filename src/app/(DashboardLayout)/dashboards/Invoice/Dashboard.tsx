@@ -15,6 +15,7 @@ import MonthlyStoreChart from "@/app/components/dashboards/invoice/MonthlyStoreC
 import NOOAreaChart from "@/app/components/dashboards/invoice/NOOAreaChart";
 import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
+import PaymentDistributionChart from "@/app/components/dashboards/invoice/PaymentDistributionChart";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
 import StoreMetrics from "@/app/components/dashboards/invoice/StoreMetrics";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
@@ -33,6 +34,7 @@ import {
   Typography
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { ProcessedData } from "./types";
 
 
 interface StoreSummary {
@@ -43,6 +45,12 @@ interface StoreSummary {
   averageOrderValue: number;
   activeMonths: Set<string>;
   orders: OrderData[];
+}
+
+interface PaymentStatusMetrics {
+  totalOrders: number;
+  totalInvoice: number;
+  totalProfit: number;
 }
 
 export default function Dashboard() {
@@ -78,7 +86,7 @@ export default function Dashboard() {
   console.log(orders, nooData)
 
   const { processData } = useInvoiceData();
-  const [processedData, setProcessedData] = useState<any>(null);
+  const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
   const [isDataEmpty, setIsDataEmpty] = useState(false);
 
   const [period, setPeriod] = useState("thisMonth");
@@ -475,6 +483,20 @@ export default function Dashboard() {
                   <AreaChart
                     areaData={processedData.areaSummaries}
                     selectedMonths={dateRange.month}
+                  />
+                </Box>
+              )}
+
+              {/* Payment Distribution Chart */}
+              {processedData && processedData.paymentStatusMetrics && (
+                <Box mb={4}>
+                  <PaymentDistributionChart 
+                    data={Object.entries(processedData.paymentStatusMetrics as Record<string, PaymentStatusMetrics>).map(([status, metrics]) => ({
+                      status,
+                      totalOrders: metrics.totalOrders,
+                      totalInvoice: metrics.totalInvoice,
+                      totalProfit: metrics.totalProfit
+                    }))}
                   />
                 </Box>
               )}

@@ -74,34 +74,35 @@ const PaymentStatusPieChart = ({ data }: PaymentStatusPieChartProps) => {
     }
   };
 
-  const series = data.map(item => getMetricValue(item));
+  const series = [{
+    name: getMetricLabel(metricType),
+    data: data.map(item => getMetricValue(item))
+  }];
   const labels = data.map(item => item.status);
 
   const options: any = {
     chart: {
       id: chartId,
-      type: "pie",
+      type: "bar",
       fontFamily: "'Plus Jakarta Sans', sans-serif",
       foreColor: theme.palette.mode === "dark" ? "#adb0bb" : "#111",
       toolbar: {
         show: false,
       },
     },
-    labels: labels,
-    colors: [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.error.main],
-    legend: {
-      position: "bottom",
-      fontSize: "14px",
-      fontFamily: "'Plus Jakarta Sans', sans-serif",
-      fontWeight: 400,
-      labels: {
-        colors: theme.palette.mode === "dark" ? "#adb0bb" : "#111",
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '55%',
+        borderRadius: 4,
+        distributed: true,
       },
     },
+    colors: [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.error.main],
     dataLabels: {
       enabled: true,
       formatter: (val: number) => {
-        return `${val.toFixed(1)}%`;
+        return getMetricFormatter(metricType)(val);
       },
       style: {
         fontSize: "14px",
@@ -109,13 +110,36 @@ const PaymentStatusPieChart = ({ data }: PaymentStatusPieChartProps) => {
         colors: [theme.palette.mode === "dark" ? "#fff" : "#111"],
       },
     },
+    legend: {
+      show: false,
+    },
+    xaxis: {
+      categories: labels,
+      labels: {
+        style: {
+          colors: theme.palette.mode === "dark" ? "#adb0bb" : "#111",
+          fontSize: "14px",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+        },
+      },
+    },
+    yaxis: {
+      labels: {
+        formatter: (val: number) => {
+          return getMetricFormatter(metricType)(val);
+        },
+        style: {
+          colors: theme.palette.mode === "dark" ? "#adb0bb" : "#111",
+          fontSize: "14px",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+        },
+      },
+    },
     tooltip: {
       theme: theme.palette.mode,
       y: {
         formatter: (val: number) => {
-          const total = series.reduce((a, b) => a + b, 0);
-          const percentage = (val / total) * 100;
-          return `${getMetricFormatter(metricType)(val)} (${percentage.toFixed(1)}%)`;
+          return getMetricFormatter(metricType)(val);
         },
       },
     },
@@ -181,7 +205,7 @@ const PaymentStatusPieChart = ({ data }: PaymentStatusPieChartProps) => {
           <Chart
             options={options}
             series={series}
-            type="pie"
+            type="bar"
             height={350}
             width="100%"
           />

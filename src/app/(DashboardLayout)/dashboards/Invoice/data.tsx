@@ -53,7 +53,8 @@ export const useInvoiceData = () => {
           dpd30: 0,
           dpd60: 0,
           lunas: 0
-        }
+        },
+        paymentStatusMetrics: {}
       };
     }
 
@@ -91,10 +92,9 @@ export const useInvoiceData = () => {
         dpd30: 0,
         dpd60: 0,
         lunas: 0
-      }
+      },
+      paymentStatusMetrics: {}
     };
-
-  
 
     // Find the most recent month in the data
     let mostRecentMonth = '';
@@ -102,14 +102,24 @@ export const useInvoiceData = () => {
 
     // Use the target month and year passed from Dashboard
     const intendedMonth = targetMonth;
-    // console.log('here')
-    // console.log(intendedMonth)
     const intendedYear = targetYear;
     const intendedMonthKey = `${intendedYear}-${String(intendedMonth + 1).padStart(2, '0')}`;
 
     orders.forEach(order => {  
-      // const processedMonthKey = `${orderYear}-${String(orderMonth + 1).padStart(2, '0')}`;
-      const processedMonthKey = order.month
+      const processedMonthKey = order.month;
+
+      // Process payment status metrics
+      const status = order.status_payment;
+      if (!result.paymentStatusMetrics[status]) {
+        result.paymentStatusMetrics[status] = {
+          totalOrders: 0,
+          totalInvoice: 0,
+          totalProfit: 0
+        };
+      }
+      result.paymentStatusMetrics[status].totalOrders += 1;
+      result.paymentStatusMetrics[status].totalInvoice += order.total_invoice || 0;
+      result.paymentStatusMetrics[status].totalProfit += order.profit || 0;
 
       // Update most recent month if this order is more recent
       if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {

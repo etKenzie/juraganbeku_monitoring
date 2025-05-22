@@ -65,7 +65,19 @@ export interface ProcessedData {
   };
   monthlyStoreCounts: { [key: string]: Set<string> };
   monthlyOrderCounts: { [key: string]: number };
-  dueDateStatusCounts: { [key: string]: number };
+  dueDateStatusCounts: {
+    current: number;
+    below14DPD: number;
+    dpd14: number;
+    dpd30: number;
+    dpd60: number;
+    lunas: number;
+  };
+  paymentStatusMetrics: { [key: string]: {
+    totalOrders: number;
+    totalInvoice: number;
+    totalProfit: number;
+  }};
 }
 
 export interface StoreSummary {

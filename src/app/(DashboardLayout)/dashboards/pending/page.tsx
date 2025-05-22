@@ -14,12 +14,12 @@ import DueDateStatusBarChart from "@/app/components/dashboards/pending/DueDateSt
 import PaymentStatusPieChart from "@/app/components/dashboards/pending/PaymentStatusPieChart";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-    Box,
-    Button,
-    Grid,
-    MenuItem,
-    TextField,
-    Typography
+  Box,
+  Button,
+  Grid,
+  MenuItem,
+  TextField,
+  Typography
 } from "@mui/material";
 
 interface PaymentStatusData {
@@ -220,7 +220,32 @@ export default function PendingDashboard() {
               {/* Summary Cards */}
               {processedData && (
                 <Box mb={4}>
-                  <Grid container spacing={3}>
+                  <Typography variant="h6" mb={2}>Overall Summary</Typography>
+                  <Grid container spacing={3} mb={4}>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <InvoiceSummaryCard
+                        title="Total Pending Orders"
+                        value={orders.length}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <InvoiceSummaryCard
+                        title="Total Pending Invoice"
+                        value={orders.reduce((sum, order) => sum + order.total_invoice, 0)}
+                        isCurrency
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <InvoiceSummaryCard
+                        title="Total Pending Profit"
+                        value={orders.reduce((sum, order) => sum + order.profit, 0)}
+                        isCurrency
+                      />
+                    </Grid>
+                  </Grid>
+                  
+                  <Typography variant="h6" mb={2}>This Month's Summary</Typography>
+                  <Grid container spacing={3} mb={4}>
                     <Grid item xs={12} sm={6} md={4}>
                       <InvoiceSummaryCard
                         title="Total Pending Orders"
@@ -242,6 +267,8 @@ export default function PendingDashboard() {
                       />
                     </Grid>
                   </Grid>
+
+                  
                 </Box>
               )}
 
@@ -253,6 +280,7 @@ export default function PendingDashboard() {
                 <Grid item xs={12} md={12}>
                   <DueDateStatusBarChart data={dueDateStatusMetrics} />
                 </Grid>
+              
               </Grid>
               
               {/* Orders Table */}

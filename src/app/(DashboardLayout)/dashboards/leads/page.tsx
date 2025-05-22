@@ -1,10 +1,12 @@
 "use client";
 import PageContainer from "@/app/components/container/PageContainer";
 import AddLeadDialog from "@/app/components/dashboards/leads/AddLeadDialog";
+import LeadSourceChart from "@/app/components/dashboards/leads/LeadSourceChart";
 import LeadsTable from "@/app/components/dashboards/leads/LeadsTable";
+import MonthlyLeadsChart from "@/app/components/dashboards/leads/MonthlyLeadsChart";
 import { Lead } from "@/app/types/leads";
 import { supabase } from "@/lib/supabaseClient";
-import { Box, Typography } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 
 const LeadsPage = () => {
@@ -89,6 +91,35 @@ const LeadsPage = () => {
     }
   };
 
+  // Process data for LeadSourceChart
+  const sourceData = leads.reduce((acc: { source: string; count: number }[], lead) => {
+    const source = Array.isArray(lead.found_by) ? lead.found_by[0] || 'Unknown' : lead.found_by || 'Unknown';
+    const existingSource = acc.find(item => item.source === source);
+    
+    if (existingSource) {
+      existingSource.count++;
+    } else {
+      acc.push({ source, count: 1 });
+    }
+    
+    return acc;
+  }, []);
+
+  // Process data for MonthlyLeadsChart
+  const monthlyData = leads.reduce((acc: { month: string; count: number }[], lead) => {
+    const date = new Date(lead.date_added);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const existingMonth = acc.find(item => item.month === monthKey);
+    
+    if (existingMonth) {
+      existingMonth.count++;
+    } else {
+      acc.push({ month: monthKey, count: 1 });
+    }
+    
+    return acc;
+  }, []);
+
   if (loading) {
     return (
       <PageContainer title="Leads Management" description="Manage your leads">
@@ -111,19 +142,45 @@ const LeadsPage = () => {
 
   return (
     <PageContainer title="Leads Management" description="Manage your leads">
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        width: '100%',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          mb: 3,
+          width: '100%'
+        }}>
           <Typography variant="h4">Leads</Typography>
-          {/* <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
-            Add New Lead
-          </Button> */}
         </Box>
 
-        <LeadsTable 
-          leads={leads} 
-          onEdit={handleEditLead}
-          onDelete={handleDeleteLead}
-        />
+        {/* Charts Section */}
+        <Grid container spacing={3} sx={{ mb: 3, width: '100%' }}>
+          <Grid item xs={12}>
+            <MonthlyLeadsChart data={monthlyData} />
+          </Grid>
+          <Grid item xs={12}>
+            <LeadSourceChart data={sourceData} />
+          </Grid>
+        </Grid>
+
+        {/* Table Section */}
+        <Box sx={{ 
+          flex: 1,
+          width: '100%',
+          overflow: 'hidden'
+        }}>
+          <LeadsTable 
+            leads={leads} 
+            onEdit={handleEditLead}
+            onDelete={handleDeleteLead}
+          />
+        </Box>
+
         <AddLeadDialog 
           open={open} 
           onClose={() => setOpen(false)} 

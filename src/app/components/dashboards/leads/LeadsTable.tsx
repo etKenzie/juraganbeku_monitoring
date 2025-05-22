@@ -27,6 +27,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TableSortLabel,
   TextField,
   Typography
 } from "@mui/material";
@@ -129,19 +130,20 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
   };
 
   const filteredLeads = leads.filter((lead) => {
+    const searchTermLower = searchTerm.toLowerCase();
     const matchesSearch = 
-      lead.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.area.toLowerCase().includes(searchTerm.toLowerCase());
+      (lead.brand_name?.toLowerCase() || '').includes(searchTermLower) ||
+      (lead.contact_person?.toLowerCase() || '').includes(searchTermLower) ||
+      (lead.phone?.toLowerCase() || '').includes(searchTermLower) ||
+      (lead.email?.toLowerCase() || '').includes(searchTermLower) ||
+      (lead.area?.toLowerCase() || '').includes(searchTermLower);
 
-    const matchesService = selectedService ? lead.service.includes(selectedService) : true;
-    const matchesOutletType = selectedOutletType ? lead.outlet_type.includes(selectedOutletType) : true;
+    const matchesService = selectedService ? lead.service?.includes(selectedService) : true;
+    const matchesOutletType = selectedOutletType ? lead.outlet_type?.includes(selectedOutletType) : true;
     const matchesPriority = selectedPriority ? lead.priority === selectedPriority : true;
     const matchesCategory = categoryFilter ? lead.lead_category === categoryFilter : true;
     const matchesArea = areaFilter ? lead.area === areaFilter : true;
-    const matchesFoundBy = foundByFilter ? lead.found_by.includes(foundByFilter) : true;
+    const matchesFoundBy = foundByFilter ? lead.found_by?.includes(foundByFilter) : true;
 
     return matchesSearch && 
            matchesService && 
@@ -270,8 +272,8 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Leads</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, mt: 4}}>
+        <Typography variant="h6">Leads Table</Typography>
         <DownloadButton
           data={filteredLeads}
           filename="leads"
@@ -280,76 +282,73 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
           size="small"
         />
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setAddDialogOpen(true)}
-        >
-          Add New Lead
-        </Button>
-      </Box>
-      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-        <TextField
-          label="Search"
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Service</InputLabel>
-          <Select
-            value={selectedService}
-            onChange={(e) => setSelectedService(e.target.value)}
-            label="Service"
-          >
-            <MenuItem value="">All Services</MenuItem>
-            {serviceOptions.map((service) => (
-              <MenuItem key={service} value={service}>
-                {service}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Outlet Type</InputLabel>
-          <Select
-            value={selectedOutletType}
-            onChange={(e) => setSelectedOutletType(e.target.value)}
-            label="Outlet Type"
-          >
-            <MenuItem value="">All Types</MenuItem>
-            {outletTypeOptions.map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Priority</InputLabel>
-          <Select
-            value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value)}
-            label="Priority"
-          >
-            <MenuItem value="">All Priorities</MenuItem>
-            <MenuItem value="1">1</MenuItem>
-            <MenuItem value="2">2</MenuItem>
-            <MenuItem value="3">3</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
       <Grid container spacing={2} mb={3}>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search leads..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControl fullWidth>
+            <InputLabel>Service</InputLabel>
+            <Select
+              value={selectedService}
+              onChange={(e) => setSelectedService(e.target.value)}
+              label="Service"
+            >
+              <MenuItem value="">All Services</MenuItem>
+              {serviceOptions.map((service) => (
+                <MenuItem key={service} value={service}>
+                  {service}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControl fullWidth>
+            <InputLabel>Outlet Type</InputLabel>
+            <Select
+              value={selectedOutletType}
+              onChange={(e) => setSelectedOutletType(e.target.value)}
+              label="Outlet Type"
+            >
+              <MenuItem value="">All Types</MenuItem>
+              {outletTypeOptions.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {type}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControl fullWidth>
+            <InputLabel>Priority</InputLabel>
+            <Select
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value)}
+              label="Priority"
+            >
+              <MenuItem value="">All Priorities</MenuItem>
+              <MenuItem value="1">1</MenuItem>
+              <MenuItem value="2">2</MenuItem>
+              <MenuItem value="3">3</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Category</InputLabel>
             <Select
@@ -400,28 +399,37 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
             </Select>
           </FormControl>
         </Grid>
+        <Grid item xs={12} sm={4}>
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={() => setAddDialogOpen(true)}
+          >
+            Add New Lead
+          </Button>
+        </Grid>
       </Grid>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Brand Name</TableCell>
-              <TableCell>Company Name</TableCell>
-              <TableCell>Contact Person</TableCell>
-              <TableCell>Phone</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Area</TableCell>
-              <TableCell>Source</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Branch Count</TableCell>
-              <TableCell>Services</TableCell>
-              <TableCell>Outlet Types</TableCell>
-              <TableCell>Priority</TableCell>
-              <TableCell>Found By</TableCell>
-              <TableCell>Entry Date</TableCell>
-              <TableCell>Deadline</TableCell>
-              <TableCell>Memo</TableCell>
-              { role === "admin" && <TableCell>Actions</TableCell>}
+              {headCells.map((headCell) => (
+                <TableCell
+                  key={headCell.id}
+                  align={headCell.numeric ? "right" : "left"}
+                  sortDirection={orderBy === headCell.id ? order : false}
+                >
+                  <TableSortLabel
+                    active={orderBy === headCell.id}
+                    direction={orderBy === headCell.id ? order : "asc"}
+                    onClick={() => handleRequestSort(headCell.id)}
+                  >
+                    {headCell.label}
+                  </TableSortLabel>
+                </TableCell>
+              ))}
+              {role === "admin" && <TableCell>Actions</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -451,7 +459,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                       color={getCategoryColor(lead.lead_category)}
                     />
                   </TableCell>
-                  <TableCell>{lead.branch_count}</TableCell>
+                  <TableCell align="right">{lead.branch_count}</TableCell>
                   <TableCell>
                     <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
                       {lead.service.map((service) => (
@@ -466,7 +474,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                       ))}
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="right">
                     <Chip
                       label={`${lead.priority}`}
                       size="small"
@@ -486,8 +494,8 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                       ))}
                     </Box>
                   </TableCell>
-                  <TableCell>{new Date(lead.date_added).toLocaleDateString()}</TableCell>
-                  <TableCell>{lead.deadline ? new Date(lead.deadline).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell>{formatDate(lead.date_added)}</TableCell>
+                  <TableCell>{lead.deadline ? formatDate(lead.deadline) : '-'}</TableCell>
                   <TableCell>{lead.memo}</TableCell>
                   {role === 'admin' && (
                     <TableCell>
