@@ -108,18 +108,20 @@ export const useInvoiceData = () => {
     orders.forEach(order => {  
       const processedMonthKey = order.month;
 
-      // Process payment status metrics
-      const status = order.status_payment;
-      if (!result.paymentStatusMetrics[status]) {
-        result.paymentStatusMetrics[status] = {
-          totalOrders: 0,
-          totalInvoice: 0,
-          totalProfit: 0
-        };
+      // Process payment status metrics only for the most recent month
+      if (processedMonthKey === mostRecentMonth) {
+        const status = order.status_payment;
+        if (!result.paymentStatusMetrics[status]) {
+          result.paymentStatusMetrics[status] = {
+            totalOrders: 0,
+            totalInvoice: 0,
+            totalProfit: 0
+          };
+        }
+        result.paymentStatusMetrics[status].totalOrders += 1;
+        result.paymentStatusMetrics[status].totalInvoice += order.total_invoice || 0;
+        result.paymentStatusMetrics[status].totalProfit += order.profit || 0;
       }
-      result.paymentStatusMetrics[status].totalOrders += 1;
-      result.paymentStatusMetrics[status].totalInvoice += order.total_invoice || 0;
-      result.paymentStatusMetrics[status].totalProfit += order.profit || 0;
 
       // Update most recent month if this order is more recent
       if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {

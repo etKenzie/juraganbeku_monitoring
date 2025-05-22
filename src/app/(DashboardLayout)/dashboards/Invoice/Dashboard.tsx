@@ -505,6 +505,7 @@ export default function Dashboard() {
                       totalInvoice: metrics.totalInvoice,
                       totalProfit: metrics.totalProfit
                     }))}
+                    selectedMonths={dateRange.month}
                   />
                 </Box>
               )}

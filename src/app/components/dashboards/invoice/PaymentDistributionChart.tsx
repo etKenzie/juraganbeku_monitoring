@@ -24,11 +24,12 @@ interface PaymentStatusData {
 
 interface PaymentDistributionChartProps {
   data: PaymentStatusData[];
+  selectedMonths: string;
 }
 
 type SortKey = "totalOrders" | "totalInvoice" | "totalProfit" | "averageInvoice" | "averageProfit";
 
-const PaymentDistributionChart = ({ data }: PaymentDistributionChartProps) => {
+const PaymentDistributionChart = ({ data, selectedMonths }: PaymentDistributionChartProps) => {
   const theme = useTheme();
   const [sortKey, setSortKey] = React.useState<SortKey>("totalOrders");
   const [isClient, setIsClient] = React.useState(false);
@@ -41,6 +42,14 @@ const PaymentDistributionChart = ({ data }: PaymentDistributionChartProps) => {
     () => `payment-distribution-chart-${Math.random().toString(36).substr(2, 9)}`,
     []
   );
+
+  // Get the most recent month from selectedMonths
+  const getMostRecentMonth = () => {
+    const months = selectedMonths.split(',');
+    return months[months.length - 1].trim(); // Get the last month in the list
+  };
+
+  const mostRecentMonth = getMostRecentMonth();
 
   const getMetricLabel = (metric: SortKey) => {
     switch (metric) {
@@ -185,10 +194,11 @@ const PaymentDistributionChart = ({ data }: PaymentDistributionChartProps) => {
 
     const ApexCharts = (await import("apexcharts")).default;
     const metricLabel = getMetricLabel(sortKey);
+    const dateRange = `for ${mostRecentMonth}`;
 
     ApexCharts.exec(chartId, "updateOptions", {
       title: {
-        text: ["Payment Status Distribution", metricLabel],
+        text: ["Payment Status Distribution", metricLabel, dateRange],
         align: "center",
         style: {
           fontSize: "16px",
@@ -205,7 +215,7 @@ const PaymentDistributionChart = ({ data }: PaymentDistributionChartProps) => {
 
         const downloadLink = document.createElement("a");
         downloadLink.href = response.imgURI;
-        downloadLink.download = `Payment_Status_Distribution_${metricLabel}.png`;
+        downloadLink.download = `Payment_Status_Distribution_${metricLabel}_${mostRecentMonth}.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
@@ -215,7 +225,7 @@ const PaymentDistributionChart = ({ data }: PaymentDistributionChartProps) => {
 
   return (
     <DashboardCard
-      title="Payment Status Distribution"
+      title={`Payment Status Distribution`}
       action={
         <Box display="flex" alignItems="center" gap={2}>
           <Tooltip title="Download Chart">
