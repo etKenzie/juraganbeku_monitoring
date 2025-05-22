@@ -2,7 +2,7 @@
 import { fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useInvoiceData } from "../Invoice/data";
 
 import { calculateDueDateStatus } from "@/app/(DashboardLayout)/dashboards/Invoice/data";
@@ -49,6 +49,14 @@ export default function PendingDashboard() {
     })
   );
 
+  // Filter out CANCEL BY ADMIN and CANCEL orders right after data is retrieved
+  const validOrders = useMemo(() => {
+    return orders?.filter(order => 
+      order.status_order !== "CANCEL BY ADMIN" && 
+      order.status_order !== "CANCEL"
+    ) || [];
+  }, [orders]);
+
   const { processData } = useInvoiceData();
   const [processedData, setProcessedData] = useState<any>(null);
   const [isDataEmpty, setIsDataEmpty] = useState(false);
@@ -79,14 +87,14 @@ export default function PendingDashboard() {
   }, []); // Empty dependency array means this only runs once on mount
 
   useEffect(() => {
-    if (orders && orders.length > 0) {
-      const processed = processData(orders, new Date().getMonth(), new Date().getFullYear());
+    if (validOrders && validOrders.length > 0) {
+      const processed = processData(validOrders, new Date().getMonth(), new Date().getFullYear());
       setProcessedData(processed);
       setIsDataEmpty(false);
     } else {
       setIsDataEmpty(true);
     }
-  }, [orders]);
+  }, [validOrders]);
 
   useEffect(() => {
     if (processedData) {
@@ -97,7 +105,7 @@ export default function PendingDashboard() {
   }, [processedData]);
 
   // Calculate payment status metrics
-  const paymentStatusData = orders.reduce((acc: Record<string, PaymentStatusData>, order) => {
+  const paymentStatusData = validOrders.reduce((acc: Record<string, PaymentStatusData>, order) => {
     const status = order.status_payment;
     if (!acc[status]) {
       acc[status] = {
@@ -116,7 +124,7 @@ export default function PendingDashboard() {
   const paymentStatusMetrics: PaymentStatusData[] = Object.values(paymentStatusData);
 
   // Calculate due date status metrics
-  const dueDateStatusData = orders.reduce((acc: Record<string, DueDateStatusData>, order) => {
+  const dueDateStatusData = validOrders.reduce((acc: Record<string, DueDateStatusData>, order) => {
     const status = calculateDueDateStatus(order.payment_due_date, order.status_payment);
     if (!acc[status]) {
       acc[status] = {
@@ -225,20 +233,20 @@ export default function PendingDashboard() {
                     <Grid item xs={12} sm={6} md={4}>
                       <InvoiceSummaryCard
                         title="Total Pending Orders"
-                        value={orders.length}
+                        value={validOrders.length}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                       <InvoiceSummaryCard
                         title="Total Pending Invoice"
-                        value={orders.reduce((sum, order) => sum + order.total_invoice, 0)}
+                        value={validOrders.reduce((sum, order) => sum + order.total_invoice, 0)}
                         isCurrency
                       />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                       <InvoiceSummaryCard
                         title="Total Pending Profit"
-                        value={orders.reduce((sum, order) => sum + order.profit, 0)}
+                        value={validOrders.reduce((sum, order) => sum + order.profit, 0)}
                         isCurrency
                       />
                     </Grid>
@@ -284,9 +292,9 @@ export default function PendingDashboard() {
               </Grid>
               
               {/* Orders Table */}
-              {orders && (
+              {validOrders && (
                 <Box>
-                  <OrdersTable orders={orders} />
+                  <OrdersTable orders={validOrders} />
                 </Box>
               )}
             </>

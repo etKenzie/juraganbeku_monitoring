@@ -85,6 +85,14 @@ export default function Dashboard() {
 
   console.log(orders, nooData)
 
+  // Filter out CANCEL BY ADMIN and CANCEL orders right after data is retrieved
+  const validOrders = useMemo(() => {
+    return orders?.filter(order => 
+      order.status_order !== "CANCEL BY ADMIN" && 
+      order.status_order !== "CANCEL"
+    ) || [];
+  }, [orders]);
+
   const { processData } = useInvoiceData();
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
   const [isDataEmpty, setIsDataEmpty] = useState(false);
@@ -182,13 +190,13 @@ export default function Dashboard() {
   }, []); // Empty dependency array means this only runs once on mount
 
   useEffect(() => {
-    if (orders && orders.length > 0) {
-      const processed = processData(orders, customMonth, customYear);
+    if (validOrders && validOrders.length > 0) {
+      const processed = processData(validOrders, customMonth, customYear);
       setProcessedData(processed);
       setIsDataEmpty(false);
 
       // Prepare chart data using the processed data
-      const chartData = orders.map(order => {
+      const chartData = validOrders.map(order => {
         const storeSummary = processed.storeSummaries[order.user_id];
         const profit = storeSummary ? storeSummary.totalProfit / storeSummary.orderCount : 0;
 
@@ -203,7 +211,7 @@ export default function Dashboard() {
     } else {
       setIsDataEmpty(true);
     }
-  }, [orders]);
+  }, [validOrders]);
 
   useEffect(() => {
     if (processedData) {
@@ -213,7 +221,7 @@ export default function Dashboard() {
     }
   }, [processedData]);
 
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = validOrders.filter((order) => {
     if (selectedArea && order.area !== selectedArea) return false;
 
     const orderDate = new Date(order.order_date);
@@ -502,7 +510,7 @@ export default function Dashboard() {
               )}
               
               {/* Orders Table */}
-              {orders && (
+              {validOrders && (
                 <Box>
                   {processedData && (
                     <DueDateStatusChart data={processedData.dueDateStatusCounts} />

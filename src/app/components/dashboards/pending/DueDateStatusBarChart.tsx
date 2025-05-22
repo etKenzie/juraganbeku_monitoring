@@ -1,11 +1,11 @@
 "use client";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
-    Box,
-    IconButton,
-    MenuItem,
-    Select,
-    Tooltip,
+  Box,
+  IconButton,
+  MenuItem,
+  Select,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";

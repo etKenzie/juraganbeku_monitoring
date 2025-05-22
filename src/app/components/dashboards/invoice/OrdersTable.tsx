@@ -5,24 +5,24 @@ import { formatCurrency } from "@/app/utils/formatNumber";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-  Box,
-  FormControl,
-  Grid,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-  TextField,
-  Typography,
+    Box,
+    FormControl,
+    Grid,
+    InputAdornment,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TablePagination,
+    TableRow,
+    TableSortLabel,
+    TextField,
+    Typography,
 } from "@mui/material";
 import React, { useState } from "react";
 
@@ -105,6 +105,9 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
   };
 
   const filteredOrders = orders.filter((order) => {
+    // Exclude CANCEL BY ADMIN orders by default
+    if (order.status_order === "CANCEL BY ADMIN") return false;
+    
     if (statusOrderFilter && order.status_order !== statusOrderFilter) return false;
     if (statusPaymentFilter && order.status_payment !== statusPaymentFilter) return false;
     if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
