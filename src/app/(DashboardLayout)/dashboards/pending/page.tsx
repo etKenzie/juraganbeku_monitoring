@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useInvoiceData } from "../Invoice/data";
 
 import { calculateDueDateStatus } from "@/app/(DashboardLayout)/dashboards/Invoice/data";
+import { AreaData } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
@@ -13,6 +14,7 @@ import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import DueDateStatusBarChart from "@/app/components/dashboards/pending/DueDateStatusBarChart";
 import PaymentStatusPieChart from "@/app/components/dashboards/pending/PaymentStatusPieChart";
 import { useAuth } from "@/contexts/AuthContext";
+import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
   Box,
   Button,
@@ -34,6 +36,8 @@ interface DueDateStatusData {
   totalOrders: number;
   totalInvoice: number;
   totalProfit: number;
+  areaData: Record<string, AreaData>;
+  orders: OrderData[];
 }
 
 export default function PendingDashboard() {
@@ -131,12 +135,55 @@ export default function PendingDashboard() {
         status,
         totalOrders: 0,
         totalInvoice: 0,
-        totalProfit: 0
+        totalProfit: 0,
+        areaData: {},
+        orders: []
       };
     }
-    acc[status].totalOrders += 1;
-    acc[status].totalInvoice += order.total_invoice;
-    acc[status].totalProfit += order.profit;
+
+    const statusData = acc[status];
+    statusData.totalOrders += 1;
+    statusData.totalInvoice += order.total_invoice;
+    statusData.totalProfit += order.profit;
+    statusData.orders.push(order);
+
+    // Initialize area data if it doesn't exist
+    if (!statusData.areaData[order.area]) {
+      statusData.areaData[order.area] = {
+        name: order.area,
+        totalOrders: 0,
+        totalInvoice: 0,
+        totalProfit: 0,
+        totalCOD: 0,
+        totalTOP: 0,
+        totalLunas: 0,
+        totalBelumLunas: 0,
+        orders: []
+      };
+    }
+
+    // Update area data
+    const areaData = statusData.areaData[order.area];
+    areaData.totalOrders++;
+    areaData.totalInvoice += order.total_invoice;
+    areaData.totalProfit += order.profit;
+    
+    // Update payment method totals
+    if (order.payment_type === 'COD') {
+      areaData.totalCOD += order.total_invoice;
+    } else if (order.payment_type === 'TOP') {
+      areaData.totalTOP += order.total_invoice;
+    }
+
+    // Update payment status totals
+    if (order.status_payment === 'Lunas') {
+      areaData.totalLunas += order.total_invoice;
+    } else {
+      areaData.totalBelumLunas += order.total_invoice;
+    }
+
+    areaData.orders.push(order);
+
     return acc;
   }, {});
 

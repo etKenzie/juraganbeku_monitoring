@@ -1,7 +1,10 @@
 "use client";
+import { AreaData } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
   Box,
+  Dialog,
+  DialogContent,
   IconButton,
   MenuItem,
   Select,
@@ -12,6 +15,7 @@ import { IconDownload } from "@tabler/icons-react";
 import dynamic from "next/dynamic";
 import React from "react";
 import DashboardCard from "../../shared/DashboardCard";
+import AreaChart from "../invoice/AreaChart";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -20,6 +24,7 @@ interface DueDateStatusData {
   totalOrders: number;
   totalInvoice: number;
   totalProfit: number;
+  areaData?: Record<string, AreaData>;
 }
 
 interface DueDateStatusBarChartProps {
@@ -29,9 +34,13 @@ interface DueDateStatusBarChartProps {
 type MetricType = "totalOrders" | "totalInvoice" | "totalProfit";
 
 const DueDateStatusBarChart = ({ data }: DueDateStatusBarChartProps) => {
+  console.log(data);
   const theme = useTheme();
   const [metricType, setMetricType] = React.useState<MetricType>("totalOrders");
   const [isClient, setIsClient] = React.useState(false);
+  const [selectedStatus, setSelectedStatus] = React.useState<DueDateStatusData | null>(null);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  
 
   React.useEffect(() => {
     setIsClient(true);
@@ -88,6 +97,14 @@ const DueDateStatusBarChart = ({ data }: DueDateStatusBarChartProps) => {
       toolbar: {
         show: false,
       },
+      events: {
+        dataPointSelection: (event: any, chartContext: any, config: any) => {
+          const selectedData = data[config.dataPointIndex];
+          console.log(selectedData);
+          setSelectedStatus(selectedData);
+          setModalOpen(true);
+        }
+      }
     },
     plotOptions: {
       bar: {
@@ -184,39 +201,57 @@ const DueDateStatusBarChart = ({ data }: DueDateStatusBarChartProps) => {
   };
 
   return (
-    <DashboardCard
-      title="Due Date Status Distribution"
-      action={
-        <Box display="flex" alignItems="center" gap={2}>
-          <Tooltip title="Download Chart">
-            <IconButton onClick={handleDownload} size="small">
-              <IconDownload size={20} />
-            </IconButton>
-          </Tooltip>
-          <Select
-            value={metricType}
-            onChange={(e) => setMetricType(e.target.value as MetricType)}
-            size="small"
-          >
-            <MenuItem value="totalOrders">Total Orders</MenuItem>
-            <MenuItem value="totalInvoice">Total Invoice</MenuItem>
-            <MenuItem value="totalProfit">Total Profit</MenuItem>
-          </Select>
+    <>
+      <DashboardCard
+        title="Due Date Status Distribution"
+        action={
+          <Box display="flex" alignItems="center" gap={2}>
+            <Tooltip title="Download Chart">
+              <IconButton onClick={handleDownload} size="small">
+                <IconDownload size={20} />
+              </IconButton>
+            </Tooltip>
+            <Select
+              value={metricType}
+              onChange={(e) => setMetricType(e.target.value as MetricType)}
+              size="small"
+            >
+              <MenuItem value="totalOrders">Total Orders</MenuItem>
+              <MenuItem value="totalInvoice">Total Invoice</MenuItem>
+              <MenuItem value="totalProfit">Total Profit</MenuItem>
+            </Select>
+          </Box>
+        }
+      >
+        <Box height="400px">
+          {isClient && (
+            <Chart
+              options={options}
+              series={series}
+              type="bar"
+              height={350}
+              width="100%"
+            />
+          )}
         </Box>
-      }
-    >
-      <Box height="400px">
-        {isClient && (
-          <Chart
-            options={options}
-            series={series}
-            type="bar"
-            height={350}
-            width="100%"
-          />
-        )}
-      </Box>
-    </DashboardCard>
+      </DashboardCard>
+
+      <Dialog 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogContent>
+          {selectedStatus?.areaData && (
+            <AreaChart
+              areaData={selectedStatus.areaData}
+              selectedMonths={selectedStatus.status}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
