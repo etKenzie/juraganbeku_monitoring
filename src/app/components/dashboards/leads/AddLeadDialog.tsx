@@ -1,21 +1,21 @@
 "use client";
 import { Lead } from "@/app/types/leads";
 import {
-  Button,
-  Checkbox,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  FormControlLabel,
-  FormGroup,
-  FormLabel,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField
+    Button,
+    Checkbox,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    FormControlLabel,
+    FormGroup,
+    FormLabel,
+    Grid,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
 import { useEffect, useState } from "react";
@@ -59,7 +59,8 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     found_by: initialData?.found_by || [],
     memo: initialData?.memo || '',
     date_added: initialData?.date_added || new Date().toISOString().split('T')[0],
-    deadline: initialData?.deadline || ''
+    deadline: initialData?.deadline || '',
+    lead_status: initialData?.lead_status || 'CURRENT'
   }));
 
   // Reset form data when initialData changes
@@ -80,7 +81,8 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
       found_by: initialData?.found_by || [],
       memo: initialData?.memo || '',
       date_added: initialData?.date_added || new Date().toISOString().split('T')[0],
-      deadline: initialData?.deadline || ''
+      deadline: initialData?.deadline || '',
+      lead_status: initialData?.lead_status || 'CURRENT'
     });
   }, [initialData]);
 
@@ -345,6 +347,22 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
                 required
                 InputLabelProps={{ shrink: true }}
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Lead Status</InputLabel>
+                <Select
+                  label="Lead Status"
+                  name="lead_status"
+                  value={formData.lead_status}
+                  onChange={handleChange}
+                  required
+                >
+                  <MenuItem value="CLOSED">Closed</MenuItem>
+                  <MenuItem value="CURRENT">Current</MenuItem>
+                  <MenuItem value="SUCCESS">Success</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
           <DialogActions>

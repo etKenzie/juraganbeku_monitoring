@@ -1,35 +1,35 @@
 "use client";
 import DownloadButton from "@/app/components/common/DownloadButton";
-import { Lead } from "@/app/types/leads";
+import { Lead, LeadStatus } from "@/app/types/leads";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Delete as DeleteIcon, Edit as EditIcon, Search as SearchIcon } from "@mui/icons-material";
 import {
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  Grid,
-  IconButton,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-  TextField,
-  Typography
+    Box,
+    Button,
+    Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    Grid,
+    IconButton,
+    InputAdornment,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TablePagination,
+    TableRow,
+    TableSortLabel,
+    TextField,
+    Typography
 } from "@mui/material";
 import React, { useState } from "react";
 import AddLeadDialog from "./AddLeadDialog";
@@ -54,6 +54,7 @@ const headCells: HeadCell[] = [
   { id: "area", label: "Area", numeric: false },
   { id: "source", label: "Source", numeric: false },
   { id: "lead_category", label: "Category", numeric: false },
+  { id: "lead_status", label: "Status", numeric: false },
   { id: "branch_count", label: "Branch Count", numeric: true },
   { id: "service", label: "Services", numeric: false },
   { id: "outlet_type", label: "Outlet Types", numeric: false },
@@ -92,6 +93,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
   const [selectedPriority, setSelectedPriority] = useState<string>("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | "">("");
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -129,6 +131,28 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
     }
   };
 
+  const getStatusColor = (status: LeadStatus) => {
+    switch (status) {
+      case 'CLOSED':
+        return 'error';
+      case 'CURRENT':
+        return 'warning';
+      case 'SUCCESS':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
+  const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {
+    try {
+      const updatedLead = { ...lead, lead_status: newStatus };
+      await handleEditLead(updatedLead);
+    } catch (error) {
+      console.error('Error updating lead status:', error);
+    }
+  };
+
   const filteredLeads = leads.filter((lead) => {
     const searchTermLower = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -144,6 +168,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
     const matchesCategory = categoryFilter ? lead.lead_category === categoryFilter : true;
     const matchesArea = areaFilter ? lead.area === areaFilter : true;
     const matchesFoundBy = foundByFilter ? lead.found_by?.includes(foundByFilter) : true;
+    const matchesStatus = statusFilter ? lead.lead_status === statusFilter : true;
 
     return matchesSearch && 
            matchesService && 
@@ -151,7 +176,8 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
            matchesPriority && 
            matchesCategory && 
            matchesArea && 
-           matchesFoundBy;
+           matchesFoundBy &&
+           matchesStatus;
   });
 
   const uniqueAreas = leads.reduce<string[]>((acc, lead) => {
@@ -270,10 +296,18 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
 
   const { role } = useAuth();
 
+  // Calculate current leads count
+  const currentLeadsCount = leads.filter(lead => lead.lead_status === 'CURRENT').length;
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, mt: 4}}>
-        <Typography variant="h6">Leads Table</Typography>
+        <Box>
+          <Typography variant="h6">Leads Table</Typography>
+          <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1 }}>
+            Current Active Leads: {currentLeadsCount}
+          </Typography>
+        </Box>
         <DownloadButton
           data={filteredLeads}
           filename="leads"
@@ -400,6 +434,22 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
           </FormControl>
         </Grid>
         <Grid item xs={12} sm={4}>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "")}
+              size="small"
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="CLOSED">Closed</MenuItem>
+              <MenuItem value="CURRENT">Current</MenuItem>
+              <MenuItem value="SUCCESS">Success</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4}>
           <Button
             fullWidth
             variant="contained"
@@ -457,6 +507,13 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                       label={lead.lead_category}
                       size="small"
                       color={getCategoryColor(lead.lead_category)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={lead.lead_status}
+                      size="small"
+                      color={getStatusColor(lead.lead_status)}
                     />
                   </TableCell>
                   <TableCell align="right">{lead.branch_count}</TableCell>

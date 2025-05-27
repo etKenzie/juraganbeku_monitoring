@@ -1,3 +1,5 @@
+export type LeadStatus = 'CLOSED' | 'CURRENT' | 'SUCCESS';
+
 export interface Lead {
   id: number;
   source: string;
@@ -16,6 +18,7 @@ export interface Lead {
   outlet_type: string[];
   priority: string;
   brand_name: string;
+  lead_status: LeadStatus;
 }
 
 export interface FollowUp {
