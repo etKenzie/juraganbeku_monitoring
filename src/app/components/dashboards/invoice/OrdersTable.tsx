@@ -60,13 +60,10 @@ const headCells: HeadCell[] = [
 
 interface OrdersTableProps {
   orders: OrderData[];
-  sortTime: 'asc' | 'desc';
-  dateRange: { month: string };
-  area: string;
-  segment: string;
+
 }
 
-const OrdersTable = ({ orders: initialOrders, sortTime, dateRange, area, segment }: OrdersTableProps) => {
+const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [orderBy, setOrderBy] = useState<SortableField>("order_date");

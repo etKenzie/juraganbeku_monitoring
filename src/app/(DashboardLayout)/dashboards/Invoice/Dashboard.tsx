@@ -517,7 +517,7 @@ export default function Dashboard() {
                   {processedData && (
                     <DueDateStatusChart data={processedData.dueDateStatusCounts} />
                   )}
-                  <OrdersTable orders={filteredOrders} sortTime={sortTime} dateRange={dateRange} area={area} segment={segment} />
+                  <OrdersTable orders={filteredOrders} />
                 </Box>
               )}
             </>
