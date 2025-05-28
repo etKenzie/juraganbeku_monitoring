@@ -66,7 +66,7 @@ export default function Dashboard() {
   const dispatch = useDispatch();
 
   const { role } = useAuth();
-  console.log(role)
+ 
 
 
   
@@ -83,7 +83,7 @@ export default function Dashboard() {
   //   (state: RootState) => state.dashboardReducer
   // );
 
-  console.log(orders, nooData)
+  // console.log(orders, nooData)
 
   // Filter out CANCEL BY ADMIN and CANCEL orders right after data is retrieved
   const validOrders = useMemo(() => {
@@ -97,7 +97,7 @@ export default function Dashboard() {
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
   const [isDataEmpty, setIsDataEmpty] = useState(false);
 
-  const [period, setPeriod] = useState("thisMonth");
+  const [period, setPeriod] = useState("thisYear");
   const [customMonth, setCustomMonth] = useState(new Date().getMonth());
   const [customYear, setCustomYear] = useState(new Date().getFullYear());
   const [sortTime, setSortTime] = useState<'asc' | 'desc'>('desc');
@@ -119,13 +119,13 @@ export default function Dashboard() {
     const currentYear = now.getFullYear();
 
     switch (period) {
-      case "thisMonth":
-        // For this month, show last 3 months including current month
+      case "thisYear":
+        // For this year, show all months of current year
         const months = [];
-        for (let i = -2; i <= 0; i++) {
-          const monthDate = new Date(currentYear, currentMonth + i, 1);
+        for (let i = 0; i < 12; i++) {
+          const monthDate = new Date(currentYear, i, 1);
           const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
-          months.push(`${monthName} ${monthDate.getFullYear()}`);
+          months.push(`${monthName} ${currentYear}`);
         }
         return {
           month: months.join(','),
@@ -143,10 +143,10 @@ export default function Dashboard() {
         };
       default:
         const defaultMonths = [];
-        for (let i = -2; i <= 0; i++) {
-          const monthDate = new Date(currentYear, currentMonth + i, 1);
+        for (let i = 0; i < 12; i++) {
+          const monthDate = new Date(currentYear, i, 1);
           const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
-          defaultMonths.push(`${monthName} ${monthDate.getFullYear()}`);
+          defaultMonths.push(`${monthName} ${currentYear}`);
         }
         return {
           month: defaultMonths.join(','),
@@ -268,8 +268,8 @@ export default function Dashboard() {
                   onChange={(e) => setPeriod(e.target.value)}
                   label="Time Period"
                 >
-                  <MenuItem value="thisMonth">This Month</MenuItem>
-                  <MenuItem value="custom">Custom</MenuItem>
+                  <MenuItem value="thisYear">This Year</MenuItem>
+                  <MenuItem value="custom">Custom Month</MenuItem>
                 </Select>
               </FormControl>
 
@@ -442,6 +442,7 @@ export default function Dashboard() {
                       totalCOD: processedData.overallCOD,
                       totalTOP: processedData.overallTOP
                     }}
+                    period={period}
                   />
                 </Box>
               )}
@@ -516,7 +517,7 @@ export default function Dashboard() {
                   {processedData && (
                     <DueDateStatusChart data={processedData.dueDateStatusCounts} />
                   )}
-                  <OrdersTable orders={filteredOrders} />
+                  <OrdersTable orders={filteredOrders} sortTime={sortTime} dateRange={dateRange} area={area} segment={segment} />
                 </Box>
               )}
             </>

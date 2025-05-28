@@ -25,9 +25,10 @@ interface StoreMetricsProps {
     totalCOD: number;
     totalTOP: number;
   };
+  period: string;
 }
 
-const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => {
+const StoreMetrics = ({ storeSummaries, monthlyMetrics, period }: StoreMetricsProps) => {
   const [openModal, setOpenModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalStores, setModalStores] = useState<string[]>([]);
@@ -115,7 +116,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
-              Three Month Total
+              {period == "thisYear" ? 'Yearly Total' : 'Three Month Total'}
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -196,7 +197,7 @@ const StoreMetrics = ({ storeSummaries, monthlyMetrics }: StoreMetricsProps) => 
                   {storesByRecentActivity.exactlyThreeMonths.length}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  Stores active in all 3 months
+                  Stores active in 3 recent months
                 </Typography>
               </Box>
               <Box sx={{ cursor: "pointer", mt: 2 }} onClick={() => handleOpenModal("Active in 2 Months", storesByRecentActivity.exactlyTwoMonths)}>

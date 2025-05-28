@@ -2,15 +2,21 @@
 import { calculateDueDateStatus } from "@/app/(DashboardLayout)/dashboards/Invoice/data";
 import DownloadButton from "@/app/components/common/DownloadButton";
 import { formatCurrency } from "@/app/utils/formatNumber";
-import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
+import { OrderData, updateOrderItems } from "@/store/apps/Invoice/invoiceSlice";
+import { AppDispatch } from "@/store/store";
+import CancelIcon from '@mui/icons-material/Cancel';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
+  Button,
   FormControl,
   Grid,
   InputAdornment,
   InputLabel,
   MenuItem,
+  Modal,
   Paper,
   Select,
   Table,
@@ -22,9 +28,10 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  Typography,
+  Typography
 } from "@mui/material";
 import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 
 type Order = "asc" | "desc";
 
@@ -39,6 +46,7 @@ interface HeadCell {
 const headCells: HeadCell[] = [
   { id: "order_code", label: "Order Code", numeric: false },
   { id: "order_date", label: "Order Date", numeric: false },
+  { id: "month", label: "Month", numeric: false },
   { id: "payment_due_date", label: "Due Date", numeric: false },
   { id: "reseller_name", label: "Reseller Name", numeric: false },
   { id: "store_name", label: "Store Name", numeric: false },
@@ -52,9 +60,15 @@ const headCells: HeadCell[] = [
 
 interface OrdersTableProps {
   orders: OrderData[];
+  sortTime: 'asc' | 'desc';
+  dateRange: { month: string };
+  area: string;
+  segment: string;
 }
 
-const OrdersTable = ({ orders }: OrdersTableProps) => {
+const OrdersTable = ({ orders: initialOrders, sortTime, dateRange, area, segment }: OrdersTableProps) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [orderBy, setOrderBy] = useState<SortableField>("order_date");
   const [order, setOrder] = useState<Order>("desc");
   const [page, setPage] = useState(0);
@@ -63,7 +77,11 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
   const [statusPaymentFilter, setStatusPaymentFilter] = useState<string>("");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("");
   const [dueDateStatusFilter, setDueDateStatusFilter] = useState<string>("");
+  const [monthFilter, setMonthFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
+  const [editingBuyPrices, setEditingBuyPrices] = useState<{ [key: string]: number }>({});
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -112,6 +130,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
     if (statusPaymentFilter && order.status_payment !== statusPaymentFilter) return false;
     if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
     if (dueDateStatusFilter && calculateDueDateStatus(order.payment_due_date, order.status_payment) !== dueDateStatusFilter) return false;
+    if (monthFilter && order.month !== monthFilter) return false;
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -122,6 +141,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
         order.status_order.toLowerCase().includes(query) ||
         order.status_payment.toLowerCase().includes(query) ||
         order.payment_type.toLowerCase().includes(query) ||
+        order.month.toLowerCase().includes(query) ||
         calculateDueDateStatus(order.payment_due_date, order.status_payment).toLowerCase().includes(query)
       );
     }
@@ -131,6 +151,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
   const uniqueStatusOrders = Array.from(new Set(orders.map((order) => order.status_order)));
   const uniqueStatusPayments = Array.from(new Set(orders.map((order) => order.status_payment)));
   const uniquePaymentTypes = Array.from(new Set(orders.map((order) => order.payment_type)));
+  const uniqueMonths = Array.from(new Set(orders.map((order) => order.month)));
   const uniqueDueDateStatuses = ['Current', 'Below 14 DPD', '14 DPD', '30 DPD', '60 DPD', 'Lunas'];
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
@@ -154,6 +175,77 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
       return bValue < aValue ? -1 : bValue > aValue ? 1 : 0;
     }
   });
+
+  const handleRowClick = (order: OrderData) => {
+    setSelectedOrder(order);
+    // Initialize editingBuyPrices with current buy prices
+    const initialBuyPrices: { [key: string]: number } = {};
+    order.detail_order?.forEach(item => {
+      if (item.order_item_id) {
+        initialBuyPrices[item.order_item_id] = item.buy_price || 0;
+      }
+    });
+    setEditingBuyPrices(initialBuyPrices);
+    setIsEditing(false);
+  };
+
+  const handleBuyPriceChange = (orderItemId: string, newPrice: number) => {
+    setEditingBuyPrices(prev => ({
+      ...prev,
+      [orderItemId]: newPrice
+    }));
+  };
+
+  const handleSaveBuyPrices = async () => {
+    if (!selectedOrder) return;
+
+    const details = Object.entries(editingBuyPrices).map(([order_item_id, new_buy_price]) => ({
+      order_item_id,
+      new_buy_price
+    }));
+
+    try {
+      await dispatch(updateOrderItems({ details }));
+      
+      // Update only the profit in the table row
+      const updatedOrders = orders.map(order => {
+        if (order.order_id === selectedOrder.order_id) {
+          const newProfit = selectedOrder.detail_order?.reduce((total, item) => {
+            const buyPrice = editingBuyPrices[item.order_item_id] ?? item.buy_price ?? 0;
+            const price = buyPrice * (item.order_quantity || 0);
+            let profit = (item.total_invoice || 0) - price;
+            if (profit < 0) profit = 0;
+            return total + profit;
+          }, 0) || 0;
+
+          return {
+            ...order,
+            profit: newProfit
+          };
+        }
+        return order;
+      });
+
+      setOrders(updatedOrders);
+      setIsEditing(false);
+      setSelectedOrder(null);
+    } catch (error) {
+      console.error('Failed to update buy prices:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (!selectedOrder) return;
+    // Reset to original buy prices
+    const originalBuyPrices: { [key: string]: number } = {};
+    selectedOrder.detail_order?.forEach(item => {
+      if (item.order_item_id) {
+        originalBuyPrices[item.order_item_id] = item.buy_price || 0;
+      }
+    });
+    setEditingBuyPrices(originalBuyPrices);
+    setIsEditing(false);
+  };
 
   return (
     <Box>
@@ -184,7 +276,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
             }}
           />
         </Grid>
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2.4}>
           <FormControl fullWidth>
             <InputLabel>Status Order</InputLabel>
             <Select
@@ -201,7 +293,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2.4}>
           <FormControl fullWidth>
             <InputLabel>Status Payment</InputLabel>
             <Select
@@ -218,7 +310,7 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2.4}>
           <FormControl fullWidth>
             <InputLabel>Payment Type</InputLabel>
             <Select
@@ -235,7 +327,24 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2.4}>
+          <FormControl fullWidth>
+            <InputLabel>Month</InputLabel>
+            <Select
+              value={monthFilter}
+              label="Month"
+              onChange={(e) => setMonthFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              {uniqueMonths.map((month) => (
+                <MenuItem key={month} value={month}>
+                  {month}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={2.4}>
           <FormControl fullWidth>
             <InputLabel>Due Date Status</InputLabel>
             <Select
@@ -278,9 +387,14 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
             {sortedOrders
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((order) => (
-                <TableRow key={order.order_id}>
+                <TableRow 
+                  key={order.order_id}
+                  onClick={() => handleRowClick(order)}
+                  sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}
+                >
                   <TableCell>{order.order_code}</TableCell>
                   <TableCell>{formatDate(order.order_date)}</TableCell>
+                  <TableCell>{order.month}</TableCell>
                   <TableCell>{formatDate(order.payment_due_date)}</TableCell>
                   <TableCell>{order.reseller_name}</TableCell>
                   <TableCell>{order.store_name}</TableCell>
@@ -304,6 +418,114 @@ const OrdersTable = ({ orders }: OrdersTableProps) => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </TableContainer>
+
+      {/* Order Details Modal */}
+      <Modal
+        open={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        aria-labelledby="order-details-modal"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "80%",
+            maxWidth: 1000,
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            maxHeight: "80vh",
+            overflow: "auto",
+          }}
+        >
+          {selectedOrder && (
+            <>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">
+                  Order Details - {selectedOrder.order_code}
+                </Typography>
+                <Box>
+                  {!isEditing ? (
+                    <Button
+                      startIcon={<EditIcon />}
+                      onClick={() => setIsEditing(true)}
+                      variant="outlined"
+                    >
+                      Edit Buy Prices
+                    </Button>
+                  ) : (
+                    <Box>
+                      <Button
+                        startIcon={<SaveIcon />}
+                        onClick={handleSaveBuyPrices}
+                        variant="contained"
+                        color="primary"
+                        sx={{ mr: 1 }}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        startIcon={<CancelIcon />}
+                        onClick={handleCancelEdit}
+                        variant="outlined"
+                        color="error"
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Product Name</TableCell>
+                      <TableCell>SKU</TableCell>
+                      <TableCell>Quantity</TableCell>
+                      <TableCell>Price</TableCell>
+                      <TableCell>Total Invoice</TableCell>
+                      <TableCell>Buy Price</TableCell>
+                      <TableCell>Brand</TableCell>
+                      <TableCell>Category</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selectedOrder.detail_order?.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.product_name}</TableCell>
+                        <TableCell>{item.sku}</TableCell>
+                        <TableCell>{item.order_quantity}</TableCell>
+                        <TableCell>{formatCurrency(item.price)}</TableCell>
+                        <TableCell>{formatCurrency(item.total_invoice)}</TableCell>
+                        <TableCell>
+                          {isEditing ? (
+                            <TextField
+                              type="number"
+                              value={editingBuyPrices[item.order_item_id] || 0}
+                              onChange={(e) => handleBuyPriceChange(item.order_item_id, Number(e.target.value))}
+                              size="small"
+                              InputProps={{
+                                inputProps: { min: 0 }
+                              }}
+                            />
+                          ) : (
+                            formatCurrency(item.buy_price || 0)
+                          )}
+                        </TableCell>
+                        <TableCell>{item.brands}</TableCell>
+                        <TableCell>{item.category}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+        </Box>
+      </Modal>
     </Box>
   );
 };

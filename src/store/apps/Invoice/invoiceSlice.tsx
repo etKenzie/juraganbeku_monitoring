@@ -6,6 +6,7 @@ import { AppDispatch } from "../../store";
 
 const ORDER_DASHBOARD_URL = `https://dev.tokopandai.id/api/order/dashboard`;
 const ORDER_NOO_URL = "https://dev.tokopandai.id/api/order/stores-order-once"
+const UPDATE_ORDER_ITEMS_URL = "https://dev.tokopandai.id/api/order/order-items";
 
 // Combined interfaces
 interface DashboardData {
@@ -24,6 +25,7 @@ interface GeraiData {
 
 interface OrderDetail {
   id: string;
+  order_item_id: string;
   order_code: string;
   product_id: string;
   sku: string;
@@ -87,6 +89,7 @@ export interface StateType {
   orders: OrderData[];
   nooData: OrderData[];
   pendingRequests: number;
+  lastOrderQuery: OrderQuery | null;
 }
 
 const initialState: StateType = {
@@ -99,6 +102,7 @@ const initialState: StateType = {
   orders: [],
   nooData: [],
   pendingRequests: 0,
+  lastOrderQuery: null,
 };
 
 const invoiceSlice = createSlice({
@@ -150,6 +154,9 @@ const invoiceSlice = createSlice({
     getNOOSuccess(state, action: PayloadAction<OrderData[]>) {
       state.nooData = action.payload;
     },
+    setLastOrderQuery(state, action: PayloadAction<OrderQuery>) {
+      state.lastOrderQuery = action.payload;
+    },
   },
 });
 
@@ -160,7 +167,8 @@ export const {
 //   getDashboardData, 
 //   getGeraiData,
   getOrdersSuccess,
-  getNOOSuccess
+  getNOOSuccess,
+  setLastOrderQuery
 } = invoiceSlice.actions;
 
 interface OrderQuery {
@@ -175,6 +183,7 @@ interface OrderQuery {
 
 export const fetchOrders = (params: OrderQuery) => async (dispatch: AppDispatch) => {
   dispatch(startLoading());
+  dispatch(setLastOrderQuery(params));
   try {
     const AUTH_TOKEN = getCookie("token");
 
@@ -234,6 +243,49 @@ export const fetchNOO = (params: OrderQuery) => async (dispatch: AppDispatch) =>
   } catch (error: any) {
     dispatch(hasError(error.message || "Failed to fetch NOO data"));
     throw new Error("AUTH_ERROR");
+  }
+};
+
+interface UpdateOrderItemPayload {
+  details: Array<{
+    order_item_id: string;
+    new_buy_price: number;
+  }>;
+}
+
+export const updateOrderItems = (payload: UpdateOrderItemPayload) => async (dispatch: AppDispatch) => {
+  dispatch(startLoading());
+  try {
+    const AUTH_TOKEN = getCookie("token");
+
+    const response = await axios.patch(
+      UPDATE_ORDER_ITEMS_URL,
+      payload,
+      {
+        // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+      }
+    );
+    console.log(response)
+
+    if (response.data.code === 200) {
+      dispatch(endLoading());
+      return response.data;
+    } else {
+      dispatch(hasError(response.data.message || "Failed to update order items"));
+      throw new Error(response.data.message || "Failed to update order items");
+    }
+  } catch (error: any) {
+    dispatch(hasError(error.message || "Failed to update order items"));
+    throw error;
+  }
+};
+
+export const refreshOrders = () => async (dispatch: AppDispatch, getState: () => any) => {
+  const state = getState();
+  const lastQuery = state.invoiceReducer.lastOrderQuery;
+  
+  if (lastQuery) {
+    return dispatch(fetchOrders(lastQuery));
   }
 };
 
