@@ -20,7 +20,7 @@ import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSumm
 import StoreMetrics from "@/app/components/dashboards/invoice/StoreMetrics";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import { useAuth } from "@/contexts/AuthContext";
-import { OrderData } from '@/store/apps/Invoice/invoiceSlice';
+import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
   Box,
   Button,
@@ -31,11 +31,10 @@ import {
   Select,
   Stack,
   TextField,
-  Typography
+  Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { ProcessedData } from "./types";
-
 
 interface StoreSummary {
   storeName: string;
@@ -66,17 +65,14 @@ export default function Dashboard() {
   const dispatch = useDispatch();
 
   const { role } = useAuth();
- 
 
-
-  
   // Get orders from the Redux store
   const { orders, nooData, loading, error } = useSelector(
     (state: RootState) => ({
       orders: state.invoiceReducer.orders,
       nooData: state.invoiceReducer.nooData,
       loading: state.invoiceReducer.loading,
-      error: state.invoiceReducer.error
+      error: state.invoiceReducer.error,
     })
   );
   // const { dashboardData, geraiData, totalItems, meta, loading } = useSelector(
@@ -87,27 +83,34 @@ export default function Dashboard() {
 
   // Filter out CANCEL BY ADMIN and CANCEL orders right after data is retrieved
   const validOrders = useMemo(() => {
-    return orders?.filter(order => 
-      order.status_order !== "CANCEL BY ADMIN" && 
-      order.status_order !== "CANCEL"
-    ) || [];
+    return (
+      orders?.filter(
+        (order) =>
+          order.status_order !== "CANCEL BY ADMIN" &&
+          order.status_order !== "CANCEL"
+      ) || []
+    );
   }, [orders]);
 
   const { processData } = useInvoiceData();
-  const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
+  const [processedData, setProcessedData] = useState<ProcessedData | null>(
+    null
+  );
   const [isDataEmpty, setIsDataEmpty] = useState(false);
 
   const [period, setPeriod] = useState("thisYear");
   const [customMonth, setCustomMonth] = useState(new Date().getMonth());
   const [customYear, setCustomYear] = useState(new Date().getFullYear());
-  const [sortTime, setSortTime] = useState<'asc' | 'desc'>('desc');
+  const [sortTime, setSortTime] = useState<"asc" | "desc">("desc");
   const [timePeriod, setTimePeriod] = useState("Last 30 Days");
-  const [chartData, setChartData] = useState<Array<{
-    date: string;
-    month: string;
-    totalInvoice: number;
-    totalProfit: number;
-  }>>([]);
+  const [chartData, setChartData] = useState<
+    Array<{
+      date: string;
+      month: string;
+      totalInvoice: number;
+      totalProfit: number;
+    }>
+  >([]);
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [area, setArea] = useState("");
   const [areas, setAreas] = useState<string[]>([""]);
@@ -124,37 +127,46 @@ export default function Dashboard() {
         const months = [];
         for (let i = 0; i < 12; i++) {
           const monthDate = new Date(currentYear, i, 1);
-          const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+          const monthName = monthDate
+            .toLocaleString("default", { month: "long" })
+            .toLowerCase();
           months.push(`${monthName} ${currentYear}`);
         }
         return {
-          month: months.join(','),
+          month: months.join(","),
         };
       case "custom":
         // For custom, show 3 months from selected month
         const customMonths = [];
         for (let i = -2; i <= 0; i++) {
           const monthDate = new Date(customYear, customMonth + i, 1);
-          const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+          const monthName = monthDate
+            .toLocaleString("default", { month: "long" })
+            .toLowerCase();
           customMonths.push(`${monthName} ${monthDate.getFullYear()}`);
         }
         return {
-          month: customMonths.join(','),
+          month: customMonths.join(","),
         };
       default:
         const defaultMonths = [];
         for (let i = 0; i < 12; i++) {
           const monthDate = new Date(currentYear, i, 1);
-          const monthName = monthDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+          const monthName = monthDate
+            .toLocaleString("default", { month: "long" })
+            .toLowerCase();
           defaultMonths.push(`${monthName} ${currentYear}`);
         }
         return {
-          month: defaultMonths.join(','),
+          month: defaultMonths.join(","),
         };
     }
   };
 
-  const dateRange = useMemo(() => getDateRange(period), [period, customMonth, customYear]);
+  const dateRange = useMemo(
+    () => getDateRange(period),
+    [period, customMonth, customYear]
+  );
 
   const handleApplyFilters = async () => {
     try {
@@ -176,7 +188,7 @@ export default function Dashboard() {
             area: area,
             segment: segment,
           })
-        )
+        ),
       ]);
     } catch (error) {
       console.error("Fetch error:", error);
@@ -196,15 +208,17 @@ export default function Dashboard() {
       setIsDataEmpty(false);
 
       // Prepare chart data using the processed data
-      const chartData = validOrders.map(order => {
+      const chartData = validOrders.map((order) => {
         const storeSummary = processed.storeSummaries[order.user_id];
-        const profit = storeSummary ? storeSummary.totalProfit / storeSummary.orderCount : 0;
+        const profit = storeSummary
+          ? storeSummary.totalProfit / storeSummary.orderCount
+          : 0;
 
         return {
           date: order.order_date,
           month: order.month,
           totalInvoice: order.total_invoice,
-          totalProfit: profit
+          totalProfit: profit,
         };
       });
       setChartData(chartData);
@@ -225,12 +239,14 @@ export default function Dashboard() {
     if (selectedArea && order.area !== selectedArea) return false;
 
     const orderDate = new Date(order.order_date);
-    const orderMonth = orderDate.toLocaleString('default', { month: 'long' }).toLowerCase();
+    const orderMonth = orderDate
+      .toLocaleString("default", { month: "long" })
+      .toLowerCase();
     const orderYear = orderDate.getFullYear();
     const orderMonthYear = `${orderMonth} ${orderYear}`;
 
     // Check if the order's month is in the selected months
-    const selectedMonths = dateRange.month.split(',');
+    const selectedMonths = dateRange.month.split(",");
     return selectedMonths.includes(orderMonthYear);
   });
 
@@ -238,291 +254,318 @@ export default function Dashboard() {
   if (loading) {
     return <Loading />;
   }
+  console.log(nooData);
 
   return (
-    <PageContainer title="Invoice Dashboard" description="Invoice dashboard with analytics">
+    <PageContainer
+      title="Invoice Dashboard"
+      description="Invoice dashboard with analytics"
+    >
       <>
-      {role !== 'admin' ? (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          height="60vh"
-        >
-          <Typography variant="h5" color="error">
-            You don't have access to this page.
-          </Typography>
-        </Box>
-      ) : <>
+        {role !== "admin" ? (
           <Box
             display="flex"
-            justifyContent="space-between"
+            justifyContent="center"
             alignItems="center"
-            mb={3}
+            height="60vh"
           >
-            <Box display="flex" gap={2} alignItems="center" width="100%">
-              <FormControl sx={{ flexBasis: "40%", flexGrow: 1 }}>
-                <InputLabel>Time Period</InputLabel>
-                <Select
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
-                  label="Time Period"
-                >
-                  <MenuItem value="thisYear">This Year</MenuItem>
-                  <MenuItem value="custom">Custom Month</MenuItem>
-                </Select>
-              </FormControl>
-
-              {period === "custom" && (
-                <Stack direction="row" spacing={2} sx={{ flexBasis: "40%", flexGrow: 1 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Month</InputLabel>
-                    <Select 
-                      value={customMonth} 
-                      onChange={(e) => setCustomMonth(Number(e.target.value))} 
-                      label="Month"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => (
-                        <MenuItem key={i} value={i}>
-                          {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl fullWidth>
-                    <InputLabel>Year</InputLabel>
-                    <Select 
-                      value={customYear} 
-                      onChange={(e) => setCustomYear(Number(e.target.value))} 
-                      label="Year"
-                    >
-                      {Array.from({ length: 5 }, (_, i) => {
-                        const year = new Date().getFullYear() - i;
-                        return (
-                          <MenuItem key={year} value={year}>
-                            {year}
-                          </MenuItem>
-                        );
-                      })}
-                    </Select>
-                  </FormControl>
-                </Stack>
-              )}
-
-              <TextField
-                label="Select Area"
-                select
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ flexBasis: "30%", flexGrow: 1 }}
-              >
-                <MenuItem value="">All Areas</MenuItem>
-                {areas
-                  .filter((areaOption) => areaOption !== "")
-                  .map((areaOption) => (
-                    <MenuItem key={areaOption} value={areaOption}>
-                      {areaOption}
-                    </MenuItem>
-                  ))}
-              </TextField>
-
-              <TextField
-                label="Select Segment"
-                select
-                value={segment}
-                onChange={(e) => setSegment(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ flexBasis: "30%", flexGrow: 1 }}
-              >
-                <MenuItem value="">All Segments</MenuItem>
-                <MenuItem value="HORECA">HORECA</MenuItem>
-                <MenuItem value="RESELLER">RESELLER</MenuItem>
-                <MenuItem value="OTHER">OTHER</MenuItem>
-              </TextField>
-
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleApplyFilters}
-                sx={{ flexBasis: "20%", flexGrow: 1 }}
-              >
-                Apply Filters
-              </Button>
-            </Box>
+            <Typography variant="h5" color="error">
+              You don't have access to this page.
+            </Typography>
           </Box>
-
-          {isDataEmpty ? (
+        ) : (
+          <>
             <Box
               display="flex"
-              justifyContent="center"
+              justifyContent="space-between"
               alignItems="center"
-              height="50vh"
+              mb={3}
             >
-              <Typography variant="h6" color="textSecondary">
-                Data tidak tersedia untuk periode ini.
-              </Typography>
+              <Box display="flex" gap={2} alignItems="center" width="100%">
+                <FormControl sx={{ flexBasis: "40%", flexGrow: 1 }}>
+                  <InputLabel>Time Period</InputLabel>
+                  <Select
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value)}
+                    label="Time Period"
+                  >
+                    <MenuItem value="thisYear">This Year</MenuItem>
+                    <MenuItem value="custom">Custom Month</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {period === "custom" && (
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{ flexBasis: "40%", flexGrow: 1 }}
+                  >
+                    <FormControl fullWidth>
+                      <InputLabel>Month</InputLabel>
+                      <Select
+                        value={customMonth}
+                        onChange={(e) => setCustomMonth(Number(e.target.value))}
+                        label="Month"
+                      >
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <MenuItem key={i} value={i}>
+                            {new Date(2000, i, 1).toLocaleString("default", {
+                              month: "long",
+                            })}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl fullWidth>
+                      <InputLabel>Year</InputLabel>
+                      <Select
+                        value={customYear}
+                        onChange={(e) => setCustomYear(Number(e.target.value))}
+                        label="Year"
+                      >
+                        {Array.from({ length: 5 }, (_, i) => {
+                          const year = new Date().getFullYear() - i;
+                          return (
+                            <MenuItem key={year} value={year}>
+                              {year}
+                            </MenuItem>
+                          );
+                        })}
+                      </Select>
+                    </FormControl>
+                  </Stack>
+                )}
+
+                <TextField
+                  label="Select Area"
+                  select
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ flexBasis: "30%", flexGrow: 1 }}
+                >
+                  <MenuItem value="">All Areas</MenuItem>
+                  {areas
+                    .filter((areaOption) => areaOption !== "")
+                    .map((areaOption) => (
+                      <MenuItem key={areaOption} value={areaOption}>
+                        {areaOption}
+                      </MenuItem>
+                    ))}
+                </TextField>
+
+                <TextField
+                  label="Select Segment"
+                  select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ flexBasis: "30%", flexGrow: 1 }}
+                >
+                  <MenuItem value="">All Segments</MenuItem>
+                  <MenuItem value="HORECA">HORECA</MenuItem>
+                  <MenuItem value="RESELLER">RESELLER</MenuItem>
+                  <MenuItem value="OTHER">OTHER</MenuItem>
+                </TextField>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleApplyFilters}
+                  sx={{ flexBasis: "20%", flexGrow: 1 }}
+                >
+                  Apply Filters
+                </Button>
+              </Box>
             </Box>
-          ) : (
-            <>
-              {/* Summary Cards */}
-              {processedData && (
+
+            {isDataEmpty ? (
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                height="50vh"
+              >
+                <Typography variant="h6" color="textSecondary">
+                  Data tidak tersedia untuk periode ini.
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                {/* Summary Cards */}
+                {processedData && (
+                  <Box mb={4}>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Orders"
+                          value={processedData.thisMonthMetrics.totalOrders}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Stores"
+                          value={processedData.thisMonthMetrics.totalStores}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Invoice"
+                          value={processedData.thisMonthMetrics.totalInvoice}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Profit"
+                          value={processedData.thisMonthMetrics.totalProfit}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Lunas"
+                          value={processedData.thisMonthMetrics.totalLunas}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Belum Lunas"
+                          value={processedData.thisMonthMetrics.totalBelumLunas}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total COD"
+                          value={processedData.thisMonthMetrics.totalCOD}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total TOP"
+                          value={processedData.thisMonthMetrics.totalTOP}
+                          isCurrency
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* Store Metrics */}
+                {processedData && (
+                  <Box mb={4}>
+                    <StoreMetrics
+                      storeSummaries={processedData.storeSummaries}
+                      monthlyMetrics={{
+                        totalInvoice: processedData.overallTotalInvoice,
+                        totalProfit: processedData.overallProfit,
+                        totalOrders: processedData.totalOrderCount,
+                        totalStores: Object.keys(processedData.storeSummaries)
+                          .length,
+                        totalLunas: processedData.overallLunas,
+                        totalBelumLunas: processedData.overallBelumLunas,
+                        totalCOD: processedData.overallCOD,
+                        totalTOP: processedData.overallTOP,
+                      }}
+                      period={period}
+                    />
+                  </Box>
+                )}
+
+                {/* Line Chart */}
                 <Box mb={4}>
                   <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total Orders"
-                        value={processedData.thisMonthMetrics.totalOrders}
+                    <Grid item xs={12} lg={8}>
+                      <InvoiceLineChart
+                        data={chartData}
+                        timePeriod={timePeriod}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total Stores"
-                        value={processedData.thisMonthMetrics.totalStores}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total Invoice"
-                        value={processedData.thisMonthMetrics.totalInvoice}
-                        isCurrency
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total Profit"
-                        value={processedData.thisMonthMetrics.totalProfit}
-                        isCurrency
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total Lunas"
-                        value={processedData.thisMonthMetrics.totalLunas}
-                        isCurrency
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total Belum Lunas"
-                        value={processedData.thisMonthMetrics.totalBelumLunas}
-                        isCurrency
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total COD"
-                        value={processedData.thisMonthMetrics.totalCOD}
-                        isCurrency
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <InvoiceSummaryCard
-                        title="Total TOP"
-                        value={processedData.thisMonthMetrics.totalTOP}
-                        isCurrency
+                    <Grid item xs={12} lg={4}>
+                      <MonthlyStoreChart
+                        data={processedData?.monthlyStoreCounts || {}}
+                        monthlyOrders={processedData?.monthlyOrderCounts || {}}
                       />
                     </Grid>
                   </Grid>
                 </Box>
-              )}
 
-              {/* Store Metrics */}
-              {processedData && (
+                {/* NOO Chart */}
                 <Box mb={4}>
-                  <StoreMetrics 
-                    storeSummaries={processedData.storeSummaries} 
-                    monthlyMetrics={{
-                      totalInvoice: processedData.overallTotalInvoice,
-                      totalProfit: processedData.overallProfit,
-                      totalOrders: processedData.totalOrderCount,
-                      totalStores: Object.keys(processedData.storeSummaries).length,
-                      totalLunas: processedData.overallLunas,
-                      totalBelumLunas: processedData.overallBelumLunas,
-                      totalCOD: processedData.overallCOD,
-                      totalTOP: processedData.overallTOP
-                    }}
-                    period={period}
-                  />
+                  <NOOChart data={nooData} />
                 </Box>
-              )}
 
-              {/* Line Chart */}
-              <Box mb={4}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} lg={8}>
-                    <InvoiceLineChart data={chartData} timePeriod={timePeriod} />
-                  </Grid>
-                  <Grid item xs={12} lg={4}>
-                    <MonthlyStoreChart 
-                      data={processedData?.monthlyStoreCounts || {}} 
-                      monthlyOrders={processedData?.monthlyOrderCounts || {}}
+                {/* NOO Area Chart */}
+                <Box mb={4}>
+                  <NOOAreaChart data={nooData} />
+                </Box>
+
+                {/* Store Summary Table */}
+                {processedData && (
+                  <Box mb={4}>
+                    <StoreSummaryTable
+                      storeSummaries={processedData.storeSummaries}
                     />
-                  </Grid>
-                </Grid>
-              </Box>
+                  </Box>
+                )}
 
-              {/* NOO Chart */}
-              <Box mb={4}>
-                <NOOChart data={nooData} />
-              </Box>
+                {/* Product Summary Table */}
+                {processedData && (
+                  <Box mb={4}>
+                    <ProductSummaryTable
+                      productSummaries={processedData.productSummaries}
+                    />
+                  </Box>
+                )}
 
-              {/* NOO Area Chart */}
-              <Box mb={4}>
-                <NOOAreaChart data={nooData} />
-              </Box>
+                {/* Area Chart */}
+                {processedData && (
+                  <Box mb={4}>
+                    <AreaChart
+                      areaData={processedData.areaSummaries}
+                      selectedMonths={dateRange.month}
+                    />
+                  </Box>
+                )}
 
-              {/* Store Summary Table */}
-              {processedData && (
-                <Box mb={4}>
-                  <StoreSummaryTable storeSummaries={processedData.storeSummaries} />
-                </Box>
-              )}
+                {/* Payment Distribution Chart */}
+                {processedData && processedData.paymentStatusMetrics && (
+                  <Box mb={4}>
+                    <PaymentDistributionChart
+                      data={Object.entries(
+                        processedData.paymentStatusMetrics as Record<
+                          string,
+                          PaymentStatusMetrics
+                        >
+                      ).map(([status, metrics]) => ({
+                        status,
+                        totalOrders: metrics.totalOrders,
+                        totalInvoice: metrics.totalInvoice,
+                        totalProfit: metrics.totalProfit,
+                      }))}
+                      selectedMonths={dateRange.month}
+                    />
+                  </Box>
+                )}
 
-              {/* Product Summary Table */}
-              {processedData && (
-                <Box mb={4}>
-                  <ProductSummaryTable productSummaries={processedData.productSummaries} />
-                </Box>
-              )}
-
-              {/* Area Chart */}
-              {processedData && (
-                <Box mb={4}>
-                  <AreaChart
-                    areaData={processedData.areaSummaries}
-                    selectedMonths={dateRange.month}
-                  />
-                </Box>
-              )}
-
-              {/* Payment Distribution Chart */}
-              {processedData && processedData.paymentStatusMetrics && (
-                <Box mb={4}>
-                  <PaymentDistributionChart 
-                    data={Object.entries(processedData.paymentStatusMetrics as Record<string, PaymentStatusMetrics>).map(([status, metrics]) => ({
-                      status,
-                      totalOrders: metrics.totalOrders,
-                      totalInvoice: metrics.totalInvoice,
-                      totalProfit: metrics.totalProfit
-                    }))}
-                    selectedMonths={dateRange.month}
-                  />
-                </Box>
-              )}
-              
-              {/* Orders Table */}
-              {validOrders && (
-                <Box>
-                  {processedData && (
-                    <DueDateStatusChart data={processedData.dueDateStatusCounts} />
-                  )}
-                  <OrdersTable orders={filteredOrders} />
-                </Box>
-              )}
-            </>
-          )}
-        </>}
+                {/* Orders Table */}
+                {validOrders && (
+                  <Box>
+                    {processedData && (
+                      <DueDateStatusChart
+                        data={processedData.dueDateStatusCounts}
+                      />
+                    )}
+                    <OrdersTable orders={filteredOrders} />
+                  </Box>
+                )}
+              </>
+            )}
+          </>
+        )}
       </>
     </PageContainer>
   );

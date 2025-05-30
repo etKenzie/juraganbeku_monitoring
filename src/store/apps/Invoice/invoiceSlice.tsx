@@ -5,8 +5,9 @@ import axios from "../../../utils/axios";
 import { AppDispatch } from "../../store";
 
 const ORDER_DASHBOARD_URL = `https://dev.tokopandai.id/api/order/dashboard`;
-const ORDER_NOO_URL = "https://dev.tokopandai.id/api/order/stores-order-once"
-const UPDATE_ORDER_ITEMS_URL = "https://dev.tokopandai.id/api/order/order-items";
+const ORDER_NOO_URL = "https://dev.tokopandai.id/api/order/stores-order-once";
+const UPDATE_ORDER_ITEMS_URL =
+  "https://dev.tokopandai.id/api/order/order-items";
 
 // Combined interfaces
 interface DashboardData {
@@ -63,6 +64,7 @@ export interface OrderData {
   order_code: string;
   reseller_name: string;
   store_name: string;
+  segment: string;
   user_id: string;
   process_hub: string;
   total_invoice: number;
@@ -155,89 +157,89 @@ const invoiceSlice = createSlice({
   },
 });
 
-export const { 
-  startLoading, 
+export const {
+  startLoading,
   endLoading,
-  hasError, 
-//   getDashboardData, 
-//   getGeraiData,
+  hasError,
+  //   getDashboardData,
+  //   getGeraiData,
   getOrdersSuccess,
-  getNOOSuccess
+  getNOOSuccess,
 } = invoiceSlice.actions;
 
 interface OrderQuery {
   startDate?: string;
   endDate?: string;
-  sortTime?: 'desc' | 'asc';
+  sortTime?: "desc" | "asc";
   month?: string;
   area?: string;
   segment?: string;
   payment?: string;
 }
 
-export const fetchOrders = (params: OrderQuery) => async (dispatch: AppDispatch) => {
-  dispatch(startLoading());
-  try {
-    const AUTH_TOKEN = getCookie("token");
+export const fetchOrders =
+  (params: OrderQuery) => async (dispatch: AppDispatch) => {
+    dispatch(startLoading());
+    try {
+      const AUTH_TOKEN = getCookie("token");
 
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) searchParams.append(key, value.toString());
-    });
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) searchParams.append(key, value.toString());
+      });
 
-    const request = `${ORDER_DASHBOARD_URL}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
-    console.log(request);
+      const request = `${ORDER_DASHBOARD_URL}${
+        searchParams.toString() ? `?${searchParams.toString()}` : ""
+      }`;
+      console.log(request);
 
-    const response = await axios.get(
-      request,
-      {
+      const response = await axios.get(request, {
         // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+      });
+
+      if (response.data.code === 200) {
+        dispatch(getOrdersSuccess(response.data.data));
+        dispatch(endLoading());
+      } else {
+        dispatch(hasError(response.data.message || "Failed to fetch orders"));
       }
-    );
-
-    if (response.data.code === 200) {
-      dispatch(getOrdersSuccess(response.data.data));
-      dispatch(endLoading());
-    } else {
-      dispatch(hasError(response.data.message || "Failed to fetch orders"));
+    } catch (error: any) {
+      dispatch(hasError(error.message || "Failed to fetch orders"));
+      throw new Error("AUTH_ERROR");
     }
-  } catch (error: any) {
-    dispatch(hasError(error.message || "Failed to fetch orders"));
-    throw new Error("AUTH_ERROR");
-  }
-};
+  };
 
-export const fetchNOO = (params: OrderQuery) => async (dispatch: AppDispatch) => {
-  dispatch(startLoading());
-  try {
-    const AUTH_TOKEN = getCookie("token");
+export const fetchNOO =
+  (params: OrderQuery) => async (dispatch: AppDispatch) => {
+    dispatch(startLoading());
+    try {
+      const AUTH_TOKEN = getCookie("token");
 
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) searchParams.append(key, value.toString());
-    });
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) searchParams.append(key, value.toString());
+      });
 
-    const request = `${ORDER_NOO_URL}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
-    console.log(request);
+      const request = `${ORDER_NOO_URL}${
+        searchParams.toString() ? `?${searchParams.toString()}` : ""
+      }`;
+      console.log(request);
 
-    const response = await axios.get(
-      request,
-      {
+      const response = await axios.get(request, {
         // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-      }
-    );
+      });
 
-    if (response.data.code === 200) {
-      dispatch(getNOOSuccess(response.data.data));
-      dispatch(endLoading());
-    } else {
-      dispatch(hasError(response.data.message || "Failed to fetch NOO data"));
+      if (response.data.code === 200) {
+        dispatch(getNOOSuccess(response.data.data));
+        dispatch(endLoading());
+      } else {
+        dispatch(hasError(response.data.message || "Failed to fetch NOO data"));
+      }
+    } catch (error: any) {
+      dispatch(hasError(error.message || "Failed to fetch NOO data"));
+      throw new Error("AUTH_ERROR");
     }
-  } catch (error: any) {
-    dispatch(hasError(error.message || "Failed to fetch NOO data"));
-    throw new Error("AUTH_ERROR");
-  }
-};
+  };
 
 interface UpdateOrderItemPayload {
   details: Array<{
@@ -246,31 +248,32 @@ interface UpdateOrderItemPayload {
   }>;
 }
 
-export const updateOrderItems = (payload: UpdateOrderItemPayload) => async (dispatch: AppDispatch) => {
-  dispatch(startLoading());
-  try {
-    const AUTH_TOKEN = getCookie("token");
+export const updateOrderItems =
+  (payload: UpdateOrderItemPayload) => async (dispatch: AppDispatch) => {
+    dispatch(startLoading());
+    try {
+      const AUTH_TOKEN = getCookie("token");
 
-    const response = await axios.patch(
-      UPDATE_ORDER_ITEMS_URL,
-      payload,
-      {
+      const response = await axios.patch(UPDATE_ORDER_ITEMS_URL, payload, {
         // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-      }
-    );
-    console.log(response)
+      });
+      console.log(response);
 
-    if (response.data.code === 200) {
-      dispatch(endLoading());
-      return response.data;
-    } else {
-      dispatch(hasError(response.data.message || "Failed to update order items"));
-      throw new Error(response.data.message || "Failed to update order items");
+      if (response.data.code === 200) {
+        dispatch(endLoading());
+        return response.data;
+      } else {
+        dispatch(
+          hasError(response.data.message || "Failed to update order items")
+        );
+        throw new Error(
+          response.data.message || "Failed to update order items"
+        );
+      }
+    } catch (error: any) {
+      dispatch(hasError(error.message || "Failed to update order items"));
+      throw error;
     }
-  } catch (error: any) {
-    dispatch(hasError(error.message || "Failed to update order items"));
-    throw error;
-  }
-};
+  };
 
 export default invoiceSlice.reducer;

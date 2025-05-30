@@ -2,18 +2,18 @@
 import { formatCurrency } from "@/app/utils/formatNumber";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
-    Box,
-    Dialog,
-    DialogContent,
-    Grid,
-    IconButton,
-    MenuItem,
-    Paper,
-    Select,
-    Stack,
-    Tooltip,
-    Typography,
-    useMediaQuery
+  Box,
+  Dialog,
+  DialogContent,
+  Grid,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
@@ -26,14 +26,23 @@ interface NOOAreaChartProps {
   data: OrderData[];
 }
 
-type MetricKey = "totalInvoice" | "totalOrders" | "averageInvoice" | "totalProfit" | "averageProfit";
+type MetricKey =
+  | "totalInvoice"
+  | "totalOrders"
+  | "averageInvoice"
+  | "totalProfit"
+  | "averageProfit";
 
 const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   const theme = useTheme();
-  const [selectedArea, setSelectedArea] = React.useState<{ name: string; stores: OrderData[] } | null>(null);
+  const [selectedArea, setSelectedArea] = React.useState<{
+    name: string;
+    stores: OrderData[];
+  } | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [isClient, setIsClient] = React.useState(false);
-  const [selectedMetric, setSelectedMetric] = React.useState<MetricKey>("totalOrders");
+  const [selectedMetric, setSelectedMetric] =
+    React.useState<MetricKey>("totalOrders");
 
   React.useEffect(() => {
     setIsClient(true);
@@ -42,49 +51,64 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   // Process data to get first orders per store and group by area
   const areaData = React.useMemo(() => {
     // Find the most recent month
-    let mostRecentMonth = '';
-    data.forEach(order => {
+    let mostRecentMonth = "";
+    data.forEach((order) => {
       if (!mostRecentMonth || order.month > mostRecentMonth) {
         mostRecentMonth = order.month;
       }
     });
 
     // First, get the first order date for each store
-    const storeFirstOrders = data.reduce((acc: Record<string, { month: string, order: OrderData }>, order) => {
-      const storeId = order.user_id;
-      const monthYear = order.month.toLowerCase();
-      
-      if (!acc[storeId] || new Date(order.order_date) < new Date(acc[storeId].order.order_date)) {
-        acc[storeId] = { month: monthYear, order };
-      }
-      return acc;
-    }, {});
+    const storeFirstOrders = data.reduce(
+      (acc: Record<string, { month: string; order: OrderData }>, order) => {
+        const storeId = order.user_id;
+        const monthYear = order.month.toLowerCase();
+
+        if (
+          !acc[storeId] ||
+          new Date(order.order_date) < new Date(acc[storeId].order.order_date)
+        ) {
+          acc[storeId] = { month: monthYear, order };
+        }
+        return acc;
+      },
+      {}
+    );
 
     // Then, group by area and calculate metrics for most recent month only
-    const areaGroups = Object.values(storeFirstOrders).reduce((acc: Record<string, {
-      stores: OrderData[];
-      totalInvoice: number;
-      totalOrders: number;
-      totalProfit: number;
-    }>, { order }) => {
-      // Only include orders from the most recent month
-      if (order.month !== mostRecentMonth) return acc;
+    const areaGroups = Object.values(storeFirstOrders).reduce(
+      (
+        acc: Record<
+          string,
+          {
+            stores: OrderData[];
+            totalInvoice: number;
+            totalOrders: number;
+            totalProfit: number;
+          }
+        >,
+        { order }
+      ) => {
+        // Only include orders from the most recent month
+        if (order.month !== mostRecentMonth) return acc;
 
-      const area = order.area || 'Unknown';
-      if (!acc[area]) {
-        acc[area] = {
-          stores: [],
-          totalInvoice: 0,
-          totalOrders: 0,
-          totalProfit: 0
-        };
-      }
-      acc[area].stores.push(order);
-      acc[area].totalInvoice += order.total_invoice;
-      acc[area].totalOrders += 1;
-      acc[area].totalProfit += order.profit || 0;
-      return acc;
-    }, {});
+        const area = order.area || "Unknown";
+        if (!acc[area]) {
+          acc[area] = {
+            stores: [],
+            totalInvoice: 0,
+            totalOrders: 0,
+            totalProfit: 0,
+          };
+        }
+        acc[area].stores.push(order);
+        acc[area].totalInvoice += order.total_invoice;
+        acc[area].totalOrders += 1;
+        acc[area].totalProfit += order.profit || 0;
+        return acc;
+      },
+      {}
+    );
 
     return areaGroups;
   }, [data]);
@@ -109,11 +133,15 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
         case "totalOrders":
           return b.totalOrders - a.totalOrders;
         case "averageInvoice":
-          return (b.totalInvoice / b.stores.length) - (a.totalInvoice / a.stores.length);
+          return (
+            b.totalInvoice / b.stores.length - a.totalInvoice / a.stores.length
+          );
         case "totalProfit":
           return b.totalProfit - a.totalProfit;
         case "averageProfit":
-          return (b.totalProfit / b.stores.length) - (a.totalProfit / a.stores.length);
+          return (
+            b.totalProfit / b.stores.length - a.totalProfit / a.stores.length
+          );
         default:
           return 0;
       }
@@ -185,8 +213,12 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
     dataLabels: {
       enabled: true,
       formatter: (val: number) => {
-        if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice" || 
-            selectedMetric === "totalProfit" || selectedMetric === "averageProfit") {
+        if (
+          selectedMetric === "totalInvoice" ||
+          selectedMetric === "averageInvoice" ||
+          selectedMetric === "totalProfit" ||
+          selectedMetric === "averageProfit"
+        ) {
           return formatCurrency(val);
         }
         return val;
@@ -215,8 +247,12 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
     yaxis: {
       labels: {
         formatter: (val: number) => {
-          if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice" || 
-              selectedMetric === "totalProfit" || selectedMetric === "averageProfit") {
+          if (
+            selectedMetric === "totalInvoice" ||
+            selectedMetric === "averageInvoice" ||
+            selectedMetric === "totalProfit" ||
+            selectedMetric === "averageProfit"
+          ) {
             return formatCurrency(val);
           }
           return val;
@@ -233,8 +269,12 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
       },
       y: {
         formatter: (val: number) => {
-          if (selectedMetric === "totalInvoice" || selectedMetric === "averageInvoice" || 
-              selectedMetric === "totalProfit" || selectedMetric === "averageProfit") {
+          if (
+            selectedMetric === "totalInvoice" ||
+            selectedMetric === "averageInvoice" ||
+            selectedMetric === "totalProfit" ||
+            selectedMetric === "averageProfit"
+          ) {
             return formatCurrency(val);
           }
           return val;
@@ -257,7 +297,9 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
 
     ApexCharts.exec("noo-area-chart", "updateOptions", {
       title: {
-        text: `New Ordering Outlets by Area - ${getMetricLabel(selectedMetric)}`,
+        text: `New Ordering Outlets by Area - ${getMetricLabel(
+          selectedMetric
+        )}`,
         align: "center",
         style: {
           fontSize: "16px",
@@ -275,7 +317,9 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
 
           const downloadLink = document.createElement("a");
           downloadLink.href = response.imgURI;
-          downloadLink.download = `NOO_Area_Distribution_${getMetricLabel(selectedMetric)}_${new Date().toLocaleDateString()}.png`;
+          downloadLink.download = `NOO_Area_Distribution_${getMetricLabel(
+            selectedMetric
+          )}_${new Date().toLocaleDateString()}.png`;
           document.body.appendChild(downloadLink);
           downloadLink.click();
           document.body.removeChild(downloadLink);
@@ -335,13 +379,44 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Paper sx={{ p: 2 }}>
-                    <Typography variant="subtitle1">New Stores ({selectedArea.stores.length})</Typography>
-                    <Stack spacing={1} mt={1}>
-                      {selectedArea.stores.map((store) => (
-                        <Box key={store.order_id}>
-                          <Typography variant="body2">
-                            {store.store_name} - {new Date(store.order_date).toLocaleDateString()}
+                    <Typography variant="subtitle1">
+                      New Stores ({selectedArea.stores.length})
+                    </Typography>
+                    <Stack spacing={2} mt={2}>
+                      {/* Group stores by segment */}
+                      {Object.entries(
+                        selectedArea.stores.reduce(
+                          (acc: Record<string, OrderData[]>, store) => {
+                            const segment = store.segment || "OTHER";
+                            if (!acc[segment]) {
+                              acc[segment] = [];
+                            }
+                            acc[segment].push(store);
+                            return acc;
+                          },
+                          {}
+                        )
+                      ).map(([segment, stores]) => (
+                        <Box key={segment}>
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            gutterBottom
+                          >
+                            {segment} ({stores.length} stores)
                           </Typography>
+                          <Stack spacing={1}>
+                            {stores.map((store) => (
+                              <Box key={store.order_id} sx={{ pl: 2 }}>
+                                <Typography variant="body2">
+                                  {store.store_name} -{" "}
+                                  {new Date(
+                                    store.order_date
+                                  ).toLocaleDateString()}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Stack>
                         </Box>
                       ))}
                     </Stack>
@@ -356,4 +431,4 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   );
 };
 
-export default NOOAreaChart; 
+export default NOOAreaChart;
