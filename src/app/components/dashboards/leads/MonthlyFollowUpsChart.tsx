@@ -1,11 +1,11 @@
 "use client";
-import { Lead } from "@/app/types/leads";
+import { FollowUp } from "@/app/types/leads";
 import {
-  Box,
-  IconButton,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
+    Box,
+    IconButton,
+    ToggleButton,
+    ToggleButtonGroup,
+    Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
@@ -17,17 +17,17 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 type TimePeriod = 'weekly' | 'monthly';
 
-interface MonthlyLeadsChartProps {
-  data: Lead[];
+interface MonthlyFollowUpsChartProps {
+  data: FollowUp[];
 }
 
 interface ChartDataItem {
   timeKey: string;
   label: string;
-  [key: string]: string | number;
+  count: number;
 }
 
-const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
+const MonthlyFollowUpsChart = ({ data }: MonthlyFollowUpsChartProps) => {
   const theme = useTheme();
   const [isClient, setIsClient] = React.useState(false);
   const [timePeriod, setTimePeriod] = React.useState<TimePeriod>('monthly');
@@ -37,7 +37,7 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
   }, []);
 
   const chartId = React.useMemo(
-    () => `monthly-leads-chart-${Math.random().toString(36).substr(2, 9)}`,
+    () => `monthly-followups-chart-${Math.random().toString(36).substr(2, 9)}`,
     []
   );
 
@@ -49,72 +49,63 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
     return Math.ceil(diff / 7);
   }
 
-  // Process data to get leads count by creator and time period
-  const processedData = data.reduce((acc: Record<string, Record<string, number>>, lead) => {
-    const date = new Date(lead.date_added);
+  // Process data to get follow-ups count by time period
+  const processedData = data.reduce((acc: { timeKey: string; count: number }[], followUp) => {
+    const date = new Date(followUp.date);
     const weekNum = getWeekOfMonth(date);
     const timeKey = timePeriod === 'weekly' 
       ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${weekNum}`
       : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const creators = Array.isArray(lead.found_by) ? lead.found_by : [lead.found_by];
+    const existingTime = acc.find(item => item.timeKey === timeKey);
     
-    if (!acc[timeKey]) {
-      acc[timeKey] = {};
+    if (existingTime) {
+      existingTime.count++;
+    } else {
+      acc.push({ timeKey, count: 1 });
     }
     
-    creators.forEach(creator => {
-      if (!acc[timeKey][creator]) {
-        acc[timeKey][creator] = 0;
-      }
-      acc[timeKey][creator]++;
-    });
-    
     return acc;
-  }, {});
+  }, []).sort((a, b) => a.timeKey.localeCompare(b.timeKey));
 
-  // Get unique creators
-  const creators = Array.from(new Set(data.flatMap(lead => 
-    Array.isArray(lead.found_by) ? lead.found_by : [lead.found_by]
-  )));
-
-  // Convert to array format for the chart
-  const chartData = Object.entries(processedData)
-    .map(([timeKey, creators]): ChartDataItem => {
-      if (timePeriod === 'weekly') {
-        const [year, month, week] = timeKey.split('-');
-        const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleString('default', { month: 'short' });
-        return {
-          timeKey,
-          label: `W${week} ${monthName}, ${year}`,
-          ...creators
-        };
-      }
+  const chartData = processedData.map((item): ChartDataItem => {
+    if (timePeriod === 'weekly') {
+      const [year, month, week] = item.timeKey.split('-');
+      const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleString('default', { month: 'short' });
       return {
-        timeKey,
-        label: new Date(timeKey + '-01').toLocaleString('default', { month: 'short', year: 'numeric' }),
-        ...creators
+        timeKey: item.timeKey,
+        label: `W${week} ${monthName}, ${year}`,
+        count: item.count
       };
-    })
-    .sort((a, b) => a.timeKey.localeCompare(b.timeKey));
+    }
+    return {
+      timeKey: item.timeKey,
+      label: new Date(item.timeKey + '-01').toLocaleString('default', { month: 'short', year: 'numeric' }),
+      count: item.count
+    };
+  });
 
   const options: any = {
     chart: {
       id: chartId,
-      type: "bar",
-      stacked: true,
+      type: "line",
       fontFamily: "'Plus Jakarta Sans', sans-serif",
       foreColor: theme.palette.mode === "dark" ? "#adb0bb" : "#111",
       toolbar: {
         show: false,
       },
     },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: '55%',
-        endingShape: 'rounded'
+    stroke: {
+      width: 3,
+      curve: 'smooth',
+    },
+    markers: {
+      size: 4,
+      strokeWidth: 0,
+      hover: {
+        size: 6,
       },
     },
+    colors: [theme.palette.secondary.main],
     dataLabels: {
       enabled: true,
       style: {
@@ -123,10 +114,12 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
         colors: [theme.palette.mode === "dark" ? "#fff" : "#111"],
       },
     },
-    stroke: {
-      show: true,
-      width: 2,
-      colors: ['transparent']
+    legend: {
+      show: false
+    },
+    grid: {
+      borderColor: theme.palette.mode === "dark" ? "#333" : "#e0e0e0",
+      strokeDashArray: 4,
     },
     xaxis: {
       categories: chartData.map(item => item.label),
@@ -139,9 +132,6 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
       },
     },
     yaxis: {
-      title: {
-        text: 'Number of Leads'
-      },
       labels: {
         style: {
           colors: theme.palette.mode === "dark" ? "#adb0bb" : "#111",
@@ -150,29 +140,20 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
         },
       },
     },
-    fill: {
-      opacity: 1
-    },
     tooltip: {
       theme: theme.palette.mode,
       y: {
         formatter: function (val: number) {
-          return val + " leads";
+          return val + " follow-ups";
         }
       }
     },
-    legend: {
-      position: 'top',
-      horizontalAlign: 'right',
-      offsetX: 40
-    },
-    colors: ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe']
   };
 
-  const series = creators.map(creator => ({
-    name: creator,
-    data: chartData.map(item => Number(item[creator] || 0))
-  }));
+  const series = [{
+    name: "Number of Follow-ups",
+    data: chartData.map(item => Number(item.count))
+  }];
 
   const handleDownload = async () => {
     if (!isClient) return;
@@ -181,7 +162,7 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
 
     ApexCharts.exec(chartId, "updateOptions", {
       title: {
-        text: `Leads Distribution (${timePeriod === 'weekly' ? 'Weekly' : 'Monthly'})`,
+        text: `Follow-ups Trend (${timePeriod === 'weekly' ? 'Weekly' : 'Monthly'})`,
         align: "center",
         style: {
           fontSize: "16px",
@@ -198,7 +179,7 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
 
         const downloadLink = document.createElement("a");
         downloadLink.href = response.imgURI;
-        downloadLink.download = `Leads_Distribution_${timePeriod}_${new Date().toLocaleDateString()}.png`;
+        downloadLink.download = `Followups_Trend_${timePeriod}_${new Date().toLocaleDateString()}.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
@@ -208,7 +189,7 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
 
   return (
     <DashboardCard
-      title={`Leads Distribution (${timePeriod === 'weekly' ? 'Weekly' : 'Monthly'})`}
+      title={`Follow-ups Trend (${timePeriod === 'weekly' ? 'Weekly' : 'Monthly'})`}
       action={
         <Box display="flex" alignItems="center" gap={2}>
           <ToggleButtonGroup
@@ -233,7 +214,7 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
           <Chart
             options={options}
             series={series}
-            type="bar"
+            type="line"
             height={350}
             width="100%"
           />
@@ -243,4 +224,4 @@ const MonthlyLeadsChart = ({ data }: MonthlyLeadsChartProps) => {
   );
 };
 
-export default MonthlyLeadsChart; 
+export default MonthlyFollowUpsChart; 

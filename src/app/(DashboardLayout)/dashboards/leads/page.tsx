@@ -1,16 +1,18 @@
 "use client";
 import PageContainer from "@/app/components/container/PageContainer";
 import AddLeadDialog from "@/app/components/dashboards/leads/AddLeadDialog";
-import LeadSourceChart from "@/app/components/dashboards/leads/LeadSourceChart";
+import FollowUpsTable from "@/app/components/dashboards/leads/FollowUpsTable";
 import LeadsTable from "@/app/components/dashboards/leads/LeadsTable";
+import MonthlyFollowUpsChart from "@/app/components/dashboards/leads/MonthlyFollowUpsChart";
 import MonthlyLeadsChart from "@/app/components/dashboards/leads/MonthlyLeadsChart";
-import { Lead } from "@/app/types/leads";
+import { FollowUp, Lead } from "@/app/types/leads";
 import { supabase } from "@/lib/supabaseClient";
 import { Box, Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 
 const LeadsPage = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +43,24 @@ const LeadsPage = () => {
     }
   };
 
+  const fetchFollowUps = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('follow_ups')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      setFollowUps(data || []);
+    } catch (err) {
+      console.error('Error fetching follow-ups:', err);
+    }
+  };
+
   useEffect(() => {
     console.log('Initializing leads page...');
     fetchLeads();
+    fetchFollowUps();
   }, []);
 
   const handleAddLead = async (newLead: Omit<Lead, 'id'>) => {
@@ -105,21 +122,6 @@ const LeadsPage = () => {
     return acc;
   }, []);
 
-  // Process data for MonthlyLeadsChart
-  const monthlyData = leads.reduce((acc: { month: string; count: number }[], lead) => {
-    const date = new Date(lead.date_added);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const existingMonth = acc.find(item => item.month === monthKey);
-    
-    if (existingMonth) {
-      existingMonth.count++;
-    } else {
-      acc.push({ month: monthKey, count: 1 });
-    }
-    
-    return acc;
-  }, []);
-
   if (loading) {
     return (
       <PageContainer title="Leads Management" description="Manage your leads">
@@ -161,19 +163,26 @@ const LeadsPage = () => {
         {/* Charts Section */}
         <Grid container spacing={3} sx={{ mb: 3, width: '100%' }}>
           <Grid item xs={12}>
-            <MonthlyLeadsChart data={monthlyData} />
+            <MonthlyLeadsChart data={leads} />
           </Grid>
           <Grid item xs={12}>
-            <LeadSourceChart data={sourceData} />
+            <MonthlyFollowUpsChart data={followUps} />
           </Grid>
+          {/* <Grid item xs={12}>
+            <LeadSourceChart data={sourceData} />
+          </Grid> */}
         </Grid>
 
         {/* Table Section */}
         <Box sx={{ 
           flex: 1,
           width: '100%',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3
         }}>
+          <FollowUpsTable />
           <LeadsTable 
             leads={leads} 
             onEdit={handleEditLead}

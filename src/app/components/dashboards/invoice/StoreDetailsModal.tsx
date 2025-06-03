@@ -198,11 +198,11 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
                         {order.status_payment}
                       </Typography>
                     </TableCell>
-                    <TableCell>{formatCurrency(order.total_invoice)}</TableCell>
+                    <TableCell>{formatCurrency(order.total_invoice || 0)}</TableCell>
                     <TableCell>
-                      {formatCurrency(order.total_pembayaran)}
+                      {formatCurrency(order.total_pembayaran || 0)}
                     </TableCell>
-                    <TableCell>{formatCurrency(order.profit)}</TableCell>
+                    <TableCell>{formatCurrency(order.profit || 0)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

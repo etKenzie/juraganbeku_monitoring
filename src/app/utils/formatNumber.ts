@@ -8,9 +8,9 @@ export const formatLargeNumber = (num: number): string => {
   return num.toString();
 };
 
-export const formatCurrency = (num: number): string => {
- if (num < 5000) {
-  return `${num.toLocaleString()}`;
- }
+export const formatCurrency = (num: number | undefined | null): string => {
+  if (num === undefined || num === null) {
+    return 'Rp 0';
+  }
   return `Rp ${num.toLocaleString()}`;
 }; 
