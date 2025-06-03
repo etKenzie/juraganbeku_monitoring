@@ -60,7 +60,6 @@ const headCells: HeadCell[] = [
 
 interface OrdersTableProps {
   orders: OrderData[];
-
 }
 
 const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
@@ -79,6 +78,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [editingBuyPrices, setEditingBuyPrices] = useState<{ [key: string]: number }>({});
   const [isEditing, setIsEditing] = useState(false);
+  const [tagFilter, setTagFilter] = useState<string>("");
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -111,12 +111,23 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
       if (!item) return;
       const price = (item.buy_price || 0) * (item.order_quantity || 0);
       let profit = (item.total_invoice || 0) - price;
-      if (profit < 0) {
-        profit = 0;
-      }
+  
       totalProfit += profit;
     });
     return totalProfit;
+  };
+
+  const getOrderTags = (order: OrderData) => {
+    const tags: string[] = [];
+    const profit = calculateOrderProfit(order);
+    if (profit < 0) {
+      tags.push("NEGATIVE_PROFIT");
+    }
+    return tags;
+  };
+
+  const hasZeroBuyPrice = (order: OrderData) => {
+    return order.detail_order?.some(item => item.buy_price === 0);
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -128,6 +139,15 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
     if (dueDateStatusFilter && calculateDueDateStatus(order.payment_due_date, order.status_payment) !== dueDateStatusFilter) return false;
     if (monthFilter && order.month !== monthFilter) return false;
+    
+    // Tag filtering
+    if (tagFilter) {
+      const hasNegativeProfit = calculateOrderProfit(order) < 0;
+      const hasZeroBuyPrice = order.detail_order?.some(item => item.buy_price === 0);
+      
+      if (tagFilter === "NEGATIVE_PROFIT" && !hasNegativeProfit) return false;
+      if (tagFilter === "ZERO_BUY_PRICE" && !hasZeroBuyPrice) return false;
+    }
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -273,7 +293,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
             }}
           />
         </Grid>
-        <Grid item xs={12} sm={2.4}>
+        <Grid item xs={12} sm={2}>
           <FormControl fullWidth>
             <InputLabel>Status Order</InputLabel>
             <Select
@@ -290,7 +310,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={2.4}>
+        <Grid item xs={12} sm={2}>
           <FormControl fullWidth>
             <InputLabel>Status Payment</InputLabel>
             <Select
@@ -307,7 +327,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={2.4}>
+        <Grid item xs={12} sm={2}>
           <FormControl fullWidth>
             <InputLabel>Payment Type</InputLabel>
             <Select
@@ -324,7 +344,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={2.4}>
+        <Grid item xs={12} sm={2}>
           <FormControl fullWidth>
             <InputLabel>Month</InputLabel>
             <Select
@@ -341,7 +361,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={2.4}>
+        <Grid item xs={12} sm={2}>
           <FormControl fullWidth>
             <InputLabel>Due Date Status</InputLabel>
             <Select
@@ -355,6 +375,20 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                   {status}
                 </MenuItem>
               ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={2}>
+          <FormControl fullWidth>
+            <InputLabel>Tags</InputLabel>
+            <Select
+              value={tagFilter}
+              label="Tags"
+              onChange={(e) => setTagFilter(e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="NEGATIVE_PROFIT">Negative Profit</MenuItem>
+              <MenuItem value="ZERO_BUY_PRICE">Zero Buy Price</MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -378,6 +412,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                   </TableSortLabel>
                 </TableCell>
               ))}
+              <TableCell>Tags</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -401,6 +436,45 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                   <TableCell>{calculateDueDateStatus(order.payment_due_date, order.status_payment)}</TableCell>
                   <TableCell align="right">{formatCurrency(order.total_invoice)}</TableCell>
                   <TableCell align="right">{formatCurrency(order.profit)}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      {getOrderTags(order).map((tag, index) => (
+                        <Typography
+                          key={index}
+                          sx={{
+                            backgroundColor: 'error.main',
+                            color: 'white',
+                            px: 0.5,
+                            py: 0.25,
+                            borderRadius: 0.5,
+                            fontSize: '0.7rem',
+                            minWidth: '24px',
+                            textAlign: 'center'
+                          }}
+                          title="Negative Profit"
+                        >
+                          NP
+                        </Typography>
+                      ))}
+                      {hasZeroBuyPrice(order) && (
+                        <Typography
+                          sx={{
+                            backgroundColor: 'warning.main',
+                            color: 'white',
+                            px: 0.5,
+                            py: 0.25,
+                            borderRadius: 0.5,
+                            fontSize: '0.7rem',
+                            minWidth: '24px',
+                            textAlign: 'center'
+                          }}
+                          title="Zero Buy Price"
+                        >
+                          ZBP
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
                 </TableRow>
               ))}
           </TableBody>
@@ -487,6 +561,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                       <TableCell>Buy Price</TableCell>
                       <TableCell>Brand</TableCell>
                       <TableCell>Category</TableCell>
+                      <TableCell>Tags</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -514,6 +589,26 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                         </TableCell>
                         <TableCell>{item.brands}</TableCell>
                         <TableCell>{item.category}</TableCell>
+                        <TableCell>
+                          {item.buy_price === 0 && (
+                            <Typography
+                              sx={{
+                                backgroundColor: 'warning.main',
+                                color: 'white',
+                                px: 0.5,
+                                py: 0.25,
+                                borderRadius: 0.5,
+                                fontSize: '0.7rem',
+                                minWidth: '24px',
+                                textAlign: 'center',
+                                display: 'inline-block'
+                              }}
+                              title="Zero Buy Price"
+                            >
+                              ZBP
+                            </Typography>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

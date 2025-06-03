@@ -206,22 +206,6 @@ export default function Dashboard() {
       const processed = processData(validOrders, customMonth, customYear);
       setProcessedData(processed);
       setIsDataEmpty(false);
-
-      // Prepare chart data using the processed data
-      const chartData = validOrders.map((order) => {
-        const storeSummary = processed.storeSummaries[order.user_id];
-        const profit = storeSummary
-          ? storeSummary.totalProfit / storeSummary.orderCount
-          : 0;
-
-        return {
-          date: order.order_date,
-          month: order.month,
-          totalInvoice: order.total_invoice,
-          totalProfit: profit,
-        };
-      });
-      setChartData(chartData);
     } else {
       setIsDataEmpty(true);
     }
@@ -480,7 +464,7 @@ export default function Dashboard() {
                   <Grid container spacing={3}>
                     <Grid item xs={12} lg={8}>
                       <InvoiceLineChart
-                        data={chartData}
+                        data={processedData?.chartData || []}
                         timePeriod={timePeriod}
                       />
                     </Grid>

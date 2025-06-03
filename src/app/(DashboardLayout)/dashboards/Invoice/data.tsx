@@ -17,6 +17,51 @@ export const calculateDueDateStatus = (dueDate: string, paymentStatus: string): 
 };
 
 export const useInvoiceData = () => {
+  const processChartData = (orders: OrderData[]): Array<{
+    date: string;
+    month: string;
+    totalInvoice: number;
+    totalProfit: number;
+  }> => {
+    // Group orders by month
+    const monthlyData = orders.reduce((acc, order) => {
+      const monthKey = order.month;
+      
+      if (!acc[monthKey]) {
+        acc[monthKey] = {
+          date: order.order_date,
+          month: monthKey,
+          totalInvoice: 0,
+          totalProfit: 0,
+          orderCount: 0
+        };
+      }
+
+      acc[monthKey].totalInvoice += order.total_invoice ;
+      if (order.profit > 0 ) {
+        acc[monthKey].totalProfit += order.profit;
+      }
+      
+      acc[monthKey].orderCount += 1;
+
+      return acc;
+    }, {} as Record<string, {
+      date: string;
+      month: string;
+      totalInvoice: number;
+      totalProfit: number;
+      orderCount: number;
+    }>);
+
+    // Convert to array and calculate average profit per order
+    return Object.values(monthlyData).map(data => ({
+      date: data.date,
+      month: data.month,
+      totalInvoice: data.totalInvoice,
+      totalProfit: data.totalProfit
+    }));
+  };
+
   const processData = (orders: OrderData[], targetMonth: number, targetYear: number): ProcessedData => {
     if (!orders || orders.length === 0) {
       return {
@@ -54,7 +99,8 @@ export const useInvoiceData = () => {
           dpd60: 0,
           lunas: 0
         },
-        paymentStatusMetrics: {}
+        paymentStatusMetrics: {},
+        chartData: []
       };
     }
 
@@ -93,17 +139,36 @@ export const useInvoiceData = () => {
         dpd60: 0,
         lunas: 0
       },
-      paymentStatusMetrics: {}
+      paymentStatusMetrics: {},
+      chartData: processChartData(orders)
     };
 
     // Find the most recent month in the data
-    let mostRecentMonth = '';
-    let mostRecentMonthStores = new Set<string>();
+    const allMonths = orders.map(order => {
+      const [month, year] = order.month.split(' ');
+      // Convert month name to month number (0-11)
+      const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+      return {
+        month: order.month,
+        date: new Date(parseInt(year), monthIndex, 1)
+      };
+    });
+    const mostRecentMonth = allMonths.sort((a, b) => b.date.getTime() - a.date.getTime())[0].month;
+    console.log('Most recent month:', mostRecentMonth);
+    const mostRecentMonthStores = new Set<string>();
 
-    // Use the target month and year passed from Dashboard
-    const intendedMonth = targetMonth;
-    const intendedYear = targetYear;
-    const intendedMonthKey = `${intendedYear}-${String(intendedMonth + 1).padStart(2, '0')}`;
+    // Reset thisMonthMetrics at the start
+    result.thisMonthMetrics = {
+      totalOrders: 0,
+      totalStores: 0,
+      totalInvoice: 0,
+      totalProfit: 0,
+      activationRate: 0,
+      totalLunas: 0,
+      totalBelumLunas: 0,
+      totalCOD: 0,
+      totalTOP: 0
+    };
 
     orders.forEach(order => {  
       const processedMonthKey = order.month;
@@ -119,25 +184,11 @@ export const useInvoiceData = () => {
           };
         }
         result.paymentStatusMetrics[status].totalOrders += 1;
-        result.paymentStatusMetrics[status].totalInvoice += order.total_invoice || 0;
-        result.paymentStatusMetrics[status].totalProfit += order.profit || 0;
-      }
-
-      // Update most recent month if this order is more recent
-      if (!mostRecentMonth || processedMonthKey > mostRecentMonth) {
-        mostRecentMonth = processedMonthKey;
-        mostRecentMonthStores = new Set<string>();
-        // Reset summaries when we find a new most recent month
-        result.productSummaries = {};
-        result.areaSummaries = {};
-        result.dueDateStatusCounts = {
-          current: 0,
-          below14DPD: 0,
-          dpd14: 0,
-          dpd30: 0,
-          dpd60: 0,
-          lunas: 0
-        };
+        result.paymentStatusMetrics[status].totalInvoice += order.total_invoice ;
+        if (order.profit > 0 ) {
+          result.paymentStatusMetrics[status].totalProfit += order.profit;
+        }
+        
       }
 
       // Initialize monthly store count if not exists
@@ -160,21 +211,20 @@ export const useInvoiceData = () => {
       if (processedMonthKey === mostRecentMonth) {
         mostRecentMonthStores.add(order.user_id);
         result.thisMonthMetrics.totalOrders++;
-        result.thisMonthMetrics.totalInvoice += order.total_invoice || 0;
+        result.thisMonthMetrics.totalInvoice += order.total_invoice;
         
-        // Calculate profit for this order
+        // Calculate profit for this order   
         if (order.profit > 0) {
           result.thisMonthMetrics.totalProfit += order.profit;
-        }
+        }     
+        
         
 
-        if (order.status_payment == "LUNAS") {
+        if (order.status_payment === "LUNAS") {
           result.thisMonthMetrics.totalLunas += order.total_invoice || 0;
-        } else if (order.status_payment == "WAITING VALIDATION BY FINANCE") {
-          result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
-        } else if (order.status_payment == "BELUM LUNAS") {
-          result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
-        } else if (order.status_payment == "PARTIAL") {
+        } else if (order.status_payment === "WAITING VALIDATION BY FINANCE" || 
+                  order.status_payment === "BELUM LUNAS" || 
+                  order.status_payment === "PARTIAL") {
           result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
         }
 
@@ -183,32 +233,8 @@ export const useInvoiceData = () => {
         } else if (order.payment_type === "TOP") {
           result.thisMonthMetrics.totalTOP += order.total_invoice || 0;
         }
-      }
 
-      // Add to overall totals
-      result.overallTotalInvoice += order.total_invoice || 0;
-      result.overallTotalPembayaran += order.total_pembayaran || 0;
-
-      if(order.status_payment == "LUNAS") {
-        result.overallLunas += order.total_invoice || 0;
-      } else if (order.status_payment == "WAITING VALIDATION BY FINANCE") {
-        result.overallLunas += order.total_invoice || 0;
-      } else if (order.status_payment == "BELUM LUNAS") {
-        result.overallBelumLunas += order.total_invoice || 0;
-      } else if (order.status_payment == "PARTIAL") {
-        result.overallBelumLunas += order.total_invoice || 0;
-      }
-
-      if (order.payment_type === "COD") {
-        result.overallCOD += order.total_invoice || 0;
-      } else if (order.payment_type === "TOP") {
-        result.overallTOP += order.total_invoice || 0;
-      }
-
-      let gross_profit = 0;
-
-      if (processedMonthKey === mostRecentMonth) {
-        // Process product each invoice
+        // Process product data for most recent month
         order.detail_order?.forEach(item => {
           if (!item) return;
 
@@ -227,46 +253,17 @@ export const useInvoiceData = () => {
             result.productSummaries[item.product_id].price += item.price;
             result.productSummaries[item.product_id].difPrice += 1;
           }
-          if (order.profit > 0 ) {
-            gross_profit += order.profit;
+
+          if (order.profit > 0) {
             result.productSummaries[item.product_id].profit += order.profit;
           }
           
           result.productSummaries[item.product_id].totalInvoice += item.total_invoice || 0;
-          
-          
-          if (item.quantity) {
-            result.productSummaries[item.product_id].quantity += item.quantity;
-          } else {
-            result.productSummaries[item.product_id].quantity += 1;
-          }
-          
-          // Process category data
-          if (item.category) {
-            if (!result.categorySummaries[item.category]) {
-              result.categorySummaries[item.category] = {
-                totalInvoice: 0,
-                gross_profit: 0,
-                quantity: 0,
-                totalPrice: 0,
-                itemCount: 0
-              };
-            }
-            
-            result.categorySummaries[item.category].totalInvoice += item.total_invoice || 0;
-            result.categorySummaries[item.category].quantity += item.quantity || 1;
-            result.categorySummaries[item.category].gross_profit += order.profit;
-            if (item.price) {
-              result.categorySummaries[item.category].totalPrice += item.price;
-              result.categorySummaries[item.category].itemCount += 1;
-            }
-          }
+          result.productSummaries[item.product_id].quantity += item.quantity || 1;
         });
 
-        console.log(mostRecentMonth)
-
-        // Process area data
-        let area = order.area;
+        // Process area data for most recent month
+        const area = order.area;
         if (!result.areaSummaries[area]) {
           result.areaSummaries[area] = {
             name: "",
@@ -298,11 +295,12 @@ export const useInvoiceData = () => {
           areaSummary.totalBelumLunas += order.total_invoice || 0;
         }
 
-        areaSummary.totalProfit += gross_profit
+        if (order.profit > 0) {
+          areaSummary.totalProfit += order.profit;
+        }
 
-        // DUE DATE STATUS COUNTING
+        // Process due date status for most recent month
         const dueDateStatus = calculateDueDateStatus(order.payment_due_date, order.status_payment);
-
         switch (dueDateStatus) {
           case 'Lunas':
             result.dueDateStatusCounts.lunas++;
@@ -323,12 +321,33 @@ export const useInvoiceData = () => {
             result.dueDateStatusCounts.dpd60++;
             break;
         }
-      } 
+      }
+
+      // Process overall totals
+      result.overallTotalInvoice += order.total_invoice || 0;
+      result.overallTotalPembayaran += order.total_pembayaran || 0;
+      if (order.profit > 0) {
+        result.overallProfit += order.profit;
+      }
+      
+
+      if (order.status_payment === "LUNAS") {
+        result.overallLunas += order.total_invoice || 0;
+      } else if (order.status_payment === "WAITING VALIDATION BY FINANCE" || 
+                order.status_payment === "BELUM LUNAS" || 
+                order.status_payment === "PARTIAL") {
+        result.overallBelumLunas += order.total_invoice || 0;
+      }
+
+      if (order.payment_type === "COD") {
+        result.overallCOD += order.total_invoice || 0;
+      } else if (order.payment_type === "TOP") {
+        result.overallTOP += order.total_invoice || 0;
+      }
 
       // Process store-specific data
       const userId = order.user_id;
       const storeName = order.store_name;
-      const activeMonthKey = order.month; // YYYY-MM format
 
       if (!result.storeSummaries[userId]) {
         result.storeSummaries[userId] = {
@@ -344,9 +363,13 @@ export const useInvoiceData = () => {
       }
 
       result.storeSummaries[userId].totalInvoice += order.total_invoice || 0;
-      result.storeSummaries[userId].totalProfit += gross_profit;
+      if (order.profit > 0) {
+        result.storeSummaries[userId].totalProfit += order.profit;
+      }
+      
+      
       result.storeSummaries[userId].orderCount++;
-      result.storeSummaries[userId].activeMonths.add(activeMonthKey);
+      result.storeSummaries[userId].activeMonths.add(processedMonthKey);
       result.storeSummaries[userId].averageOrderValue = 
         result.storeSummaries[userId].totalInvoice / result.storeSummaries[userId].orderCount;
       result.storeSummaries[userId].orders.push(order);
@@ -363,14 +386,15 @@ export const useInvoiceData = () => {
       }
 
       result.hubSummaries[hub].totalInvoice += order.total_invoice || 0;
-      result.hubSummaries[hub].totalProfit += gross_profit;
+      if (order.profit > 0) {
+        result.hubSummaries[hub].totalProfit += order.profit;
+      }
+      
       result.hubSummaries[hub].totalPembayaran += order.total_pembayaran || 0;
       result.hubSummaries[hub].orderCount++;
-
-      result.overallProfit += gross_profit;      
     });
 
-    // Calculate most recent month's metrics
+    // Calculate final metrics for most recent month
     result.thisMonthMetrics.totalStores = mostRecentMonthStores.size;
     result.thisMonthMetrics.activationRate = mostRecentMonthStores.size / Object.keys(result.storeSummaries).length * 100;
 

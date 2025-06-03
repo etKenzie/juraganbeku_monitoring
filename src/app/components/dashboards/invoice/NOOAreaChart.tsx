@@ -52,11 +52,16 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   const areaData = React.useMemo(() => {
     // Find the most recent month
     let mostRecentMonth = "";
-    data.forEach((order) => {
-      if (!mostRecentMonth || order.month > mostRecentMonth) {
-        mostRecentMonth = order.month;
-      }
+    const allMonths = data.map(order => {
+      const [month, year] = order.month.split(' ');
+      const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+      return {
+        month: order.month,
+        date: new Date(parseInt(year), monthIndex, 1)
+      };
     });
+    mostRecentMonth = allMonths.sort((a, b) => b.date.getTime() - a.date.getTime())[0].month;
+    console.log('NOOAreaChart most recent month:', mostRecentMonth);
 
     // First, get the first order date for each store
     const storeFirstOrders = data.reduce(

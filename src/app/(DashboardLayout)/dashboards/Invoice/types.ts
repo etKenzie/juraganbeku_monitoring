@@ -78,6 +78,12 @@ export interface ProcessedData {
     totalInvoice: number;
     totalProfit: number;
   }};
+  chartData: Array<{
+    date: string;
+    month: string;
+    totalInvoice: number;
+    totalProfit: number;
+  }>;
 }
 
 export interface StoreSummary {
