@@ -1,21 +1,21 @@
 "use client";
 import { Lead } from "@/app/types/leads";
 import {
-    Button,
-    Checkbox,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    FormControlLabel,
-    FormGroup,
-    FormLabel,
-    Grid,
-    InputLabel,
-    MenuItem,
-    Select,
-    TextField
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  FormGroup,
+  FormLabel,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
 import { useEffect, useState } from "react";
@@ -60,7 +60,8 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     memo: initialData?.memo || '',
     date_added: initialData?.date_added || new Date().toISOString().split('T')[0],
     deadline: initialData?.deadline || '',
-    lead_status: initialData?.lead_status || 'CURRENT'
+    lead_status: initialData?.lead_status || 'CURRENT',
+    order_status: initialData?.order_status || 'CURRENT'
   }));
 
   // Reset form data when initialData changes
@@ -82,7 +83,8 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
       memo: initialData?.memo || '',
       date_added: initialData?.date_added || new Date().toISOString().split('T')[0],
       deadline: initialData?.deadline || '',
-      lead_status: initialData?.lead_status || 'CURRENT'
+      lead_status: initialData?.lead_status || 'CURRENT',
+      order_status: initialData?.order_status || 'CURRENT'
     });
   }, [initialData]);
 
@@ -119,12 +121,19 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Ensure lead_status is set
+    const formDataWithStatus = {
+      ...formData,
+      lead_status: formData.lead_status || 'CURRENT' // Default to CURRENT if not set
+    };
+
     if (initialData) {
       // For editing, include the ID
-      onAdd({ ...formData, id: initialData.id } as Lead);
+      onAdd({ ...formDataWithStatus, id: initialData.id } as Lead);
     } else {
       // For new leads, just pass the form data
-      onAdd(formData);
+      onAdd(formDataWithStatus);
     }
   };
 

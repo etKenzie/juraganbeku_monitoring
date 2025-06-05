@@ -11,11 +11,6 @@ export async function middleware(req: NextRequest) {
     // Create the Supabase client
     const supabase = createMiddlewareClient<Database>({ req, res });
 
-    // Refresh session if expired - this will update the session cookie if needed
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
     // Get the pathname of the request
     const path = req.nextUrl.pathname;
 
@@ -28,32 +23,44 @@ export async function middleware(req: NextRequest) {
 
     // Handle sign-out explicitly
     if (path === '/auth/signout') {
-      // console.log('Middleware - Processing sign-out');
-      return res;
+      const redirectUrl = new URL('/auth/signin', req.url);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Refresh session if expired - this will update the session cookie if needed
+    const {
+      data: { session },
+      error: sessionError
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      console.error('Middleware session error:', sessionError);
+      // If there's a session error, redirect to signin
+      const redirectUrl = new URL('/auth/signin', req.url);
+      return NextResponse.redirect(redirectUrl);
     }
 
     if (!session && !isPublicRoute) {
-      // console.log('Middleware - No session, redirecting to signin');
       const redirectUrl = new URL('/auth/signin', req.url);
       return NextResponse.redirect(redirectUrl);
     }
 
     if (session && path.startsWith('/auth/')) {
-      // console.log('Middleware - Has session, redirecting to dashboard');
       const redirectUrl = new URL('/', req.url);
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Update response headers to set cookie
     return res;
 
   } catch (e) {
     console.error('Middleware error:', e);
-    // On error, allow the request to continue
-    return NextResponse.next();
+    // On error, redirect to signin
+    const redirectUrl = new URL('/auth/signin', req.url);
+    return NextResponse.redirect(redirectUrl);
   }
 }
 
+// Specify which routes this middleware should run on
 export const config = {
   matcher: [
     /*

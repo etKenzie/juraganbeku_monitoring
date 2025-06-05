@@ -5,6 +5,7 @@ import FollowUpsTable from "@/app/components/dashboards/leads/FollowUpsTable";
 import LeadsTable from "@/app/components/dashboards/leads/LeadsTable";
 import MonthlyFollowUpsChart from "@/app/components/dashboards/leads/MonthlyFollowUpsChart";
 import MonthlyLeadsChart from "@/app/components/dashboards/leads/MonthlyLeadsChart";
+import OrderStatusChart from "@/app/components/dashboards/leads/OrderStatusChart";
 import { FollowUp, Lead } from "@/app/types/leads";
 import { supabase } from "@/lib/supabaseClient";
 import { Box, Grid, Typography } from "@mui/material";
@@ -108,20 +109,6 @@ const LeadsPage = () => {
     }
   };
 
-  // Process data for LeadSourceChart
-  const sourceData = leads.reduce((acc: { source: string; count: number }[], lead) => {
-    const source = Array.isArray(lead.found_by) ? lead.found_by[0] || 'Unknown' : lead.found_by || 'Unknown';
-    const existingSource = acc.find(item => item.source === source);
-    
-    if (existingSource) {
-      existingSource.count++;
-    } else {
-      acc.push({ source, count: 1 });
-    }
-    
-    return acc;
-  }, []);
-
   if (loading) {
     return (
       <PageContainer title="Leads Management" description="Manage your leads">
@@ -162,6 +149,9 @@ const LeadsPage = () => {
 
         {/* Charts Section */}
         <Grid container spacing={3} sx={{ mb: 3, width: '100%' }}>
+          <Grid item xs={12}>
+            <OrderStatusChart data={leads} />
+          </Grid>
           <Grid item xs={12}>
             <MonthlyLeadsChart data={leads} />
           </Grid>

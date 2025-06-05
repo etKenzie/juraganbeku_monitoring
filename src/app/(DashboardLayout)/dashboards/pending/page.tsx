@@ -193,11 +193,12 @@ export default function PendingDashboard() {
   if (loading) {
     return <Loading />;
   }
+  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya"].some(r => role?.includes(r));
 
   return (
     <PageContainer title="Pending Invoices Dashboard" description="Dashboard for pending invoices">
       <>
-      {role !== 'admin' ? (
+      {!hasAccess ? (
         <Box
           display="flex"
           justifyContent="center"

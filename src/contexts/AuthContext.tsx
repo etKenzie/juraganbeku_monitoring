@@ -1,10 +1,10 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import type { Database } from '@/types/supabase';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Session, User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import type { Database } from '@/types/supabase';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
   user: User | null;
@@ -12,7 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
-  role: string | null;
+  role: string[] | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -23,17 +23,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string[] | null>(null);
   const router = useRouter();
   const supabase = createClientComponentClient<Database>();
+  
 
   const fetchUserRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('roles')
         .eq('id', userId)
         .single();
+        console.log(data)
 
       if (error) {
         console.error('Error fetching user role:', error);
@@ -41,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       //@ts-ignore
-      return data?.role || null;
+      return data?.roles || null;
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
       return null;
@@ -89,12 +91,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     try {
       console.log('Attempting to sign in...');
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Authentication service not available');
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase auth error:', error);
+        throw error;
+      }
       
       console.log('Sign in successful:', data);
       
@@ -104,9 +114,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const userRole = await fetchUserRole(data.session.user.id);
         setRole(userRole);
         
+        // Wait for session to be properly set
         await supabase.auth.getSession();
-        router.refresh();
-        router.push(DASHBOARD_PATH);
+        
+        // Force a hard navigation to the dashboard
+        window.location.href = DASHBOARD_PATH;
+      } else {
+        throw new Error('No session data received');
       }
     } catch (error) {
       console.error('Error signing in:', error);
@@ -117,20 +131,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       console.log('Attempting to sign out...');
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-  
-      console.log('Sign out successful');
+      
+      // Clear local state first
       setUser(null);
       setSession(null);
       setRole(null);
+
+      // Try to sign out from Supabase, but don't throw if it fails
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.warn('Supabase sign out error:', error);
+        }
+      } catch (error) {
+        console.warn('Error during Supabase sign out:', error);
+      }
+  
+      console.log('Sign out successful');
       
-      router.refresh();
-      router.push('/auth/signin');
+      // Clear any stored data
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Force a hard navigation to sign in page
+      window.location.replace('/auth/signin');
       
     } catch (error) {
-      console.error('Error signing out:', error);
-      throw error;
+      console.error('Error in sign out process:', error);
+      // Even if there's an error, try to redirect to sign in
+      window.location.replace('/auth/signin');
     }
   };
 

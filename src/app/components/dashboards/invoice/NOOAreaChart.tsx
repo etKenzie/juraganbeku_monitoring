@@ -51,7 +51,6 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   // Process data to get first orders per store and group by area
   const areaData = React.useMemo(() => {
     // Find the most recent month
-    let mostRecentMonth = "";
     const allMonths = data.map(order => {
       const [month, year] = order.month.split(' ');
       const monthIndex = new Date(`${month} 1, 2000`).getMonth();
@@ -60,7 +59,12 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
         date: new Date(parseInt(year), monthIndex, 1)
       };
     });
-    mostRecentMonth = allMonths.sort((a, b) => b.date.getTime() - a.date.getTime())[0].month;
+    
+    // Add safety check for empty data
+    let mostRecentMonth = "";
+    if (allMonths.length > 0) {
+      mostRecentMonth = allMonths.sort((a, b) => b.date.getTime() - a.date.getTime())[0].month;
+    }
     console.log('NOOAreaChart most recent month:', mostRecentMonth);
 
     // First, get the first order date for each store

@@ -170,12 +170,25 @@ export default function Dashboard() {
 
   const handleApplyFilters = async () => {
     try {
+      let AREA = area;
+      if (role?.includes("tangerang")) {
+        AREA = "TANGERANG"
+      }
+      if (role?.includes("surabaya")) {
+        AREA = "SURABAYA"
+      }
+      if (role?.includes("jakarta")) {
+        AREA = "JAKARTA"
+      }
+      console.log(role)
+
+
       await Promise.all([
         dispatch(
           fetchOrders({
             sortTime,
             month: dateRange.month,
-            area: area,
+            area: AREA,
             segment: segment,
           })
         ),
@@ -238,7 +251,8 @@ export default function Dashboard() {
   if (loading) {
     return <Loading />;
   }
-  console.log(nooData);
+
+  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya"].some(r => role?.includes(r));
 
   return (
     <PageContainer
@@ -246,7 +260,7 @@ export default function Dashboard() {
       description="Invoice dashboard with analytics"
     >
       <>
-        {role !== "admin" ? (
+        {!hasAccess ? (
           <Box
             display="flex"
             justifyContent="center"

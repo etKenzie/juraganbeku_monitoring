@@ -26,6 +26,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
@@ -52,6 +53,8 @@ const foundByOptions = ['HARITZ', 'ZAHRO', 'MARDI', 'ADRIL', 'KENZIE'];
 const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [newFollowUp, setNewFollowUp] = useState<Omit<FollowUp, 'id' | 'lead_id' | 'created_at' | 'updated_at'>>({
     date: new Date().toISOString().split('T')[0],
     status: "tersambung",
@@ -206,22 +209,23 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
     }
   };
 
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h6">Lead Details</Typography>
-            <Typography variant="subtitle1">{lead.brand_name}</Typography>
-          </Box>
-          {/* <Button
-            variant="contained"
-            color="error"
-            onClick={handleDeleteLead}
-            startIcon={<DeleteIcon />}
-          >
+          <Typography variant="h6">Lead Details</Typography>
+          <Button color="error" onClick={handleDeleteLead}>
             Delete Lead
-          </Button> */}
+          </Button>
         </Box>
       </DialogTitle>
       <DialogContent>
@@ -229,20 +233,78 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
           <Typography variant="h6" gutterBottom>Lead Information</Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Typography><strong>Brand Name:</strong> {lead.brand_name}</Typography>
-              <Typography><strong>Company Name:</strong> {lead.company_name}</Typography>
-              <Typography><strong>Contact Person:</strong> {lead.contact_person}</Typography>
-              <Typography><strong>Phone:</strong> {lead.phone}</Typography>
-              <Typography><strong>Email:</strong> {lead.email}</Typography>
-              <Typography><strong>Area:</strong> {lead.area}</Typography>
+              <Typography variant="subtitle2">Brand Name</Typography>
+              <Typography>{lead.brand_name}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography><strong>Source:</strong> {lead.source}</Typography>
-              <Typography><strong>Category:</strong> {lead.lead_category}</Typography>
-              <Typography><strong>Branch Count:</strong> {lead.branch_count}</Typography>
-              <Typography><strong>Services:</strong> {lead.service.join(', ')}</Typography>
-              <Typography><strong>Outlet Types:</strong> {lead.outlet_type.join(', ')}</Typography>
-              <Typography><strong>Found By:</strong> {lead.found_by.join(', ')}</Typography>
+              <Typography variant="subtitle2">Company Name</Typography>
+              <Typography>{lead.company_name}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Contact Person</Typography>
+              <Typography>{lead.contact_person}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Phone</Typography>
+              <Typography>{lead.phone}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Email</Typography>
+              <Typography>{lead.email}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Area</Typography>
+              <Typography>{lead.area}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Source</Typography>
+              <Typography>{lead.source}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Category</Typography>
+              <Typography>{lead.lead_category}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Status</Typography>
+              <Typography>{lead.lead_status}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Branch Count</Typography>
+              <Typography>{lead.branch_count}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2">Priority</Typography>
+              <Typography>{lead.priority}</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2">Services</Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                {lead.service.map((service) => (
+                  <Chip key={service} label={service} size="small" />
+                ))}
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2">Outlet Types</Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                {lead.outlet_type.map((type) => (
+                  <Chip key={type} label={type} size="small" />
+                ))}
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2">Found By</Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                {lead.found_by.map((name) => (
+                  <Chip key={name} label={name} size="small" />
+                ))}
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2">Memo</Typography>
+              <Paper sx={{ p: 2, mt: 1, bgcolor: 'background.default' }}>
+                <Typography>{lead.memo || 'No memo available'}</Typography>
+              </Paper>
             </Grid>
           </Grid>
         </Box>
@@ -358,43 +420,65 @@ const FollowUpsDialog = ({ open, onClose, lead }: FollowUpsDialogProps) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {followUps.map((followUp) => (
-                <TableRow key={followUp.id}>
-                  <TableCell>{new Date(followUp.date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={followUp.status}
-                      color={getStatusColor(followUp.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-                      {followUp.followed_by.map((name) => (
-                        <Chip key={name} label={name} size="small" />
-                      ))}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{followUp.memo}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => setEditingFollowUp(followUp)}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeleteFollowUp(followUp.id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {followUps
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((followUp) => (
+                  <TableRow key={followUp.id}>
+                    <TableCell>{new Date(followUp.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={followUp.status}
+                        color={getStatusColor(followUp.status)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                        {followUp.followed_by.map((name) => (
+                          <Chip key={name} label={name} size="small" />
+                        ))}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{followUp.memo}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditingFollowUp(followUp)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteFollowUp(followUp.id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={followUps.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            sx={{
+              '.MuiTablePagination-select': {
+                paddingRight: '32px'
+              },
+              '.MuiTablePagination-selectLabel': {
+                margin: 0
+              },
+              '.MuiTablePagination-displayedRows': {
+                margin: 0
+              }
+            }}
+          />
         </TableContainer>
       </DialogContent>
       <DialogActions>

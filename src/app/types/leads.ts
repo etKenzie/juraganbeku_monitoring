@@ -1,24 +1,25 @@
 export type LeadStatus = 'CLOSED' | 'CURRENT' | 'SUCCESS';
 
 export interface Lead {
-  id: number;
-  source: string;
+  id: string;
+  brand_name: string;
   company_name: string;
   contact_person: string;
-  area: string;
   phone: string;
   email: string;
+  area: string;
+  source: string;
   lead_category: string;
+  lead_status: LeadStatus;
+  order_status: LeadStatus;
   branch_count: number;
-  deadline: string;
-  memo: string;
-  date_added: string;
-  found_by: string[];
   service: string[];
   outlet_type: string[];
   priority: string;
-  brand_name: string;
-  lead_status: LeadStatus;
+  found_by: string[];
+  memo: string;
+  date_added: string;
+  deadline: string;
 }
 
 export interface FollowUp {

@@ -5,31 +5,31 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Delete as DeleteIcon, Edit as EditIcon, Search as SearchIcon } from "@mui/icons-material";
 import {
-    Box,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    Grid,
-    IconButton,
-    InputAdornment,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TableSortLabel,
-    TextField,
-    Typography
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TableSortLabel,
+  TextField,
+  Typography
 } from "@mui/material";
 import React, { useState } from "react";
 import AddLeadDialog from "./AddLeadDialog";
@@ -46,6 +46,7 @@ interface HeadCell {
 }
 
 const headCells: HeadCell[] = [
+  { id: "date_added", label: "Entry Date", numeric: false },
   { id: "brand_name", label: "Brand Name", numeric: false },
   { id: "company_name", label: "Company Name", numeric: false },
   { id: "contact_person", label: "Contact Person", numeric: false },
@@ -60,9 +61,7 @@ const headCells: HeadCell[] = [
   { id: "outlet_type", label: "Outlet Types", numeric: false },
   { id: "priority", label: "Priority", numeric: true },
   { id: "found_by", label: "Found By", numeric: false },
-  { id: "date_added", label: "Entry Date", numeric: false },
-  { id: "deadline", label: "Deadline", numeric: false },
-  { id: "memo", label: "Memo", numeric: false },
+  { id: "deadline", label: "Deadline", numeric: false }
 ];
 
 interface LeadsTableProps {
@@ -94,6 +93,8 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "">("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -170,6 +171,10 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
     const matchesFoundBy = foundByFilter ? lead.found_by?.includes(foundByFilter) : true;
     const matchesStatus = statusFilter ? lead.lead_status === statusFilter : true;
 
+    const leadDate = new Date(lead.date_added);
+    const matchesStartDate = startDate ? leadDate >= new Date(startDate) : true;
+    const matchesEndDate = endDate ? leadDate <= new Date(endDate) : true;
+
     return matchesSearch && 
            matchesService && 
            matchesOutletType && 
@@ -177,7 +182,9 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
            matchesCategory && 
            matchesArea && 
            matchesFoundBy &&
-           matchesStatus;
+           matchesStatus &&
+           matchesStartDate &&
+           matchesEndDate;
   });
 
   const uniqueAreas = leads.reduce<string[]>((acc, lead) => {
@@ -251,19 +258,25 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
 
   const handleAddLead = async (newLead: Lead | Omit<Lead, 'id'>) => {
     try {
-      if ('id' in newLead) {
+      // Ensure lead_status is set
+      const leadWithStatus = {
+        ...newLead,
+        lead_status: newLead.lead_status || 'CURRENT'
+      };
+
+      if ('id' in leadWithStatus) {
         // This is an edit operation
         const { error } = await supabase
           .from('leads')
-          .update(newLead)
-          .eq('id', newLead.id);
+          .update(leadWithStatus)
+          .eq('id', leadWithStatus.id);
 
         if (error) throw error;
       } else {
         // This is an add operation
         const { error } = await supabase
           .from('leads')
-          .insert([newLead]);
+          .insert([leadWithStatus]);
 
         if (error) throw error;
       }
@@ -399,7 +412,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Area</InputLabel>
             <Select
@@ -416,7 +429,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Found By</InputLabel>
             <Select
@@ -433,14 +446,13 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
           <FormControl fullWidth>
             <InputLabel>Status</InputLabel>
             <Select
               value={statusFilter}
               label="Status"
               onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "")}
-              size="small"
             >
               <MenuItem value="">All</MenuItem>
               <MenuItem value="CLOSED">Closed</MenuItem>
@@ -449,7 +461,27 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
+          <TextField
+            fullWidth
+            label="Start Date"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <TextField
+            fullWidth
+            label="End Date"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
           <Button
             fullWidth
             variant="contained"
@@ -479,7 +511,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                   </TableSortLabel>
                 </TableCell>
               ))}
-              {role === "admin" && <TableCell>Actions</TableCell>}
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -495,6 +527,7 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                     setFollowUpsOpen(true);
                   }}
                 >
+                  <TableCell>{formatDate(lead.date_added)}</TableCell>
                   <TableCell>{lead.brand_name}</TableCell>
                   <TableCell>{lead.company_name}</TableCell>
                   <TableCell>{lead.contact_person}</TableCell>
@@ -551,31 +584,27 @@ const LeadsTable = ({ leads, onEdit, onDelete }: LeadsTableProps) => {
                       ))}
                     </Box>
                   </TableCell>
-                  <TableCell>{formatDate(lead.date_added)}</TableCell>
                   <TableCell>{lead.deadline ? formatDate(lead.deadline) : '-'}</TableCell>
-                  <TableCell>{lead.memo}</TableCell>
-                  {role === 'admin' && (
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingLead(lead);
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={(e) => handleDeleteClick(e, lead)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingLead(lead);
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => handleDeleteClick(e, lead)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
                 </TableRow>
               ))}
           </TableBody>
