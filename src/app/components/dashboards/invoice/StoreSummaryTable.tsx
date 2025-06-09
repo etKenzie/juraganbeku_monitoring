@@ -1,24 +1,30 @@
 "use client";
 import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
 import DownloadButton from "@/app/components/common/DownloadButton";
+import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from "@mui/icons-material/Search";
 import {
-    Box,
-    Grid,
-    InputAdornment,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TableSortLabel,
-    TextField,
-    Typography,
+  Box,
+  Checkbox,
+  Collapse,
+  FormControlLabel,
+  FormGroup,
+  Grid,
+  IconButton,
+  InputAdornment,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TableSortLabel,
+  TextField,
+  Typography,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import StoreDetailsModal from './StoreDetailsModal';
 
 type Order = "asc" | "desc";
@@ -60,7 +66,28 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
   const [selectedStore, setSelectedStore] = useState<StoreSummary | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  
+  const [showMonthFilter, setShowMonthFilter] = useState(false);
+  const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set());
+
+  // Get all unique months from all stores
+  const allMonths = useMemo(() => {
+    const months = new Set<string>();
+    Object.values(storeSummaries).forEach(store => {
+      store.activeMonths.forEach(month => months.add(month));
+    });
+    return Array.from(months).sort();
+  }, [storeSummaries]);
+
+  const handleMonthChange = (month: string) => {
+    const newSelectedMonths = new Set(selectedMonths);
+    if (newSelectedMonths.has(month)) {
+      newSelectedMonths.delete(month);
+    } else {
+      newSelectedMonths.add(month);
+    }
+    setSelectedMonths(newSelectedMonths);
+    setPage(0); // Reset to first page when filter changes
+  };
 
   const handleRequestSort = (property: keyof DisplayStoreSummary) => {
     const isAsc = orderBy === property && order === "asc";
@@ -83,12 +110,24 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
 
   const filteredStores = Object.entries(storeSummaries)
     .filter(([_, summary]) => {
+      // Text search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        return (
-          summary.storeName.toLowerCase().includes(query)
-        );
+        if (!summary.storeName.toLowerCase().includes(query)) {
+          return false;
+        }
       }
+
+      // Month filter
+      if (selectedMonths.size > 0) {
+        // Check if store has ALL selected months
+        for (const month of Array.from(selectedMonths)) {
+          if (!summary.activeMonths.has(month)) {
+            return false;
+          }
+        }
+      }
+
       return true;
     })
     .map(([id, summary]) => ({
@@ -130,14 +169,43 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Store Summary</Typography>
-        <DownloadButton
-          data={filteredStores}
-          filename="store_summary"
-          sheetName="Store Summary"
-          variant="outlined"
-          size="small"
-        />
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <IconButton 
+            onClick={() => setShowMonthFilter(!showMonthFilter)}
+            color={selectedMonths.size > 0 ? "primary" : "default"}
+          >
+            <FilterListIcon />
+          </IconButton>
+          <DownloadButton
+            data={filteredStores}
+            filename="store_summary"
+            sheetName="Store Summary"
+            variant="outlined"
+            size="small"
+          />
+        </Box>
       </Box>
+
+      <Collapse in={showMonthFilter}>
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Filter by Active Months</Typography>
+          <FormGroup row>
+            {allMonths.map((month) => (
+              <FormControlLabel
+                key={month}
+                control={
+                  <Checkbox
+                    checked={selectedMonths.has(month)}
+                    onChange={() => handleMonthChange(month)}
+                  />
+                }
+                label={month}
+              />
+            ))}
+          </FormGroup>
+        </Box>
+      </Collapse>
+
       <Grid container spacing={2} mb={3}>
         <Grid item xs={12}>
           <TextField

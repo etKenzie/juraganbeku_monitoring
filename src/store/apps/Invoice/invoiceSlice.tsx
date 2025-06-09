@@ -65,6 +65,7 @@ export interface OrderData {
   reseller_name: string;
   store_name: string;
   segment: string;
+  business_type: string;
   user_id: string;
   process_hub: string;
   total_invoice: number;

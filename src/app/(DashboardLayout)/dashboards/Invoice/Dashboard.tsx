@@ -17,6 +17,7 @@ import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import PaymentDistributionChart from "@/app/components/dashboards/invoice/PaymentDistributionChart";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
+import SegmentPerformanceChart from "@/app/components/dashboards/invoice/SegmentPerformanceChart";
 import StoreMetrics from "@/app/components/dashboards/invoice/StoreMetrics";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +35,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { ProcessedData } from "./types";
+import { AreaData, ProcessedData } from "./types";
 
 interface StoreSummary {
   storeName: string;
@@ -44,6 +45,10 @@ interface StoreSummary {
   averageOrderValue: number;
   activeMonths: Set<string>;
   orders: OrderData[];
+}
+
+interface ExtendedAreaData extends AreaData {
+  activeMonths: Set<string>;
 }
 
 interface PaymentStatusMetrics {
@@ -93,9 +98,7 @@ export default function Dashboard() {
   }, [orders]);
 
   const { processData } = useInvoiceData();
-  const [processedData, setProcessedData] = useState<ProcessedData | null>(
-    null
-  );
+  const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
   const [isDataEmpty, setIsDataEmpty] = useState(false);
 
   const [period, setPeriod] = useState("thisYear");
@@ -287,7 +290,7 @@ export default function Dashboard() {
                     onChange={(e) => setPeriod(e.target.value)}
                     label="Time Period"
                   >
-                    <MenuItem value="thisYear">This Year</MenuItem>
+                    <MenuItem value="thisYear">This Month</MenuItem>
                     <MenuItem value="custom">Custom Month</MenuItem>
                   </Select>
                 </FormControl>
@@ -524,6 +527,16 @@ export default function Dashboard() {
                   <Box mb={4}>
                     <AreaChart
                       areaData={processedData.areaSummaries}
+                      selectedMonths={dateRange.month}
+                    />
+                  </Box>
+                )}
+
+                {/* Segment Performance Chart */}
+                {processedData && Object.keys(processedData.segmentSummaries).length > 0 && (
+                  <Box mb={4}>
+                    <SegmentPerformanceChart
+                      segmentData={processedData.segmentSummaries}
                       selectedMonths={dateRange.month}
                     />
                   </Box>

@@ -73,6 +73,7 @@ export const useInvoiceData = () => {
         categorySummaries: {},
         storeSummaries: {},
         areaSummaries: {},
+        segmentSummaries: {},
         overallTOP: 0,
         overallCOD: 0,
         overallProfit: 0,
@@ -113,6 +114,7 @@ export const useInvoiceData = () => {
       categorySummaries: {},
       storeSummaries: {},
       areaSummaries: {},
+      segmentSummaries: {},
       overallTOP: 0,
       overallCOD: 0,
       overallProfit: 0,
@@ -297,6 +299,48 @@ export const useInvoiceData = () => {
 
         if (order.profit > 0) {
           areaSummary.totalProfit += order.profit;
+        }
+
+        // Process segment data for most recent month
+        const business_type = order.business_type || 'OTHER';
+        if (!result.segmentSummaries) {
+          result.segmentSummaries = {};
+        }
+        if (!result.segmentSummaries[business_type]) {
+          result.segmentSummaries[business_type] = {
+            name: business_type,
+            totalOrders: 0,
+            totalInvoice: 0,
+            totalProfit: 0,
+            totalCOD: 0,
+            totalTOP: 0,
+            totalLunas: 0,
+            totalBelumLunas: 0,
+            orders: [],
+            activeMonths: new Set(),
+          };
+        }
+
+        const segmentSummary = result.segmentSummaries[business_type];
+        segmentSummary.totalOrders++;
+        segmentSummary.totalInvoice += order.total_invoice || 0;
+        segmentSummary.orders.push(order);
+        segmentSummary.activeMonths.add(processedMonthKey);
+
+        if (order.payment_type === 'COD') {
+          segmentSummary.totalCOD += order.total_invoice || 0;
+        } else if (order.payment_type === 'TOP') {
+          segmentSummary.totalTOP += order.total_invoice || 0;
+        }
+
+        if (order.status_payment === 'LUNAS') {
+          segmentSummary.totalLunas += order.total_invoice || 0;
+        } else {
+          segmentSummary.totalBelumLunas += order.total_invoice || 0;
+        }
+
+        if (order.profit > 0) {
+          segmentSummary.totalProfit += order.profit;
         }
 
         // Process due date status for most recent month
