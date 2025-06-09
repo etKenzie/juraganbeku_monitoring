@@ -71,10 +71,21 @@ export default function PendingDashboard() {
 
   const handleApplyFilters = async () => {
     try {
+      let AREA = area;
+      if (role?.includes("tangerang")) {
+        AREA = "TANGERANG"
+      }
+      if (role?.includes("surabaya")) {
+        AREA = "SURABAYA"
+      }
+      if (role?.includes("jakarta")) {
+        AREA = "JAKARTA"
+      }
+     
       await dispatch(
         fetchOrders({
           sortTime,
-          area: area,
+          area: AREA,
           segment: segment,
           payment: "BELUM LUNAS, PARTIAL, WAITING VALIDATION BY FINANCE"
         })
@@ -193,7 +204,7 @@ export default function PendingDashboard() {
   if (loading) {
     return <Loading />;
   }
-  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya"].some(r => role?.includes(r));
+  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya", "dashboard"].some(r => role?.includes(r));
 
   return (
     <PageContainer title="Pending Invoices Dashboard" description="Dashboard for pending invoices">

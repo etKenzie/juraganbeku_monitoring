@@ -252,7 +252,7 @@ export default function Dashboard() {
     return <Loading />;
   }
 
-  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya"].some(r => role?.includes(r));
+  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya", "dashboard"].some(r => role?.includes(r));
 
   return (
     <PageContainer

@@ -7,6 +7,7 @@ import MonthlyFollowUpsChart from "@/app/components/dashboards/leads/MonthlyFoll
 import MonthlyLeadsChart from "@/app/components/dashboards/leads/MonthlyLeadsChart";
 import OrderStatusChart from "@/app/components/dashboards/leads/OrderStatusChart";
 import { FollowUp, Lead } from "@/app/types/leads";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Box, Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
@@ -128,64 +129,77 @@ const LeadsPage = () => {
       </PageContainer>
     );
   }
+  const { role } = useAuth();
+
+  const hasAccess = ["leads", "admin"].some(r => role?.includes(r));
 
   return (
     <PageContainer title="Leads Management" description="Manage your leads">
-      <Box sx={{ 
-        height: '100%', 
-        display: 'flex', 
-        flexDirection: 'column',
-        width: '100%',
-        overflow: 'hidden'
-      }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          mb: 3,
-          width: '100%'
-        }}>
-          <Typography variant="h4">Leads</Typography>
+      {!hasAccess ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="60vh"
+        >
+          <Typography variant="h5" color="error">
+            You don't have access to this page.
+          </Typography>
         </Box>
-
-        {/* Charts Section */}
-        <Grid container spacing={3} sx={{ mb: 3, width: '100%' }}>
-          <Grid item xs={12}>
-            <OrderStatusChart data={leads} />
-          </Grid>
-          <Grid item xs={12}>
-            <MonthlyLeadsChart data={leads} />
-          </Grid>
-          <Grid item xs={12}>
-            <MonthlyFollowUpsChart data={followUps} />
-          </Grid>
-          {/* <Grid item xs={12}>
-            <LeadSourceChart data={sourceData} />
-          </Grid> */}
-        </Grid>
-
-        {/* Table Section */}
+      ) : (
         <Box sx={{ 
-          flex: 1,
-          width: '100%',
-          overflow: 'hidden',
-          display: 'flex',
+          height: '100%', 
+          display: 'flex', 
           flexDirection: 'column',
-          gap: 3
+          width: '100%',
+          overflow: 'hidden'
         }}>
-          <FollowUpsTable />
-          <LeadsTable 
-            leads={leads} 
-            onEdit={handleEditLead}
-            onDelete={handleDeleteLead}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            mb: 3,
+            width: '100%'
+          }}>
+            <Typography variant="h4">Leads</Typography>
+          </Box>
+
+          {/* Charts Section */}
+          <Grid container spacing={3} sx={{ mb: 3, width: '100%' }}>
+            <Grid item xs={12}>
+              <OrderStatusChart data={leads} />
+            </Grid>
+            <Grid item xs={12}>
+              <MonthlyLeadsChart data={leads} />
+            </Grid>
+            <Grid item xs={12}>
+              <MonthlyFollowUpsChart data={followUps} />
+            </Grid>
+          </Grid>
+
+          {/* Table Section */}
+          <Box sx={{ 
+            flex: 1,
+            width: '100%',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3
+          }}>
+            <FollowUpsTable />
+            <LeadsTable 
+              leads={leads} 
+              onEdit={handleEditLead}
+              onDelete={handleDeleteLead}
+            />
+          </Box>
+
+          <AddLeadDialog 
+            open={open} 
+            onClose={() => setOpen(false)} 
+            onAdd={handleAddLead} 
           />
         </Box>
-
-        <AddLeadDialog 
-          open={open} 
-          onClose={() => setOpen(false)} 
-          onAdd={handleAddLead} 
-        />
-      </Box>
+      )}
     </PageContainer>
   );
 };
