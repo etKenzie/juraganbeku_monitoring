@@ -11,7 +11,6 @@ export interface Lead {
   source: string;
   lead_category: string;
   lead_status: LeadStatus;
-  order_status: LeadStatus;
   branch_count: number;
   service: string[];
   outlet_type: string[];

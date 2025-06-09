@@ -1,21 +1,21 @@
 "use client";
 import { Lead } from "@/app/types/leads";
 import {
-  Button,
-  Checkbox,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  FormControlLabel,
-  FormGroup,
-  FormLabel,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField
+    Button,
+    Checkbox,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    FormControlLabel,
+    FormGroup,
+    FormLabel,
+    Grid,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
 import { useEffect, useState } from "react";
@@ -60,8 +60,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
     memo: initialData?.memo || '',
     date_added: initialData?.date_added || new Date().toISOString().split('T')[0],
     deadline: initialData?.deadline || '',
-    lead_status: initialData?.lead_status || 'CURRENT',
-    order_status: initialData?.order_status || 'CURRENT'
+    lead_status: initialData?.lead_status || 'CURRENT'
   }));
 
   // Reset form data when initialData changes
@@ -83,8 +82,7 @@ const AddLeadDialog = ({ open, onClose, onAdd, initialData }: AddLeadDialogProps
       memo: initialData?.memo || '',
       date_added: initialData?.date_added || new Date().toISOString().split('T')[0],
       deadline: initialData?.deadline || '',
-      lead_status: initialData?.lead_status || 'CURRENT',
-      order_status: initialData?.order_status || 'CURRENT'
+      lead_status: initialData?.lead_status || 'CURRENT'
     });
   }, [initialData]);
 

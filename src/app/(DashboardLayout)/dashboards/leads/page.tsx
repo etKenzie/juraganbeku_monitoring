@@ -13,11 +13,14 @@ import { Box, Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 
 const LeadsPage = () => {
+  const { role } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const hasAccess = ["leads", "admin"].some(r => role?.includes(r));
 
   const fetchLeads = async () => {
     try {
@@ -129,9 +132,6 @@ const LeadsPage = () => {
       </PageContainer>
     );
   }
-  const { role } = useAuth();
-
-  const hasAccess = ["leads", "admin"].some(r => role?.includes(r));
 
   return (
     <PageContainer title="Leads Management" description="Manage your leads">
