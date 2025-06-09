@@ -420,7 +420,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((order) => (
                 <TableRow 
-                  key={order.order_id}
+                  key={`${order.order_id}-${order.order_code}`}
                   onClick={() => handleRowClick(order)}
                   sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}
                 >

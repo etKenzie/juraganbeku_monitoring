@@ -137,29 +137,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setRole(null);
 
-      // Try to sign out from Supabase, but don't throw if it fails
-      try {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          console.warn('Supabase sign out error:', error);
-        }
-      } catch (error) {
-        console.warn('Error during Supabase sign out:', error);
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.warn('Supabase sign out error:', error);
       }
-  
-      console.log('Sign out successful');
+
+      // Clear all cookies and storage
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
       
-      // Clear any stored data
       localStorage.clear();
       sessionStorage.clear();
+
+      // Clear any remaining Supabase session
+      await supabase.auth.getSession();
       
-      // Force a hard navigation to sign in page
-      window.location.replace('/auth/signin');
+      console.log('Sign out successful');
+      
+      // Force a hard navigation to sign in page with cache busting
+      window.location.href = '/auth/signin?t=' + new Date().getTime();
       
     } catch (error) {
       console.error('Error in sign out process:', error);
-      // Even if there's an error, try to redirect to sign in
-      window.location.replace('/auth/signin');
+      // Even if there's an error, try to redirect to sign in with cache busting
+      window.location.href = '/auth/signin?t=' + new Date().getTime();
     }
   };
 
