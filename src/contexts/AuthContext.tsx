@@ -143,12 +143,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.warn('Supabase sign out error:', error);
       }
 
-      // Clear all cookies and storage
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      // More thorough cookie deletion
+      const deleteCookie = (name: string, path: string = '/', domain: string = '') => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${domain ? `; domain=${domain}` : ''}`;
+      };
+
+      // Delete all possible Supabase cookies
+      const cookieNames = [
+        'sb-access-token',
+        'sb-refresh-token',
+        'sb-provider-token',
+        'sb-auth-token',
+        'sb-user-id',
+        'sb-user-role',
+        'sb-user-session'
+      ];
+
+      // Delete cookies for current domain
+      cookieNames.forEach(name => {
+        deleteCookie(name);
+        deleteCookie(name, '/');
       });
+
+      // Delete cookies for subdomains if any
+      const hostname = window.location.hostname;
+      if (hostname.includes('.')) {
+        const domain = hostname.split('.').slice(-2).join('.');
+        cookieNames.forEach(name => {
+          deleteCookie(name, '/', `.${domain}`);
+        });
+      }
       
       localStorage.clear();
       sessionStorage.clear();
