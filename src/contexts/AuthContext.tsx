@@ -89,43 +89,61 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [router, supabase]);
 
   const signIn = async (email: string, password: string) => {
-    try {
-      console.log('Attempting to sign in...');
-      if (!supabase) {
-        console.error('Supabase client not initialized');
-        throw new Error('Authentication service not available');
-      }
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: any = null;
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error('Supabase auth error:', error);
-        throw error;
-      }
-      
-      console.log('Sign in successful:', data);
-      
-      if (data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
-        const userRole = await fetchUserRole(data.session.user.id);
-        setRole(userRole);
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting to sign in... (Attempt ${retryCount + 1}/${maxRetries})`);
+        if (!supabase) {
+          console.error('Supabase client not initialized');
+          throw new Error('Authentication service not available');
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         
-        // Wait for session to be properly set
-        await supabase.auth.getSession();
+        if (error) {
+          console.error('Supabase auth error:', error);
+          throw error;
+        }
         
-        // Force a hard navigation to the dashboard
-        window.location.href = DASHBOARD_PATH;
-      } else {
-        throw new Error('No session data received');
+        console.log('Sign in successful:', data);
+        
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+          const userRole = await fetchUserRole(data.session.user.id);
+          setRole(userRole);
+          
+          // Wait for session to be properly set
+          await supabase.auth.getSession();
+          
+          // Force a hard navigation to the dashboard
+          window.location.href = DASHBOARD_PATH;
+          return; // Success, exit the function
+        } else {
+          throw new Error('No session data received');
+        }
+      } catch (error) {
+        lastError = error;
+        retryCount++;
+        
+        if (retryCount < maxRetries) {
+          // Wait before retrying (exponential backoff)
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-    } catch (error) {
-      console.error('Error signing in:', error);
-      throw error;
     }
+
+    // If we've exhausted all retries, throw the last error
+    console.error('All sign-in attempts failed:', lastError);
+    throw lastError;
   };
 
   const signOut = async () => {

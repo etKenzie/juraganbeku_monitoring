@@ -3,6 +3,8 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+const TIMEOUT_DURATION = 10000; // 10 seconds
+
 export async function middleware(req: NextRequest) {
   try {
     // Create a response object that we'll modify
@@ -27,16 +29,34 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Refresh session if expired - this will update the session cookie if needed
+    // Add timeout handling for session refresh
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Session refresh timeout')), TIMEOUT_DURATION);
+    });
+
     const {
       data: { session },
       error: sessionError
-    } = await supabase.auth.getSession();
+    } = await Promise.race([sessionPromise, timeoutPromise]) as any;
 
     if (sessionError) {
       console.error('Middleware session error:', sessionError);
-      // If there's a session error, redirect to signin
+      
+      // If it's a timeout error, try to continue without session
+      if (sessionError.message === 'Session refresh timeout') {
+        console.warn('Session refresh timed out, continuing without session');
+        if (!isPublicRoute) {
+          const redirectUrl = new URL('/auth/signin', req.url);
+          redirectUrl.searchParams.set('error', 'timeout');
+          return NextResponse.redirect(redirectUrl);
+        }
+        return res;
+      }
+
+      // For other errors, redirect to signin
       const redirectUrl = new URL('/auth/signin', req.url);
+      redirectUrl.searchParams.set('error', 'session_error');
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -54,8 +74,9 @@ export async function middleware(req: NextRequest) {
 
   } catch (e) {
     console.error('Middleware error:', e);
-    // On error, redirect to signin
+    // On error, redirect to signin with error parameter
     const redirectUrl = new URL('/auth/signin', req.url);
+    redirectUrl.searchParams.set('error', 'middleware_error');
     return NextResponse.redirect(redirectUrl);
   }
 }
