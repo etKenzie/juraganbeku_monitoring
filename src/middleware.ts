@@ -29,16 +29,34 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Add timeout handling for session refresh
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Session refresh timeout')), TIMEOUT_DURATION);
-    });
+    // Try to get the session with retries
+    let session = null;
+    let sessionError = null;
+    const maxRetries = 3;
 
-    const {
-      data: { session },
-      error: sessionError
-    } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Session refresh timeout')), TIMEOUT_DURATION);
+        });
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        session = result.data.session;
+        break;
+      } catch (error: any) {
+        sessionError = error;
+        // If it's a refresh token error, break immediately
+        if (error?.code === 'refresh_token_not_found') {
+          break;
+        }
+        // For other errors, retry with exponential backoff
+        if (i < maxRetries - 1) {
+          const delay = Math.min(1000 * Math.pow(2, i), 5000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
 
     // If we're on a public route and have a session, redirect to home
     if (session && path.startsWith('/auth/')) {
@@ -51,6 +69,9 @@ export async function middleware(req: NextRequest) {
       const redirectUrl = new URL('/auth/signin', req.url);
       // Add a timestamp to prevent caching
       redirectUrl.searchParams.set('t', Date.now().toString());
+      if (sessionError?.code === 'refresh_token_not_found') {
+        redirectUrl.searchParams.set('error', 'session_expired');
+      }
       return NextResponse.redirect(redirectUrl);
     }
 
