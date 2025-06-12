@@ -130,15 +130,18 @@ export default function Dashboard() {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
+    // Helper function to get English month name
+    const getEnglishMonthName = (date: Date) => {
+      return date.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+    };
+
     switch (period) {
       case "thisYear":
         // For this year, show all months of current year
         const months = [];
         for (let i = 0; i < 12; i++) {
           const monthDate = new Date(currentYear, i, 1);
-          const monthName = monthDate
-            .toLocaleString("default", { month: "long" })
-            .toLowerCase();
+          const monthName = getEnglishMonthName(monthDate);
           months.push(`${monthName} ${currentYear}`);
         }
         return {
@@ -149,9 +152,7 @@ export default function Dashboard() {
         const customMonths = [];
         for (let i = -2; i <= 0; i++) {
           const monthDate = new Date(customYear, customMonth + i, 1);
-          const monthName = monthDate
-            .toLocaleString("default", { month: "long" })
-            .toLowerCase();
+          const monthName = getEnglishMonthName(monthDate);
           customMonths.push(`${monthName} ${monthDate.getFullYear()}`);
         }
         return {
@@ -161,9 +162,7 @@ export default function Dashboard() {
         const defaultMonths = [];
         for (let i = 0; i < 12; i++) {
           const monthDate = new Date(currentYear, i, 1);
-          const monthName = monthDate
-            .toLocaleString("default", { month: "long" })
-            .toLowerCase();
+          const monthName = getEnglishMonthName(monthDate);
           defaultMonths.push(`${monthName} ${currentYear}`);
         }
         return {
@@ -189,7 +188,6 @@ export default function Dashboard() {
       if (role?.includes("jakarta")) {
         AREA = "JAKARTA"
       }
-
 
 
       await Promise.all([
