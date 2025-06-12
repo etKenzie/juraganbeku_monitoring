@@ -250,13 +250,11 @@ export default function Dashboard() {
     }
   }, [processedData]);
 
-  const filteredOrders = validOrders.filter((order) => {
+  let filteredOrders = validOrders.filter((order) => {
     if (selectedArea && order.area !== selectedArea) return false;
 
     const orderDate = new Date(order.order_date);
-    const orderMonth = orderDate
-      .toLocaleString("default", { month: "long" })
-      .toLowerCase();
+    const orderMonth = orderDate.toLocaleString('en-US', { month: 'long' }).toLowerCase();
     const orderYear = orderDate.getFullYear();
     const orderMonthYear = `${orderMonth} ${orderYear}`;
 
