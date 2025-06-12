@@ -65,12 +65,19 @@ export default function PendingDashboard() {
   const [processedData, setProcessedData] = useState<any>(null);
   const [isDataEmpty, setIsDataEmpty] = useState(false);
   const [sortTime, setSortTime] = useState<'asc' | 'desc'>('desc');
-  const [area, setArea] = useState("");
+  const [area, setArea] = useState(() => {
+    if (role?.includes("surabaya")) return "SURABAYA";
+    if (role?.includes("tangerang")) return "TANGERANG";
+    if (role?.includes("jakarta")) return "JAKARTA";
+    return "";
+  });
   const [areas, setAreas] = useState<string[]>([""]);
   const [segment, setSegment] = useState<string>("");
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const handleApplyFilters = async () => {
     try {
+
       let AREA = area;
       if (role?.includes("tangerang")) {
         AREA = "TANGERANG"
@@ -81,6 +88,7 @@ export default function PendingDashboard() {
       if (role?.includes("jakarta")) {
         AREA = "JAKARTA"
       }
+
      
       await dispatch(
         fetchOrders({
@@ -96,10 +104,21 @@ export default function PendingDashboard() {
     }
   };
 
+  useEffect(() => {
+    if (role && !hasInitialized) {
+      if (role.includes("surabaya")) setArea("SURABAYA");
+      else if (role.includes("tangerang")) setArea("TANGERANG");
+      else if (role.includes("jakarta")) setArea("JAKARTA");
+      setHasInitialized(true); // prevent re-setting area
+    }
+  }, [role, hasInitialized]);
+
   // Add initial data fetch when component mounts
   useEffect(() => {
-    handleApplyFilters();
-  }, []); // Empty dependency array means this only runs once on mount
+    if (hasInitialized) {
+      handleApplyFilters();
+    }
+  }, [hasInitialized]);
 
   useEffect(() => {
     if (validOrders && validOrders.length > 0) {

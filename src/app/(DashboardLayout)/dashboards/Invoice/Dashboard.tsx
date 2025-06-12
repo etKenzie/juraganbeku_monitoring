@@ -115,9 +115,15 @@ export default function Dashboard() {
     }>
   >([]);
   const [selectedArea, setSelectedArea] = useState<string>("");
-  const [area, setArea] = useState("");
+  const [area, setArea] = useState(() => {
+    if (role?.includes("surabaya")) return "SURABAYA";
+    if (role?.includes("tangerang")) return "TANGERANG";
+    if (role?.includes("jakarta")) return "JAKARTA";
+    return "";
+  });
   const [areas, setAreas] = useState<string[]>([""]);
   const [segment, setSegment] = useState<string>("");
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const getDateRange = (period: string) => {
     const now = new Date();
@@ -183,7 +189,7 @@ export default function Dashboard() {
       if (role?.includes("jakarta")) {
         AREA = "JAKARTA"
       }
-      console.log(role)
+
 
 
       await Promise.all([
@@ -201,7 +207,7 @@ export default function Dashboard() {
             month: dateRange.month,
             // startDate: "2025-03-01",
             // endDate: "2025-05-30",
-            area: area,
+            area: AREA,
             segment: segment,
           })
         ),
@@ -212,10 +218,21 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    if (role && !hasInitialized) {
+      if (role.includes("surabaya")) setArea("SURABAYA");
+      else if (role.includes("tangerang")) setArea("TANGERANG");
+      else if (role.includes("jakarta")) setArea("JAKARTA");
+      setHasInitialized(true); // prevent re-setting area
+    }
+  }, [role, hasInitialized]);
+
   // Add initial data fetch when component mounts
   useEffect(() => {
-    handleApplyFilters();
-  }, []); // Empty dependency array means this only runs once on mount
+    if (hasInitialized) {
+      handleApplyFilters();
+    }
+  }, [hasInitialized]);
 
   useEffect(() => {
     if (validOrders && validOrders.length > 0) {
@@ -254,6 +271,7 @@ export default function Dashboard() {
   if (loading) {
     return <Loading />;
   }
+
 
   const hasAccess = ["admin", "tangerang", "jakarta", "surabaya", "dashboard"].some(r => role?.includes(r));
 
