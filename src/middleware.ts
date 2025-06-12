@@ -25,8 +25,19 @@ export async function middleware(req: NextRequest) {
 
     // Handle sign-out explicitly
     if (path === '/auth/signout') {
-      const redirectUrl = new URL('/auth/signin', req.url);
-      return NextResponse.redirect(redirectUrl);
+      // Clear all cookies
+      const response = NextResponse.redirect(new URL('/auth/signin', req.url));
+      response.cookies.delete('sb-access-token');
+      response.cookies.delete('sb-refresh-token');
+      response.cookies.delete('sb-provider-token');
+      response.cookies.delete('sb-auth-token');
+      response.cookies.delete('sb-user-id');
+      response.cookies.delete('sb-user-role');
+      response.cookies.delete('sb-user-session');
+      response.cookies.delete('token');
+      response.cookies.delete('refresh_token');
+      response.cookies.delete('brand_id');
+      return response;
     }
 
     // Try to get the session with retries

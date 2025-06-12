@@ -155,43 +155,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setRole(null);
 
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.warn('Supabase sign out error:', error);
+      // Try to sign out from Supabase, but don't throw if it fails
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.warn('Supabase sign out error:', error);
+        }
+      } catch (error) {
+        console.warn('Error during Supabase sign out:', error);
       }
 
-      // More thorough cookie deletion
-      const deleteCookie = (name: string, path: string = '/', domain: string = '') => {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${domain ? `; domain=${domain}` : ''}`;
-      };
+      console.log('Sign out successful');
 
-      // Delete all possible Supabase cookies
-      const cookieNames = [
-        'sb-access-token',
-        'sb-refresh-token',
-        'sb-provider-token',
-        'sb-auth-token',
-        'sb-user-id',
-        'sb-user-role',
-        'sb-user-session'
-      ];
-
-      // Delete cookies for current domain
-      cookieNames.forEach(name => {
-        deleteCookie(name);
-        deleteCookie(name, '/');
+      // Clear all cookies and storage
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
       });
 
-      // Delete cookies for subdomains if any
-      const hostname = window.location.hostname;
-      if (hostname.includes('.')) {
-        const domain = hostname.split('.').slice(-2).join('.');
-        cookieNames.forEach(name => {
-          deleteCookie(name, '/', `.${domain}`);
-        });
-      }
-      
+      // Clear any stored data
       localStorage.clear();
       sessionStorage.clear();
 
@@ -199,10 +182,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.getSession();
       
       console.log('Sign out successful');
-      
+
       // Force a hard navigation to sign in page with cache busting
       window.location.href = '/auth/signin?t=' + new Date().getTime();
-      
+
     } catch (error) {
       console.error('Error in sign out process:', error);
       // Even if there's an error, try to redirect to sign in with cache busting
