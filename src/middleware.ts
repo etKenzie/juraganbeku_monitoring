@@ -40,6 +40,21 @@ export async function middleware(req: NextRequest) {
       error: sessionError
     } = await Promise.race([sessionPromise, timeoutPromise]) as any;
 
+    // If we're on a public route and have a session, redirect to home
+    if (session && path.startsWith('/auth/')) {
+      const redirectUrl = new URL('/', req.url);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // If we're not on a public route and don't have a session, redirect to signin
+    if (!session && !isPublicRoute) {
+      const redirectUrl = new URL('/auth/signin', req.url);
+      // Add a timestamp to prevent caching
+      redirectUrl.searchParams.set('t', Date.now().toString());
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Handle session errors
     if (sessionError) {
       console.error('Middleware session error:', sessionError);
       
@@ -49,6 +64,7 @@ export async function middleware(req: NextRequest) {
         if (!isPublicRoute) {
           const redirectUrl = new URL('/auth/signin', req.url);
           redirectUrl.searchParams.set('error', 'timeout');
+          redirectUrl.searchParams.set('t', Date.now().toString());
           return NextResponse.redirect(redirectUrl);
         }
         return res;
@@ -57,16 +73,7 @@ export async function middleware(req: NextRequest) {
       // For other errors, redirect to signin
       const redirectUrl = new URL('/auth/signin', req.url);
       redirectUrl.searchParams.set('error', 'session_error');
-      return NextResponse.redirect(redirectUrl);
-    }
-
-    if (!session && !isPublicRoute) {
-      const redirectUrl = new URL('/auth/signin', req.url);
-      return NextResponse.redirect(redirectUrl);
-    }
-
-    if (session && path.startsWith('/auth/')) {
-      const redirectUrl = new URL('/', req.url);
+      redirectUrl.searchParams.set('t', Date.now().toString());
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -77,6 +84,7 @@ export async function middleware(req: NextRequest) {
     // On error, redirect to signin with error parameter
     const redirectUrl = new URL('/auth/signin', req.url);
     redirectUrl.searchParams.set('error', 'middleware_error');
+    redirectUrl.searchParams.set('t', Date.now().toString());
     return NextResponse.redirect(redirectUrl);
   }
 }
