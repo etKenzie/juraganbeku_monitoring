@@ -130,10 +130,34 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     return order.detail_order?.some(item => item.buy_price === 0);
   };
 
+  const searchFields = (order: OrderData, query: string): boolean => {
+    if (!query) return true;
+    
+    const searchableFields = [
+      order.order_code,
+      order.reseller_name,
+      order.store_name,
+      order.status_order,
+      order.status_payment,
+      order.payment_type,
+      order.month,
+      order.business_type,
+      order.sub_business_type,
+      calculateDueDateStatus(order.payment_due_date, order.status_payment),
+      formatCurrency(order.total_invoice),
+      formatCurrency(order.profit)
+    ];
+
+    return searchableFields.some(field => 
+      field?.toString().toLowerCase().includes(query.toLowerCase())
+    );
+  };
+
   const filteredOrders = orders.filter((order) => {
     // Exclude CANCEL BY ADMIN orders by default
     if (order.status_order === "CANCEL BY ADMIN") return false;
     
+    // Apply filters
     if (statusOrderFilter && order.status_order !== statusOrderFilter) return false;
     if (statusPaymentFilter && order.status_payment !== statusPaymentFilter) return false;
     if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
@@ -142,26 +166,18 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     
     // Tag filtering
     if (tagFilter) {
-      const hasNegativeProfit = calculateOrderProfit(order) < 0;
+      const hasNegativeProfit = order.profit < 0;
       const hasZeroBuyPrice = order.detail_order?.some(item => item.buy_price === 0);
       
       if (tagFilter === "NEGATIVE_PROFIT" && !hasNegativeProfit) return false;
       if (tagFilter === "ZERO_BUY_PRICE" && !hasZeroBuyPrice) return false;
     }
     
+    // Search functionality
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        order.order_code.toLowerCase().includes(query) ||
-        order.reseller_name.toLowerCase().includes(query) ||
-        order.store_name.toLowerCase().includes(query) ||
-        order.status_order.toLowerCase().includes(query) ||
-        order.status_payment.toLowerCase().includes(query) ||
-        order.payment_type.toLowerCase().includes(query) ||
-        order.month.toLowerCase().includes(query) ||
-        calculateDueDateStatus(order.payment_due_date, order.status_payment).toLowerCase().includes(query)
-      );
+      return searchFields(order, searchQuery);
     }
+    
     return true;
   });
 
@@ -418,9 +434,9 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
           <TableBody>
             {sortedOrders
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((order) => (
+              .map((order, index) => (
                 <TableRow 
-                  key={`${order.order_id}-${order.order_code}`}
+                  key={`${order.order_id}-${order.order_code}-${index}`}
                   onClick={() => handleRowClick(order)}
                   sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}
                 >
@@ -438,9 +454,9 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                   <TableCell align="right">{formatCurrency(order.profit)}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      {getOrderTags(order).map((tag, index) => (
+                      {getOrderTags(order).map((tag, tagIndex) => (
                         <Typography
-                          key={index}
+                          key={`${order.order_id}-tag-${tagIndex}`}
                           sx={{
                             backgroundColor: 'error.main',
                             color: 'white',
@@ -458,6 +474,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                       ))}
                       {hasZeroBuyPrice(order) && (
                         <Typography
+                          key={`${order.order_id}-zbp`}
                           sx={{
                             backgroundColor: 'warning.main',
                             color: 'white',

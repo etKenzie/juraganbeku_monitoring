@@ -26,19 +26,23 @@ interface SegmentPerformanceChartProps {
   isLoading?: boolean;
   segmentData: Record<string, AreaData>;
   selectedMonths: string;
+  subBusinessTypeData: Record<string, AreaData>;
 }
 
 type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP" | "averageInvoice" | "averageProfit";
+type SegmentType = "business_type" | "sub_business_type";
 
 const SegmentPerformanceChart = ({
   isLoading,
   segmentData,
   selectedMonths,
+  subBusinessTypeData,
 }: SegmentPerformanceChartProps) => {
   const theme = useTheme();
   const [selectedSegment, setSelectedSegment] = React.useState<AreaData | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [sortKey, setSortKey] = React.useState<SortKey>("totalInvoice");
+  const [segmentType, setSegmentType] = React.useState<SegmentType>("business_type");
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
@@ -57,9 +61,14 @@ const SegmentPerformanceChart = ({
     setSelectedSegment(null);
   };
 
+  // Get the appropriate data based on segment type
+  const currentSegmentData = segmentType === "business_type" ? segmentData : subBusinessTypeData;
+
   // Sort segments based on selected key
-  const sortedSegments = Object.entries(segmentData)
+  const sortedSegments = Object.entries(currentSegmentData || {})
     .sort(([, a], [, b]) => {
+      if (!a || !b) return 0;
+      
       switch (sortKey) {
         case "totalInvoice":
           return b.totalInvoice - a.totalInvoice;
@@ -83,22 +92,24 @@ const SegmentPerformanceChart = ({
 
   const segments = sortedSegments;
   const values = segments.map((segment) => {
-    const data = segmentData[segment];
+    const data = currentSegmentData?.[segment];
+    if (!data) return 0;
+
     switch (sortKey) {
       case "totalInvoice":
-        return data.totalInvoice;
+        return data.totalInvoice || 0;
       case "totalProfit":
-        return data.totalProfit;
+        return data.totalProfit || 0;
       case "totalOrders":
-        return data.totalOrders;
+        return data.totalOrders || 0;
       case "totalCOD":
-        return data.totalCOD;
+        return data.totalCOD || 0;
       case "totalTOP":
-        return data.totalTOP;
+        return data.totalTOP || 0;
       case "averageInvoice":
-        return data.totalInvoice / data.totalOrders;
+        return data.totalOrders ? (data.totalInvoice || 0) / data.totalOrders : 0;
       case "averageProfit":
-        return data.totalProfit / data.totalOrders;
+        return data.totalOrders ? (data.totalProfit || 0) / data.totalOrders : 0;
       default:
         return 0;
     }
@@ -267,6 +278,15 @@ const SegmentPerformanceChart = ({
                 <IconDownload size={20} />
               </IconButton>
             </Tooltip>
+            <Select
+              value={segmentType}
+              onChange={(e) => setSegmentType(e.target.value as SegmentType)}
+              size="small"
+              sx={{ minWidth: '150px' }}
+            >
+              <MenuItem value="business_type">Business Type</MenuItem>
+              <MenuItem value="sub_business_type">Sub Business Type</MenuItem>
+            </Select>
             <Select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value as SortKey)}

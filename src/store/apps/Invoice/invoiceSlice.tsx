@@ -62,24 +62,24 @@ interface OrderDetail {
 export interface OrderData {
   order_id: string;
   order_code: string;
+  order_date: string;
+  payment_due_date: string;
   reseller_name: string;
   store_name: string;
-  segment: string;
-  business_type: string;
-  user_id: string;
-  process_hub: string;
-  total_invoice: number;
-  total_pembayaran: number;
-  profit: number;
-  month: string;
-  payment_type: string;
   status_order: string;
   status_payment: string;
-  payment_due_date: string;
-  order_date: string;
-  area: string;
-  // due_date_status: string;
+  payment_type: string;
+  total_invoice: number;
+  total_pembayaran: number;
+  user_id: string;
   detail_order: OrderDetail[];
+  area: string;
+  process_hub: string;
+  profit: number;
+  month: string;
+  business_type: string;
+  sub_business_type: string;
+  // ... other existing fields ...
 }
 
 export interface StateType {

@@ -48,6 +48,7 @@ export interface ProcessedData {
   storeSummaries: { [key: string]: StoreSummary };
   areaSummaries: { [key: string]: AreaData };
   segmentSummaries: { [key: string]: AreaData & { activeMonths: Set<string> } };
+  subBusinessTypeSummaries: { [key: string]: AreaData & { activeMonths: Set<string> } };
   overallTOP: number;
   overallCOD: number;
   overallProfit: number;

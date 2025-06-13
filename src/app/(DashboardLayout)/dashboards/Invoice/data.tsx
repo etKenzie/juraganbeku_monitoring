@@ -74,6 +74,7 @@ export const useInvoiceData = () => {
         storeSummaries: {},
         areaSummaries: {},
         segmentSummaries: {},
+        subBusinessTypeSummaries: {},
         overallTOP: 0,
         overallCOD: 0,
         overallProfit: 0,
@@ -115,6 +116,7 @@ export const useInvoiceData = () => {
       storeSummaries: {},
       areaSummaries: {},
       segmentSummaries: {},
+      subBusinessTypeSummaries: {},
       overallTOP: 0,
       overallCOD: 0,
       overallProfit: 0,
@@ -303,9 +305,9 @@ export const useInvoiceData = () => {
 
         // Process segment data for most recent month
         const business_type = order.business_type || 'OTHER';
-        if (!result.segmentSummaries) {
-          result.segmentSummaries = {};
-        }
+        const sub_business_type = order.sub_business_type || 'OTHER';
+
+        // Process business type (segment) data
         if (!result.segmentSummaries[business_type]) {
           result.segmentSummaries[business_type] = {
             name: business_type,
@@ -341,6 +343,44 @@ export const useInvoiceData = () => {
 
         if (order.profit > 0) {
           segmentSummary.totalProfit += order.profit;
+        }
+
+        // Process sub-business type data
+        if (!result.subBusinessTypeSummaries[sub_business_type]) {
+          result.subBusinessTypeSummaries[sub_business_type] = {
+            name: sub_business_type,
+            totalOrders: 0,
+            totalInvoice: 0,
+            totalProfit: 0,
+            totalCOD: 0,
+            totalTOP: 0,
+            totalLunas: 0,
+            totalBelumLunas: 0,
+            orders: [],
+            activeMonths: new Set(),
+          };
+        }
+
+        const subBusinessTypeSummary = result.subBusinessTypeSummaries[sub_business_type];
+        subBusinessTypeSummary.totalOrders++;
+        subBusinessTypeSummary.totalInvoice += order.total_invoice || 0;
+        subBusinessTypeSummary.orders.push(order);
+        subBusinessTypeSummary.activeMonths.add(processedMonthKey);
+
+        if (order.payment_type === 'COD') {
+          subBusinessTypeSummary.totalCOD += order.total_invoice || 0;
+        } else if (order.payment_type === 'TOP') {
+          subBusinessTypeSummary.totalTOP += order.total_invoice || 0;
+        }
+
+        if (order.status_payment === 'LUNAS') {
+          subBusinessTypeSummary.totalLunas += order.total_invoice || 0;
+        } else {
+          subBusinessTypeSummary.totalBelumLunas += order.total_invoice || 0;
+        }
+
+        if (order.profit > 0) {
+          subBusinessTypeSummary.totalProfit += order.profit;
         }
 
         // Process due date status for most recent month

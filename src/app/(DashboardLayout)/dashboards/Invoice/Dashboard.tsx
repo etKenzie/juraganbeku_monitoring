@@ -550,6 +550,7 @@ export default function Dashboard() {
                 {processedData && Object.keys(processedData.segmentSummaries).length > 0 && (
                   <Box mb={4}>
                     <SegmentPerformanceChart
+                      subBusinessTypeData={processedData.subBusinessTypeSummaries}
                       segmentData={processedData.segmentSummaries}
                       selectedMonths={dateRange.month}
                     />
