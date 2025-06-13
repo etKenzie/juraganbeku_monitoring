@@ -396,23 +396,23 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
                       {Object.entries(
                         selectedArea.stores.reduce(
                           (acc: Record<string, OrderData[]>, store) => {
-                            const segment = store.segment || "OTHER";
-                            if (!acc[segment]) {
-                              acc[segment] = [];
+                            const businessType = store.business_type || "OTHER";
+                            if (!acc[businessType]) {
+                              acc[businessType] = [];
                             }
-                            acc[segment].push(store);
+                            acc[businessType].push(store);
                             return acc;
                           },
                           {}
                         )
-                      ).map(([segment, stores]) => (
-                        <Box key={segment}>
+                      ).map(([businessType, stores]) => (
+                        <Box key={businessType}>
                           <Typography
                             variant="subtitle2"
                             color="primary"
                             gutterBottom
                           >
-                            {segment} ({stores.length} stores)
+                            {businessType} ({stores.length} stores)
                           </Typography>
                           <Stack spacing={1}>
                             {stores.map((store) => (
