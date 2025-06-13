@@ -62,6 +62,8 @@ interface OrderDetail {
 export interface OrderData {
   order_id: string;
   order_code: string;
+  reseller_code: string;
+  phone_number: string;
   order_date: string;
   payment_due_date: string;
   reseller_name: string;
@@ -70,6 +72,8 @@ export interface OrderData {
   status_payment: string;
   payment_type: string;
   total_invoice: number;
+  faktur_date: string;
+  agent_name: string;
   total_pembayaran: number;
   user_id: string;
   detail_order: OrderDetail[];

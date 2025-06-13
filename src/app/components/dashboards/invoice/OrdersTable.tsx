@@ -280,12 +280,53 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     setIsEditing(false);
   };
 
+  const getOrderTagsString = (order: OrderData) => {
+    const tags: string[] = [];
+    if (order.profit < 0) {
+      tags.push("Negative Profit");
+    }
+    if (hasZeroBuyPrice(order)) {
+      tags.push("Zero Buy Price");
+    }
+    return tags.join(", ");
+  };
+
+  const prepareDataForExport = (orders: OrderData[]) => {
+    return orders.map(order => ({
+      // "order_id": order.order_id,
+      "order_code": order.order_code,
+      // "user_id": order.user_id,
+      "reseller_name": order.reseller_name,
+      "store_name": order.store_name,
+      "segment": order.business_type,
+      "area": order.area,
+      "reseller_code": order.reseller_code,
+      "phone_number": order.phone_number,
+      "status_order": order.status_order,
+      "status_payment": order.status_payment,
+      "payment_type": order.payment_type,
+      "order_date": order.order_date,
+      "faktur_date": order.faktur_date,
+      "payment_due_date": order.payment_due_date,
+      // "process_hub": order.process_hub,
+      // "is_cross": order.is_cross,
+      "month": order.month,
+      // "order_type": order.order_type,
+      "due_date_status": calculateDueDateStatus(order.payment_due_date, order.status_payment),
+      "total_invoice": order.total_invoice,
+      // "total_pembayaran": order.total_pembayaran,
+      "agent_name": order.agent_name,
+      "profit": order.profit,
+      "Tags": getOrderTagsString(order)
+    }));
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, mt: 4}}>
         <Typography variant="h6">Orders Table</Typography>
         <DownloadButton
-          data={filteredOrders}
+          data={prepareDataForExport(filteredOrders)}
           filename="orders"
           sheetName="Orders"
           variant="outlined"
