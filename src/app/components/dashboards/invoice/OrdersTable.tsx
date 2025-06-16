@@ -96,12 +96,18 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
+    const date = new Date(dateString);
+    // Convert to WIB (UTC+7)
+    // const wibDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+    
+    return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'UTC',
+    // hour12: false
     });
   };
 
