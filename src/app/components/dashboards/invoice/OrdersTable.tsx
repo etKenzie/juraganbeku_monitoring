@@ -4,9 +4,9 @@ import DownloadButton from "@/app/components/common/DownloadButton";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import { OrderData, updateOrderItems } from "@/store/apps/Invoice/invoiceSlice";
 import { AppDispatch } from "@/store/store";
-import CancelIcon from '@mui/icons-material/Cancel';
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from "@mui/icons-material/Cancel";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
@@ -28,14 +28,18 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  Typography
+  Typography,
 } from "@mui/material";
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 
 type Order = "asc" | "desc";
 
-type SortableField = keyof OrderData | "order_date" | "profit" | "due_date_status";
+type SortableField =
+  | keyof OrderData
+  | "order_date"
+  | "profit"
+  | "due_date_status";
 
 interface HeadCell {
   id: SortableField;
@@ -76,7 +80,9 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   const [monthFilter, setMonthFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
-  const [editingBuyPrices, setEditingBuyPrices] = useState<{ [key: string]: number }>({});
+  const [editingBuyPrices, setEditingBuyPrices] = useState<{
+    [key: string]: number;
+  }>({});
   const [isEditing, setIsEditing] = useState(false);
   const [tagFilter, setTagFilter] = useState<string>("");
 
@@ -90,7 +96,9 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -99,25 +107,25 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     const date = new Date(dateString);
     // Convert to WIB (UTC+7)
     // const wibDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
-    
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC',
-    // hour12: false
+
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+      // hour12: false
     });
   };
 
   const calculateOrderProfit = (order: OrderData) => {
     let totalProfit = 0;
-    order.detail_order?.forEach(item => {
+    order.detail_order?.forEach((item) => {
       if (!item) return;
       const price = (item.buy_price || 0) * (item.order_quantity || 0);
       let profit = (item.total_invoice || 0) - price;
-  
+
       totalProfit += profit;
     });
     return totalProfit;
@@ -133,12 +141,17 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   };
 
   const hasZeroBuyPrice = (order: OrderData) => {
-    return order.detail_order?.some(item => item.buy_price === 0);
+    return order.detail_order?.some(
+      (item) =>
+        item.buy_price === 0 &&
+        item.product_name !== "BIAYA ADMINISTRASI" &&
+        item.product_name !== "BIAYA DELIVERY"
+    );
   };
 
   const searchFields = (order: OrderData, query: string): boolean => {
     if (!query) return true;
-    
+
     const searchableFields = [
       order.order_code,
       order.reseller_name,
@@ -151,10 +164,10 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
       order.sub_business_type,
       calculateDueDateStatus(order.payment_due_date, order.status_payment),
       formatCurrency(order.total_invoice),
-      formatCurrency(order.profit)
+      formatCurrency(order.profit),
     ];
 
-    return searchableFields.some(field => 
+    return searchableFields.some((field) =>
       field?.toString().toLowerCase().includes(query.toLowerCase())
     );
   };
@@ -162,36 +175,59 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   const filteredOrders = orders.filter((order) => {
     // Exclude CANCEL BY ADMIN orders by default
     if (order.status_order === "CANCEL BY ADMIN") return false;
-    
+
     // Apply filters
-    if (statusOrderFilter && order.status_order !== statusOrderFilter) return false;
-    if (statusPaymentFilter && order.status_payment !== statusPaymentFilter) return false;
-    if (paymentTypeFilter && order.payment_type !== paymentTypeFilter) return false;
-    if (dueDateStatusFilter && calculateDueDateStatus(order.payment_due_date, order.status_payment) !== dueDateStatusFilter) return false;
+    if (statusOrderFilter && order.status_order !== statusOrderFilter)
+      return false;
+    if (statusPaymentFilter && order.status_payment !== statusPaymentFilter)
+      return false;
+    if (paymentTypeFilter && order.payment_type !== paymentTypeFilter)
+      return false;
+    if (
+      dueDateStatusFilter &&
+      calculateDueDateStatus(order.payment_due_date, order.status_payment) !==
+        dueDateStatusFilter
+    )
+      return false;
     if (monthFilter && order.month !== monthFilter) return false;
-    
+
     // Tag filtering
     if (tagFilter) {
       const hasNegativeProfit = order.profit < 0;
-      const hasZeroBuyPrice = order.detail_order?.some(item => item.buy_price === 0);
-      
+      const hasZeroBuyPrice = order.detail_order?.some(
+        (item) => item.buy_price === 0
+      );
+
       if (tagFilter === "NEGATIVE_PROFIT" && !hasNegativeProfit) return false;
       if (tagFilter === "ZERO_BUY_PRICE" && !hasZeroBuyPrice) return false;
     }
-    
+
     // Search functionality
     if (searchQuery) {
       return searchFields(order, searchQuery);
     }
-    
+
     return true;
   });
 
-  const uniqueStatusOrders = Array.from(new Set(orders.map((order) => order.status_order)));
-  const uniqueStatusPayments = Array.from(new Set(orders.map((order) => order.status_payment)));
-  const uniquePaymentTypes = Array.from(new Set(orders.map((order) => order.payment_type)));
+  const uniqueStatusOrders = Array.from(
+    new Set(orders.map((order) => order.status_order))
+  );
+  const uniqueStatusPayments = Array.from(
+    new Set(orders.map((order) => order.status_payment))
+  );
+  const uniquePaymentTypes = Array.from(
+    new Set(orders.map((order) => order.payment_type))
+  );
   const uniqueMonths = Array.from(new Set(orders.map((order) => order.month)));
-  const uniqueDueDateStatuses = ['Current', 'Below 14 DPD', '14 DPD', '30 DPD', '60 DPD', 'Lunas'];
+  const uniqueDueDateStatuses = [
+    "Current",
+    "Below 14 DPD",
+    "14 DPD",
+    "30 DPD",
+    "60 DPD",
+    "Lunas",
+  ];
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     let aValue: any;
@@ -219,7 +255,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     setSelectedOrder(order);
     // Initialize editingBuyPrices with current buy prices
     const initialBuyPrices: { [key: string]: number } = {};
-    order.detail_order?.forEach(item => {
+    order.detail_order?.forEach((item) => {
       if (item.order_item_id) {
         initialBuyPrices[item.order_item_id] = item.buy_price || 0;
       }
@@ -229,37 +265,41 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   };
 
   const handleBuyPriceChange = (orderItemId: string, newPrice: number) => {
-    setEditingBuyPrices(prev => ({
+    setEditingBuyPrices((prev) => ({
       ...prev,
-      [orderItemId]: newPrice
+      [orderItemId]: newPrice,
     }));
   };
 
   const handleSaveBuyPrices = async () => {
     if (!selectedOrder) return;
 
-    const details = Object.entries(editingBuyPrices).map(([order_item_id, new_buy_price]) => ({
-      order_item_id,
-      new_buy_price
-    }));
+    const details = Object.entries(editingBuyPrices).map(
+      ([order_item_id, new_buy_price]) => ({
+        order_item_id,
+        new_buy_price,
+      })
+    );
 
     try {
       await dispatch(updateOrderItems({ details }));
-      
+
       // Update only the profit in the table row
-      const updatedOrders = orders.map(order => {
+      const updatedOrders = orders.map((order) => {
         if (order.order_id === selectedOrder.order_id) {
-          const newProfit = selectedOrder.detail_order?.reduce((total, item) => {
-            const buyPrice = editingBuyPrices[item.order_item_id] ?? item.buy_price ?? 0;
-            const price = buyPrice * (item.order_quantity || 0);
-            let profit = (item.total_invoice || 0) - price;
-            if (profit < 0) profit = 0;
-            return total + profit;
-          }, 0) || 0;
+          const newProfit =
+            selectedOrder.detail_order?.reduce((total, item) => {
+              const buyPrice =
+                editingBuyPrices[item.order_item_id] ?? item.buy_price ?? 0;
+              const price = buyPrice * (item.order_quantity || 0);
+              let profit = (item.total_invoice || 0) - price;
+              if (profit < 0) profit = 0;
+              return total + profit;
+            }, 0) || 0;
 
           return {
             ...order,
-            profit: newProfit
+            profit: newProfit,
           };
         }
         return order;
@@ -269,7 +309,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
       setIsEditing(false);
       setSelectedOrder(null);
     } catch (error) {
-      console.error('Failed to update buy prices:', error);
+      console.error("Failed to update buy prices:", error);
     }
   };
 
@@ -277,7 +317,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
     if (!selectedOrder) return;
     // Reset to original buy prices
     const originalBuyPrices: { [key: string]: number } = {};
-    selectedOrder.detail_order?.forEach(item => {
+    selectedOrder.detail_order?.forEach((item) => {
       if (item.order_item_id) {
         originalBuyPrices[item.order_item_id] = item.buy_price || 0;
       }
@@ -298,38 +338,50 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   };
 
   const prepareDataForExport = (orders: OrderData[]) => {
-    return orders.map(order => ({
+    return orders.map((order) => ({
       // "order_id": order.order_id,
-      "order_code": order.order_code,
+      order_code: order.order_code,
       // "user_id": order.user_id,
-      "reseller_name": order.reseller_name,
-      "store_name": order.store_name,
-      "segment": order.business_type,
-      "area": order.area,
-      "reseller_code": order.reseller_code,
-      "phone_number": order.phone_number,
-      "status_order": order.status_order,
-      "status_payment": order.status_payment,
-      "payment_type": order.payment_type,
-      "order_date": order.order_date,
-      "faktur_date": order.faktur_date,
-      "payment_due_date": order.payment_due_date,
+      reseller_name: order.reseller_name,
+      store_name: order.store_name,
+      segment: order.business_type,
+      area: order.area,
+      reseller_code: order.reseller_code,
+      phone_number: order.phone_number,
+      status_order: order.status_order,
+      status_payment: order.status_payment,
+      payment_type: order.payment_type,
+      order_date: order.order_date,
+      order_status: order.order_status,
+      faktur_date: order.faktur_date,
+      payment_due_date: order.payment_due_date,
       // "process_hub": order.process_hub,
       // "is_cross": order.is_cross,
-      "month": order.month,
+      month: order.month,
       // "order_type": order.order_type,
-      "due_date_status": calculateDueDateStatus(order.payment_due_date, order.status_payment),
-      "total_invoice": order.total_invoice,
+      due_date_status: calculateDueDateStatus(
+        order.payment_due_date,
+        order.status_payment
+      ),
+      total_invoice: order.total_invoice,
       // "total_pembayaran": order.total_pembayaran,
-      "agent_name": order.agent_name,
-      "profit": order.profit,
-      "Tags": getOrderTagsString(order)
+      agent_name: order.agent_name,
+      profit: order.profit,
+      Tags: getOrderTagsString(order),
     }));
   };
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, mt: 4}}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+          mt: 4,
+        }}
+      >
         <Typography variant="h6">Orders Table</Typography>
         <DownloadButton
           data={prepareDataForExport(filteredOrders)}
@@ -482,10 +534,13 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
             {sortedOrders
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((order, index) => (
-                <TableRow 
+                <TableRow
                   key={`${order.order_id}-${order.order_code}-${index}`}
                   onClick={() => handleRowClick(order)}
-                  sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}
+                  sx={{
+                    cursor: "pointer",
+                    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
+                  }}
                 >
                   <TableCell>{order.order_code}</TableCell>
                   <TableCell>{formatDate(order.order_date)}</TableCell>
@@ -496,23 +551,32 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                   <TableCell>{order.status_order}</TableCell>
                   <TableCell>{order.status_payment}</TableCell>
                   <TableCell>{order.payment_type}</TableCell>
-                  <TableCell>{calculateDueDateStatus(order.payment_due_date, order.status_payment)}</TableCell>
-                  <TableCell align="right">{formatCurrency(order.total_invoice)}</TableCell>
-                  <TableCell align="right">{formatCurrency(order.profit)}</TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {calculateDueDateStatus(
+                      order.payment_due_date,
+                      order.status_payment
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(order.total_invoice)}
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(order.profit)}
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
                       {getOrderTags(order).map((tag, tagIndex) => (
                         <Typography
                           key={`${order.order_id}-tag-${tagIndex}`}
                           sx={{
-                            backgroundColor: 'error.main',
-                            color: 'white',
+                            backgroundColor: "error.main",
+                            color: "white",
                             px: 0.5,
                             py: 0.25,
                             borderRadius: 0.5,
-                            fontSize: '0.7rem',
-                            minWidth: '24px',
-                            textAlign: 'center'
+                            fontSize: "0.7rem",
+                            minWidth: "24px",
+                            textAlign: "center",
                           }}
                           title="Negative Profit"
                         >
@@ -523,14 +587,14 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                         <Typography
                           key={`${order.order_id}-zbp`}
                           sx={{
-                            backgroundColor: 'warning.main',
-                            color: 'white',
+                            backgroundColor: "warning.main",
+                            color: "white",
                             px: 0.5,
                             py: 0.25,
                             borderRadius: 0.5,
-                            fontSize: '0.7rem',
-                            minWidth: '24px',
-                            textAlign: 'center'
+                            fontSize: "0.7rem",
+                            minWidth: "24px",
+                            textAlign: "center",
                           }}
                           title="Zero Buy Price"
                         >
@@ -577,7 +641,12 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
         >
           {selectedOrder && (
             <>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
                 <Typography variant="h6">
                   Order Details - {selectedOrder.order_code}
                 </Typography>
@@ -635,16 +704,23 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                         <TableCell>{item.sku}</TableCell>
                         <TableCell>{item.order_quantity}</TableCell>
                         <TableCell>{formatCurrency(item.price)}</TableCell>
-                        <TableCell>{formatCurrency(item.total_invoice)}</TableCell>
+                        <TableCell>
+                          {formatCurrency(item.total_invoice)}
+                        </TableCell>
                         <TableCell>
                           {isEditing ? (
                             <TextField
                               type="number"
                               value={editingBuyPrices[item.order_item_id] || 0}
-                              onChange={(e) => handleBuyPriceChange(item.order_item_id, Number(e.target.value))}
+                              onChange={(e) =>
+                                handleBuyPriceChange(
+                                  item.order_item_id,
+                                  Number(e.target.value)
+                                )
+                              }
                               size="small"
                               InputProps={{
-                                inputProps: { min: 0 }
+                                inputProps: { min: 0 },
                               }}
                             />
                           ) : (
@@ -657,15 +733,15 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
                           {item.buy_price === 0 && (
                             <Typography
                               sx={{
-                                backgroundColor: 'warning.main',
-                                color: 'white',
+                                backgroundColor: "warning.main",
+                                color: "white",
                                 px: 0.5,
                                 py: 0.25,
                                 borderRadius: 0.5,
-                                fontSize: '0.7rem',
-                                minWidth: '24px',
-                                textAlign: 'center',
-                                display: 'inline-block'
+                                fontSize: "0.7rem",
+                                minWidth: "24px",
+                                textAlign: "center",
+                                display: "inline-block",
                               }}
                               title="Zero Buy Price"
                             >
@@ -686,4 +762,4 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   );
 };
 
-export default OrdersTable; 
+export default OrdersTable;

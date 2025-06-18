@@ -1,68 +1,83 @@
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import { ProcessedData } from "./types";
 
-export const calculateDueDateStatus = (dueDate: string, paymentStatus: string): 'Current' | 'Below 14 DPD' | '14 DPD' | '30 DPD' | '60 DPD' | 'Lunas' => {
-  if (paymentStatus === 'LUNAS') return 'Lunas';
-  
+export const calculateDueDateStatus = (
+  dueDate: string,
+  paymentStatus: string
+): "Current" | "Below 14 DPD" | "14 DPD" | "30 DPD" | "60 DPD" | "Lunas" => {
+  if (paymentStatus === "LUNAS") return "Lunas";
+
   const today = new Date();
   const due = new Date(dueDate);
   const diffTime = today.getTime() - due.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return 'Current';
-  if (diffDays < 14) return 'Below 14 DPD';
-  if (diffDays < 30) return '14 DPD';
-  if (diffDays < 60) return '30 DPD';
-  return '60 DPD';
+  if (diffDays < 0) return "Current";
+  if (diffDays < 14) return "Below 14 DPD";
+  if (diffDays < 30) return "14 DPD";
+  if (diffDays < 60) return "30 DPD";
+  return "60 DPD";
 };
 
 export const useInvoiceData = () => {
-  const processChartData = (orders: OrderData[]): Array<{
+  const processChartData = (
+    orders: OrderData[]
+  ): Array<{
     date: string;
     month: string;
     totalInvoice: number;
     totalProfit: number;
   }> => {
     // Group orders by month
-    const monthlyData = orders.reduce((acc, order) => {
-      const monthKey = order.month;
-      
-      if (!acc[monthKey]) {
-        acc[monthKey] = {
-          date: order.order_date,
-          month: monthKey,
-          totalInvoice: 0,
-          totalProfit: 0,
-          orderCount: 0
-        };
-      }
+    const monthlyData = orders.reduce(
+      (acc, order) => {
+        const monthKey = order.month;
 
-      acc[monthKey].totalInvoice += order.total_invoice ;
-      if (order.profit > 0 ) {
-        acc[monthKey].totalProfit += order.profit;
-      }
-      
-      acc[monthKey].orderCount += 1;
+        if (!acc[monthKey]) {
+          acc[monthKey] = {
+            date: order.order_date,
+            month: monthKey,
+            totalInvoice: 0,
+            totalProfit: 0,
+            orderCount: 0,
+          };
+        }
 
-      return acc;
-    }, {} as Record<string, {
-      date: string;
-      month: string;
-      totalInvoice: number;
-      totalProfit: number;
-      orderCount: number;
-    }>);
+        acc[monthKey].totalInvoice += order.total_invoice;
+        if (order.profit > 0) {
+          acc[monthKey].totalProfit += order.profit;
+        }
+
+        acc[monthKey].orderCount += 1;
+
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          date: string;
+          month: string;
+          totalInvoice: number;
+          totalProfit: number;
+          orderCount: number;
+        }
+      >
+    );
 
     // Convert to array and calculate average profit per order
-    return Object.values(monthlyData).map(data => ({
+    return Object.values(monthlyData).map((data) => ({
       date: data.date,
       month: data.month,
       totalInvoice: data.totalInvoice,
-      totalProfit: data.totalProfit
+      totalProfit: data.totalProfit,
     }));
   };
 
-  const processData = (orders: OrderData[], targetMonth: number, targetYear: number): ProcessedData => {
+  const processData = (
+    orders: OrderData[],
+    targetMonth: number,
+    targetYear: number
+  ): ProcessedData => {
     if (!orders || orders.length === 0) {
       return {
         overallTotalInvoice: 0,
@@ -77,9 +92,9 @@ export const useInvoiceData = () => {
         subBusinessTypeSummaries: {},
         overallTOP: 0,
         overallCOD: 0,
-        overallProfit: 0,
         overallLunas: 0,
         overallBelumLunas: 0,
+        overallProfit: 0,
         thisMonthMetrics: {
           totalOrders: 0,
           totalStores: 0,
@@ -89,7 +104,7 @@ export const useInvoiceData = () => {
           totalLunas: 0,
           totalBelumLunas: 0,
           totalCOD: 0,
-          totalTOP: 0
+          totalTOP: 0,
         },
         monthlyStoreCounts: {},
         monthlyOrderCounts: {},
@@ -99,17 +114,25 @@ export const useInvoiceData = () => {
           dpd14: 0,
           dpd30: 0,
           dpd60: 0,
-          lunas: 0
+          lunas: 0,
         },
         paymentStatusMetrics: {},
-        chartData: []
+        chartData: [],
       };
     }
+
+    // Remove duplicates based on order_id before processing
+    const uniqueOrders = orders.reduce((acc: OrderData[], order) => {
+      if (!acc.find((o) => o.order_id === order.order_id)) {
+        acc.push(order);
+      }
+      return acc;
+    }, []);
 
     const result: ProcessedData = {
       overallTotalInvoice: 0,
       overallTotalPembayaran: 0,
-      totalOrderCount: orders.length,
+      totalOrderCount: uniqueOrders.length,
       hubSummaries: {},
       productSummaries: {},
       categorySummaries: {},
@@ -119,9 +142,9 @@ export const useInvoiceData = () => {
       subBusinessTypeSummaries: {},
       overallTOP: 0,
       overallCOD: 0,
-      overallProfit: 0,
       overallLunas: 0,
       overallBelumLunas: 0,
+      overallProfit: 0,
       thisMonthMetrics: {
         totalOrders: 0,
         totalStores: 0,
@@ -131,7 +154,7 @@ export const useInvoiceData = () => {
         totalLunas: 0,
         totalBelumLunas: 0,
         totalCOD: 0,
-        totalTOP: 0
+        totalTOP: 0,
       },
       monthlyStoreCounts: {},
       monthlyOrderCounts: {},
@@ -141,40 +164,29 @@ export const useInvoiceData = () => {
         dpd14: 0,
         dpd30: 0,
         dpd60: 0,
-        lunas: 0
+        lunas: 0,
       },
       paymentStatusMetrics: {},
-      chartData: processChartData(orders)
+      chartData: processChartData(uniqueOrders),
     };
 
     // Find the most recent month in the data
-    const allMonths = orders.map(order => {
-      const [month, year] = order.month.split(' ');
-      // Convert month name to month number (0-11)
+    const allMonths = uniqueOrders.map((order) => {
+      const [month, year] = order.month.split(" ");
       const monthIndex = new Date(`${month} 1, 2000`).getMonth();
       return {
         month: order.month,
-        date: new Date(parseInt(year), monthIndex, 1)
+        date: new Date(parseInt(year), monthIndex, 1),
       };
     });
-    const mostRecentMonth = allMonths.sort((a, b) => b.date.getTime() - a.date.getTime())[0].month;
-    console.log('Most recent month:', mostRecentMonth);
+    const mostRecentMonth = allMonths.sort(
+      (a, b) => b.date.getTime() - a.date.getTime()
+    )[0].month;
+    console.log("Most recent month:", mostRecentMonth);
     const mostRecentMonthStores = new Set<string>();
 
-    // Reset thisMonthMetrics at the start
-    result.thisMonthMetrics = {
-      totalOrders: 0,
-      totalStores: 0,
-      totalInvoice: 0,
-      totalProfit: 0,
-      activationRate: 0,
-      totalLunas: 0,
-      totalBelumLunas: 0,
-      totalCOD: 0,
-      totalTOP: 0
-    };
-
-    orders.forEach(order => {  
+    // Process unique orders
+    uniqueOrders.forEach((order) => {
       const processedMonthKey = order.month;
 
       // Process payment status metrics only for the most recent month
@@ -184,15 +196,14 @@ export const useInvoiceData = () => {
           result.paymentStatusMetrics[status] = {
             totalOrders: 0,
             totalInvoice: 0,
-            totalProfit: 0
+            totalProfit: 0,
           };
         }
         result.paymentStatusMetrics[status].totalOrders += 1;
-        result.paymentStatusMetrics[status].totalInvoice += order.total_invoice ;
-        if (order.profit > 0 ) {
+        result.paymentStatusMetrics[status].totalInvoice += order.total_invoice;
+        if (order.profit > 0) {
           result.paymentStatusMetrics[status].totalProfit += order.profit;
         }
-        
       }
 
       // Initialize monthly store count if not exists
@@ -207,7 +218,7 @@ export const useInvoiceData = () => {
 
       // Add store to monthly count
       result.monthlyStoreCounts[processedMonthKey].add(order.user_id);
-      
+
       // Increment monthly order count
       result.monthlyOrderCounts[processedMonthKey]++;
 
@@ -216,19 +227,19 @@ export const useInvoiceData = () => {
         mostRecentMonthStores.add(order.user_id);
         result.thisMonthMetrics.totalOrders++;
         result.thisMonthMetrics.totalInvoice += order.total_invoice;
-        
-        // Calculate profit for this order   
+
+        // Calculate profit for this order
         if (order.profit > 0) {
           result.thisMonthMetrics.totalProfit += order.profit;
-        }     
-        
-        
+        }
 
         if (order.status_payment === "LUNAS") {
           result.thisMonthMetrics.totalLunas += order.total_invoice || 0;
-        } else if (order.status_payment === "WAITING VALIDATION BY FINANCE" || 
-                  order.status_payment === "BELUM LUNAS" || 
-                  order.status_payment === "PARTIAL") {
+        } else if (
+          order.status_payment === "WAITING VALIDATION BY FINANCE" ||
+          order.status_payment === "BELUM LUNAS" ||
+          order.status_payment === "PARTIAL"
+        ) {
           result.thisMonthMetrics.totalBelumLunas += order.total_invoice || 0;
         }
 
@@ -239,12 +250,12 @@ export const useInvoiceData = () => {
         }
 
         // Process product data for most recent month
-        order.detail_order?.forEach(item => {
+        order.detail_order?.forEach((item) => {
           if (!item) return;
 
           if (!result.productSummaries[item.product_id]) {
             result.productSummaries[item.product_id] = {
-              name: item.product_name || '',
+              name: item.product_name || "",
               totalInvoice: 0,
               quantity: 0,
               price: item.price || 0,
@@ -253,7 +264,10 @@ export const useInvoiceData = () => {
             };
           }
 
-          if (item.price !== result.productSummaries[item.product_id].price && item.price) {
+          if (
+            item.price !== result.productSummaries[item.product_id].price &&
+            item.price
+          ) {
             result.productSummaries[item.product_id].price += item.price;
             result.productSummaries[item.product_id].difPrice += 1;
           }
@@ -261,9 +275,11 @@ export const useInvoiceData = () => {
           if (order.profit > 0) {
             result.productSummaries[item.product_id].profit += order.profit;
           }
-          
-          result.productSummaries[item.product_id].totalInvoice += item.total_invoice || 0;
-          result.productSummaries[item.product_id].quantity += item.quantity || 1;
+
+          result.productSummaries[item.product_id].totalInvoice +=
+            item.total_invoice || 0;
+          result.productSummaries[item.product_id].quantity +=
+            item.quantity || 1;
         });
 
         // Process area data for most recent month
@@ -287,13 +303,13 @@ export const useInvoiceData = () => {
         areaSummary.totalInvoice += order.total_invoice || 0;
         areaSummary.orders.push(order);
 
-        if (order.payment_type === 'COD') {
+        if (order.payment_type === "COD") {
           areaSummary.totalCOD += order.total_invoice || 0;
-        } else if (order.payment_type === 'TOP') {
+        } else if (order.payment_type === "TOP") {
           areaSummary.totalTOP += order.total_invoice || 0;
         }
 
-        if (order.status_payment === 'LUNAS') {
+        if (order.status_payment === "LUNAS") {
           areaSummary.totalLunas += order.total_invoice || 0;
         } else {
           areaSummary.totalBelumLunas += order.total_invoice || 0;
@@ -304,8 +320,8 @@ export const useInvoiceData = () => {
         }
 
         // Process segment data for most recent month
-        const business_type = order.business_type || 'OTHER';
-        const sub_business_type = order.sub_business_type || 'OTHER';
+        const business_type = order.business_type || "OTHER";
+        const sub_business_type = order.sub_business_type || "OTHER";
 
         // Process business type (segment) data
         if (!result.segmentSummaries[business_type]) {
@@ -329,13 +345,13 @@ export const useInvoiceData = () => {
         segmentSummary.orders.push(order);
         segmentSummary.activeMonths.add(processedMonthKey);
 
-        if (order.payment_type === 'COD') {
+        if (order.payment_type === "COD") {
           segmentSummary.totalCOD += order.total_invoice || 0;
-        } else if (order.payment_type === 'TOP') {
+        } else if (order.payment_type === "TOP") {
           segmentSummary.totalTOP += order.total_invoice || 0;
         }
 
-        if (order.status_payment === 'LUNAS') {
+        if (order.status_payment === "LUNAS") {
           segmentSummary.totalLunas += order.total_invoice || 0;
         } else {
           segmentSummary.totalBelumLunas += order.total_invoice || 0;
@@ -361,19 +377,20 @@ export const useInvoiceData = () => {
           };
         }
 
-        const subBusinessTypeSummary = result.subBusinessTypeSummaries[sub_business_type];
+        const subBusinessTypeSummary =
+          result.subBusinessTypeSummaries[sub_business_type];
         subBusinessTypeSummary.totalOrders++;
         subBusinessTypeSummary.totalInvoice += order.total_invoice || 0;
         subBusinessTypeSummary.orders.push(order);
         subBusinessTypeSummary.activeMonths.add(processedMonthKey);
 
-        if (order.payment_type === 'COD') {
+        if (order.payment_type === "COD") {
           subBusinessTypeSummary.totalCOD += order.total_invoice || 0;
-        } else if (order.payment_type === 'TOP') {
+        } else if (order.payment_type === "TOP") {
           subBusinessTypeSummary.totalTOP += order.total_invoice || 0;
         }
 
-        if (order.status_payment === 'LUNAS') {
+        if (order.status_payment === "LUNAS") {
           subBusinessTypeSummary.totalLunas += order.total_invoice || 0;
         } else {
           subBusinessTypeSummary.totalBelumLunas += order.total_invoice || 0;
@@ -384,24 +401,27 @@ export const useInvoiceData = () => {
         }
 
         // Process due date status for most recent month
-        const dueDateStatus = calculateDueDateStatus(order.payment_due_date, order.status_payment);
+        const dueDateStatus = calculateDueDateStatus(
+          order.payment_due_date,
+          order.status_payment
+        );
         switch (dueDateStatus) {
-          case 'Lunas':
+          case "Lunas":
             result.dueDateStatusCounts.lunas++;
             break;
-          case 'Current':
+          case "Current":
             result.dueDateStatusCounts.current++;
             break;
-          case 'Below 14 DPD':
+          case "Below 14 DPD":
             result.dueDateStatusCounts.below14DPD++;
             break;
-          case '14 DPD':
+          case "14 DPD":
             result.dueDateStatusCounts.dpd14++;
             break;
-          case '30 DPD':
+          case "30 DPD":
             result.dueDateStatusCounts.dpd30++;
             break;
-          case '60 DPD':
+          case "60 DPD":
             result.dueDateStatusCounts.dpd60++;
             break;
         }
@@ -413,13 +433,14 @@ export const useInvoiceData = () => {
       if (order.profit > 0) {
         result.overallProfit += order.profit;
       }
-      
 
       if (order.status_payment === "LUNAS") {
         result.overallLunas += order.total_invoice || 0;
-      } else if (order.status_payment === "WAITING VALIDATION BY FINANCE" || 
-                order.status_payment === "BELUM LUNAS" || 
-                order.status_payment === "PARTIAL") {
+      } else if (
+        order.status_payment === "WAITING VALIDATION BY FINANCE" ||
+        order.status_payment === "BELUM LUNAS" ||
+        order.status_payment === "PARTIAL"
+      ) {
         result.overallBelumLunas += order.total_invoice || 0;
       }
 
@@ -435,14 +456,14 @@ export const useInvoiceData = () => {
 
       if (!result.storeSummaries[userId]) {
         result.storeSummaries[userId] = {
-          storeName: storeName || '',
+          storeName: storeName || "",
           userId: userId,
           totalInvoice: 0,
           totalProfit: 0,
           orderCount: 0,
           activeMonths: new Set(),
           averageOrderValue: 0,
-          orders: []
+          orders: [],
         };
       }
 
@@ -450,12 +471,12 @@ export const useInvoiceData = () => {
       if (order.profit > 0) {
         result.storeSummaries[userId].totalProfit += order.profit;
       }
-      
-      
+
       result.storeSummaries[userId].orderCount++;
       result.storeSummaries[userId].activeMonths.add(processedMonthKey);
-      result.storeSummaries[userId].averageOrderValue = 
-        result.storeSummaries[userId].totalInvoice / result.storeSummaries[userId].orderCount;
+      result.storeSummaries[userId].averageOrderValue =
+        result.storeSummaries[userId].totalInvoice /
+        result.storeSummaries[userId].orderCount;
       result.storeSummaries[userId].orders.push(order);
 
       // Process hub-specific data
@@ -465,7 +486,7 @@ export const useInvoiceData = () => {
           totalInvoice: 0,
           totalProfit: 0,
           totalPembayaran: 0,
-          orderCount: 0
+          orderCount: 0,
         };
       }
 
@@ -473,14 +494,16 @@ export const useInvoiceData = () => {
       if (order.profit > 0) {
         result.hubSummaries[hub].totalProfit += order.profit;
       }
-      
+
       result.hubSummaries[hub].totalPembayaran += order.total_pembayaran || 0;
       result.hubSummaries[hub].orderCount++;
     });
 
     // Calculate final metrics for most recent month
     result.thisMonthMetrics.totalStores = mostRecentMonthStores.size;
-    result.thisMonthMetrics.activationRate = mostRecentMonthStores.size / Object.keys(result.storeSummaries).length * 100;
+    result.thisMonthMetrics.activationRate =
+      (mostRecentMonthStores.size / Object.keys(result.storeSummaries).length) *
+      100;
 
     return result;
   };

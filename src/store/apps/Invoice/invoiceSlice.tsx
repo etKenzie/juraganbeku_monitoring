@@ -63,6 +63,7 @@ export interface OrderData {
   order_id: string;
   order_code: string;
   reseller_code: string;
+  order_status: string;
   phone_number: string;
   order_date: string;
   payment_due_date: string;

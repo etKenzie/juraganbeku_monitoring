@@ -88,17 +88,27 @@ export default function Dashboard() {
 
   // Filter out CANCEL BY ADMIN and CANCEL orders right after data is retrieved
   const validOrders = useMemo(() => {
-    return (
-      orders?.filter(
-        (order) =>
-          order.status_order !== "CANCEL BY ADMIN" &&
-          order.status_order !== "CANCEL"
-      ) || []
+    // First remove duplicates based on order_id
+    const uniqueOrders =
+      orders?.reduce((acc: OrderData[], order) => {
+        if (!acc.find((o) => o.order_id === order.order_id)) {
+          acc.push(order);
+        }
+        return acc;
+      }, []) || [];
+
+    // Then filter out cancelled orders
+    return uniqueOrders.filter(
+      (order) =>
+        order.status_order !== "CANCEL BY ADMIN" &&
+        order.status_order !== "CANCEL"
     );
   }, [orders]);
 
   const { processData } = useInvoiceData();
-  const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
+  const [processedData, setProcessedData] = useState<ProcessedData | null>(
+    null
+  );
   const [isDataEmpty, setIsDataEmpty] = useState(false);
 
   const [period, setPeriod] = useState("thisYear");
@@ -132,7 +142,7 @@ export default function Dashboard() {
 
     // Helper function to get English month name
     const getEnglishMonthName = (date: Date) => {
-      return date.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+      return date.toLocaleString("en-US", { month: "long" }).toLowerCase();
     };
 
     switch (period) {
@@ -180,15 +190,14 @@ export default function Dashboard() {
     try {
       let AREA = area;
       if (role?.includes("tangerang")) {
-        AREA = "TANGERANG"
+        AREA = "TANGERANG";
       }
       if (role?.includes("surabaya")) {
-        AREA = "SURABAYA"
+        AREA = "SURABAYA";
       }
       if (role?.includes("jakarta")) {
-        AREA = "JAKARTA"
+        AREA = "JAKARTA";
       }
-
 
       await Promise.all([
         dispatch(
@@ -254,7 +263,9 @@ export default function Dashboard() {
     if (selectedArea && order.area !== selectedArea) return false;
 
     const orderDate = new Date(order.order_date);
-    const orderMonth = orderDate.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+    const orderMonth = orderDate
+      .toLocaleString("en-US", { month: "long" })
+      .toLowerCase();
     const orderYear = orderDate.getFullYear();
     const orderMonthYear = `${orderMonth} ${orderYear}`;
 
@@ -268,8 +279,13 @@ export default function Dashboard() {
     return <Loading />;
   }
 
-
-  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya", "dashboard"].some(r => role?.includes(r));
+  const hasAccess = [
+    "admin",
+    "tangerang",
+    "jakarta",
+    "surabaya",
+    "dashboard",
+  ].some((r) => role?.includes(r));
 
   return (
     <PageContainer
@@ -547,15 +563,18 @@ export default function Dashboard() {
                 )}
 
                 {/* Segment Performance Chart */}
-                {processedData && Object.keys(processedData.segmentSummaries).length > 0 && (
-                  <Box mb={4}>
-                    <SegmentPerformanceChart
-                      subBusinessTypeData={processedData.subBusinessTypeSummaries}
-                      segmentData={processedData.segmentSummaries}
-                      selectedMonths={dateRange.month}
-                    />
-                  </Box>
-                )}
+                {processedData &&
+                  Object.keys(processedData.segmentSummaries).length > 0 && (
+                    <Box mb={4}>
+                      <SegmentPerformanceChart
+                        subBusinessTypeData={
+                          processedData.subBusinessTypeSummaries
+                        }
+                        segmentData={processedData.segmentSummaries}
+                        selectedMonths={dateRange.month}
+                      />
+                    </Box>
+                  )}
 
                 {/* Payment Distribution Chart */}
                 {processedData && processedData.paymentStatusMetrics && (
