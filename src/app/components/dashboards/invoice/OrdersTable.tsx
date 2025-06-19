@@ -338,37 +338,68 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   };
 
   const prepareDataForExport = (orders: OrderData[]) => {
-    return orders.map((order) => ({
-      // "order_id": order.order_id,
-      order_code: order.order_code,
-      // "user_id": order.user_id,
-      reseller_name: order.reseller_name,
-      store_name: order.store_name,
-      segment: order.business_type,
-      area: order.area,
-      reseller_code: order.reseller_code,
-      phone_number: order.phone_number,
-      status_order: order.status_order,
-      status_payment: order.status_payment,
-      payment_type: order.payment_type,
-      order_date: order.order_date,
-      order_status: order.order_status,
-      faktur_date: order.faktur_date,
-      payment_due_date: order.payment_due_date,
-      // "process_hub": order.process_hub,
-      // "is_cross": order.is_cross,
-      month: order.month,
-      // "order_type": order.order_type,
-      due_date_status: calculateDueDateStatus(
-        order.payment_due_date,
-        order.status_payment
-      ),
-      total_invoice: order.total_invoice,
-      // "total_pembayaran": order.total_pembayaran,
-      agent_name: order.agent_name,
-      profit: order.profit,
-      Tags: getOrderTagsString(order),
-    }));
+    // Grouped export: only the first row for each order has order info
+    const rows: any[] = [];
+    orders.forEach((order) => {
+      if (order.detail_order && order.detail_order.length > 0) {
+        order.detail_order.forEach((item, idx) => {
+          rows.push({
+            order_code: idx === 0 ? order.order_code : '',
+            reseller_name: idx === 0 ? order.reseller_name : '',
+            store_name: idx === 0 ? order.store_name : '',
+            segment: idx === 0 ? order.business_type : '',
+            area: idx === 0 ? order.area : '',
+            reseller_code: idx === 0 ? order.reseller_code : '',
+            phone_number: idx === 0 ? order.phone_number : '',
+            status_order: idx === 0 ? order.status_order : '',
+            status_payment: idx === 0 ? order.status_payment : '',
+            payment_type: idx === 0 ? order.payment_type : '',
+            order_date: idx === 0 ? order.order_date : '',
+            faktur_date: idx === 0 ? order.faktur_date : '',
+            payment_due_date: idx === 0 ? order.payment_due_date : '',
+            month: idx === 0 ? order.month : '',
+            due_date_status: idx === 0 ? calculateDueDateStatus(order.payment_due_date, order.status_payment) : '',
+            total_invoice: idx === 0 ? order.total_invoice : '',
+            agent_name: idx === 0 ? order.agent_name : '',
+            profit: idx === 0 ? order.profit : '',
+            Tags: idx === 0 ? getOrderTagsString(order) : '',
+            // Order item details
+            product_name: item.product_name,
+            quantity: item.order_quantity,
+            buy_price: item.buy_price,
+            item_total_invoice: item.total_invoice,
+          });
+        });
+      } else {
+        // If no detail_order, export just the order info
+        rows.push({
+          order_code: order.order_code,
+          reseller_name: order.reseller_name,
+          store_name: order.store_name,
+          segment: order.business_type,
+          area: order.area,
+          reseller_code: order.reseller_code,
+          phone_number: order.phone_number,
+          status_order: order.status_order,
+          status_payment: order.status_payment,
+          payment_type: order.payment_type,
+          order_date: order.order_date,
+          faktur_date: order.faktur_date,
+          payment_due_date: order.payment_due_date,
+          month: order.month,
+          due_date_status: calculateDueDateStatus(order.payment_due_date, order.status_payment),
+          total_invoice: order.total_invoice,
+          agent_name: order.agent_name,
+          profit: order.profit,
+          Tags: getOrderTagsString(order),
+          product_name: '',
+          quantity: '',
+          buy_price: '',
+          item_total_invoice: '',
+        });
+      }
+    });
+    return rows;
   };
 
   return (
