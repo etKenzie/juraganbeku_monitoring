@@ -12,5 +12,8 @@ export const formatCurrency = (num: number | undefined | null): string => {
   if (num === undefined || num === null) {
     return 'Rp 0';
   }
+  if (num < 1000) {
+    return `${num.toLocaleString()}`;
+  }
   return `Rp ${num.toLocaleString()}`;
 }; 

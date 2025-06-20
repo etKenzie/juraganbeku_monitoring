@@ -372,7 +372,7 @@ export default function PendingDashboard() {
               {/* Orders Table */}
               {validOrders && (
                 <Box>
-                  <OrdersTable orders={validOrders} />
+                  <OrdersTable orders={validOrders} exportOrderDetails={false}/>
                 </Box>
               )}
             </>

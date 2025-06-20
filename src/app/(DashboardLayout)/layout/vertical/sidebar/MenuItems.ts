@@ -2,7 +2,9 @@ import { getTitleKey } from "@/utils/brands/brandUtils";
 import {
   IconAlignBoxBottomCenter,
   IconClock,
-  IconList
+  IconHome,
+  IconList,
+  IconStack
 } from "@tabler/icons-react";
 import { getCookie } from "cookies-next";
 import { uniqueId } from "lodash";
@@ -33,9 +35,23 @@ const Menuitems: MenuitemsType[] = [
   {
     id: uniqueId(),
     // title: brandTitle,
+    title: "Home",
+    icon: IconHome,
+    href: "/",
+  },
+  {
+    id: uniqueId(),
+    // title: brandTitle,
+    title: "Stock",
+    icon: IconStack,
+    href: "/dashboards/stock",
+  },
+  {
+    id: uniqueId(),
+    // title: brandTitle,
     title: "Dashboard",
     icon: IconAlignBoxBottomCenter,
-    href: "/",
+    href: "/dashboards/dashboard",
   },
   {
     id: uniqueId(),

@@ -67,12 +67,15 @@ const PaymentStatusPieChart = ({ data }: PaymentStatusPieChartProps) => {
   const getMetricFormatter = (type: MetricType) => {
     switch (type) {
       case "totalOrders":
-        return (val: number) => val.toString();
+        return (val: number) => val.toLocaleString();
       case "totalInvoice":
       case "totalProfit":
         return (val: number) => formatCurrency(val);
+      default:
+        return (val: number) => val.toLocaleString();
     }
   };
+
 
   const series = [{
     name: getMetricLabel(metricType),

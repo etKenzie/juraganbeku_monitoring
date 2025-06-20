@@ -604,7 +604,7 @@ export default function Dashboard() {
                         data={processedData.dueDateStatusCounts}
                       />
                     )}
-                    <OrdersTable orders={filteredOrders} />
+                    <OrdersTable orders={filteredOrders} exportOrderDetails={true}/>
                   </Box>
                 )}
               </>

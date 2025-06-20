@@ -71,14 +71,14 @@ const PaymentDistributionChart = ({ data, selectedMonths }: PaymentDistributionC
   const getMetricFormatter = (metric: SortKey) => {
     switch (metric) {
       case "totalOrders":
-        return (val: number) => val.toString();
+        return (val: number) => val.toLocaleString();
       case "totalInvoice":
       case "totalProfit":
       case "averageInvoice":
       case "averageProfit":
         return (val: number) => formatCurrency(val);
       default:
-        return (val: number) => val.toString();
+        return (val: number) => val.toLocaleString();
     }
   };
 

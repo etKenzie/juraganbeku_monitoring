@@ -64,9 +64,11 @@ const headCells: HeadCell[] = [
 
 interface OrdersTableProps {
   orders: OrderData[];
+  title?: string;
+  exportOrderDetails?: boolean;
 }
 
-const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
+const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }: OrdersTableProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [orderBy, setOrderBy] = useState<SortableField>("order_date");
@@ -338,10 +340,9 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
   };
 
   const prepareDataForExport = (orders: OrderData[]) => {
-    // Grouped export: only the first row for each order has order info
     const rows: any[] = [];
     orders.forEach((order) => {
-      if (order.detail_order && order.detail_order.length > 0) {
+      if (exportOrderDetails && order.detail_order && order.detail_order.length > 0) {
         order.detail_order.forEach((item, idx) => {
           rows.push({
             order_code: idx === 0 ? order.order_code : '',
@@ -371,7 +372,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
           });
         });
       } else {
-        // If no detail_order, export just the order info
+        // Only export order-level info
         rows.push({
           order_code: order.order_code,
           reseller_name: order.reseller_name,
@@ -392,10 +393,6 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
           agent_name: order.agent_name,
           profit: order.profit,
           Tags: getOrderTagsString(order),
-          product_name: '',
-          quantity: '',
-          buy_price: '',
-          item_total_invoice: '',
         });
       }
     });
@@ -413,7 +410,7 @@ const OrdersTable = ({ orders: initialOrders }: OrdersTableProps) => {
           mt: 4,
         }}
       >
-        <Typography variant="h6">Orders Table</Typography>
+        <Typography variant="h6">{title || "Orders Table"}</Typography>
         <DownloadButton
           data={prepareDataForExport(filteredOrders)}
           filename="orders"
