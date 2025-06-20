@@ -258,28 +258,28 @@ export const useInvoiceData = () => {
               name: item.product_name || "",
               totalInvoice: 0,
               quantity: 0,
-              price: item.price || 0,
+              price: Number(item.price) || 0,
               difPrice: 1,
               profit: 0,
             };
           }
 
           if (
-            item.price !== result.productSummaries[item.product_id].price &&
+            Number(item.price) !== result.productSummaries[item.product_id].price &&
             item.price
           ) {
-            result.productSummaries[item.product_id].price += item.price;
+            result.productSummaries[item.product_id].price += Number(item.price);
             result.productSummaries[item.product_id].difPrice += 1;
           }
 
           if (order.profit > 0) {
-            result.productSummaries[item.product_id].profit += order.profit;
+            result.productSummaries[item.product_id].profit += Number(order.profit);
           }
 
           result.productSummaries[item.product_id].totalInvoice +=
-            item.total_invoice || 0;
+            Number(item.total_invoice) || 0;
           result.productSummaries[item.product_id].quantity +=
-            item.quantity || 1;
+            Number(item.quantity) || 1;
         });
 
         // Process area data for most recent month

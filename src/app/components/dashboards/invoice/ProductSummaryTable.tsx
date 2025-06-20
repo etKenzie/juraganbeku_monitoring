@@ -3,20 +3,20 @@ import { ProductSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types
 import DownloadButton from "@/app/components/common/DownloadButton";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-    Box,
-    Grid,
-    InputAdornment,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TableSortLabel,
-    TextField,
-    Typography,
+  Box,
+  Grid,
+  InputAdornment,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TableSortLabel,
+  TextField,
+  Typography,
 } from "@mui/material";
 import React, { useState } from "react";
 
@@ -60,6 +60,7 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
+  console.log(productSummaries)
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
