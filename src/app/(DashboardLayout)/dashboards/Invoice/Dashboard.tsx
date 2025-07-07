@@ -261,16 +261,13 @@ export default function Dashboard() {
 
   let filteredOrders = validOrders.filter((order) => {
     if (selectedArea && order.area !== selectedArea) return false;
+    const orderMonthYear = order.month.toLowerCase();
 
-    const orderDate = new Date(order.order_date);
-    const orderMonth = orderDate
-      .toLocaleString("en-US", { month: "long" })
-      .toLowerCase();
-    const orderYear = orderDate.getFullYear();
-    const orderMonthYear = `${orderMonth} ${orderYear}`;
+    console.log(orderMonthYear)
 
     // Check if the order's month is in the selected months
     const selectedMonths = dateRange.month.split(",");
+    console.log(selectedMonths)
     return selectedMonths.includes(orderMonthYear);
   });
 
