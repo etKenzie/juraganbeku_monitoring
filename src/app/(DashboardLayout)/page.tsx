@@ -9,7 +9,7 @@ import { RootState } from "@/store/store";
 import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import Loading from "../loading";
-import { useInvoiceData } from "./dashboards/Invoice/data";
+import { useInvoiceData } from "./dashboards/dashboard/data";
 
 export default function DashboardPage() {
   const dispatch = useDispatch();

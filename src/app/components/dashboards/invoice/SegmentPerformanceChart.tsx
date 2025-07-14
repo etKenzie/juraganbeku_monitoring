@@ -1,19 +1,19 @@
 "use client";
-import { AreaData } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+import { AreaData } from "@/app/(DashboardLayout)/dashboards/dashboard/types";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
-    Box,
-    Dialog,
-    DialogContent,
-    Grid,
-    IconButton,
-    MenuItem,
-    Paper,
-    Select,
-    Stack,
-    Tooltip,
-    Typography,
-    useMediaQuery
+  Box,
+  Dialog,
+  DialogContent,
+  Grid,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";

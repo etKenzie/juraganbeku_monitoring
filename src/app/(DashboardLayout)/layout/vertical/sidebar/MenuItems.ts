@@ -2,6 +2,7 @@ import { getTitleKey } from "@/utils/brands/brandUtils";
 import {
   IconAlignBoxBottomCenter,
   IconClock,
+  IconFileInvoice,
   IconHome,
   IconList,
   IconStack
@@ -58,6 +59,12 @@ const Menuitems: MenuitemsType[] = [
     title: "Pending",
     icon: IconClock,
     href: "/dashboards/pending",
+  },
+  {
+    id: uniqueId(),
+    title: "Invoice",
+    icon: IconFileInvoice,
+    href: "/dashboards/invoice",
   },
   {
     id: uniqueId(),

@@ -1,6 +1,6 @@
 "use client";
 
-import InvoiceDashboard from "../Invoice/Dashboard";
+import InvoiceDashboard from "./Dashboard";
 
 
 export default function DashboardPage() {

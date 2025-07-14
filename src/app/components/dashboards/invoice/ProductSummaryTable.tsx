@@ -1,5 +1,5 @@
 "use client";
-import { ProductSummary } from "@/app/(DashboardLayout)/dashboards/Invoice/types";
+import { ProductSummary } from "@/app/(DashboardLayout)/dashboards/dashboard/types";
 import DownloadButton from "@/app/components/common/DownloadButton";
 import SearchIcon from "@mui/icons-material/Search";
 import {

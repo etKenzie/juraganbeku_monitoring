@@ -1,5 +1,5 @@
 "use client";
-import { calculateDueDateStatus } from "@/app/(DashboardLayout)/dashboards/Invoice/data";
+import { calculateDueDateStatus } from "@/app/(DashboardLayout)/dashboards/dashboard/data";
 import DownloadButton from "@/app/components/common/DownloadButton";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import { OrderData, updateOrderItems } from "@/store/apps/Invoice/invoiceSlice";

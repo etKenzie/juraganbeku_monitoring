@@ -20,7 +20,7 @@ import PaymentDistributionChart from "@/app/components/dashboards/invoice/Paymen
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
 import SegmentPerformanceChart from "@/app/components/dashboards/invoice/SegmentPerformanceChart";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
-import TotalSummaries from "@/app/components/dashboards/invoice/TotalSummaries";
+import TotalSummaries from "@/app/components/dashboards/invoice/YearlyTotal";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
