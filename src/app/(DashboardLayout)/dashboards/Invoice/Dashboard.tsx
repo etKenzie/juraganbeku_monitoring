@@ -1,5 +1,5 @@
 "use client";
-import { fetchNOO, fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
+import { fetchNOO, fetchOrders, fetchStoreData } from "@/store/apps/Invoice/invoiceSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
 import { useEffect, useMemo, useState } from "react";
@@ -7,19 +7,20 @@ import { useInvoiceData } from "./data";
 
 import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
+import ActivationRateChart from "@/app/components/dashboards/invoice/ActivationRateChart";
 import AreaChart from "@/app/components/dashboards/invoice/AreaChart";
 import DueDateStatusChart from "@/app/components/dashboards/invoice/DueDateStatusChart";
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
-import MonthlyStoreChart from "@/app/components/dashboards/invoice/MonthlyStoreChart";
 import NOOAreaChart from "@/app/components/dashboards/invoice/NOOAreaChart";
 import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
+import PaymentDetailsModal from "@/app/components/dashboards/invoice/PaymentDetailsModal";
 import PaymentDistributionChart from "@/app/components/dashboards/invoice/PaymentDistributionChart";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
 import SegmentPerformanceChart from "@/app/components/dashboards/invoice/SegmentPerformanceChart";
-import StoreMetrics from "@/app/components/dashboards/invoice/StoreMetrics";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
+import TotalSummaries from "@/app/components/dashboards/invoice/TotalSummaries";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
@@ -72,10 +73,11 @@ export default function Dashboard() {
   const { role } = useAuth();
 
   // Get orders from the Redux store
-  const { orders, nooData, loading, error } = useSelector(
+  const { orders, nooData, storeData, loading, error } = useSelector(
     (state: RootState) => ({
       orders: state.invoiceReducer.orders,
       nooData: state.invoiceReducer.nooData,
+      storeData: state.invoiceReducer.storeData,
       loading: state.invoiceReducer.loading,
       error: state.invoiceReducer.error,
     })
@@ -134,6 +136,16 @@ export default function Dashboard() {
   const [areas, setAreas] = useState<string[]>([""]);
   const [segment, setSegment] = useState<string>("");
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [monthlyTotalStoreCount, setMonthlyTotalStoreCount] = useState<Record<string, number>>({});
+  const [activationRateData, setActivationRateData] = useState<Array<{ 
+    month: string; 
+    activationRate: number; 
+    totalStores: number; 
+    activeStores: number; 
+    monthlyOrders: number; 
+  }>>([]);
+
 
   const getDateRange = (period: string) => {
     const now = new Date();
@@ -218,6 +230,7 @@ export default function Dashboard() {
             segment: segment,
           })
         ),
+        dispatch(fetchStoreData({ area: AREA }) as any),
       ]);
     } catch (error) {
       console.error("Fetch error:", error);
@@ -251,6 +264,73 @@ export default function Dashboard() {
     }
   }, [validOrders]);
 
+  // Calculate monthlyTotalStoreCount and activation rate from storeData
+  useEffect(() => {
+    if (storeData && storeData.length > 0) {
+      const monthlyCounts: Record<string, number> = {};
+      
+      // Get all unique months from store data
+      const allMonths = storeData.map(store => store.period_month);
+      const uniqueMonths = Array.from(new Set(allMonths)).sort();
+      
+      // For each month, count all stores that have period_month <= that month
+      uniqueMonths.forEach(month => {
+        const monthDate = new Date(month);
+        const count = storeData.filter(store => {
+          const storeMonthDate = new Date(store.period_month);
+          return storeMonthDate <= monthDate;
+        }).length;
+        monthlyCounts[month] = count;
+      });
+      
+      setMonthlyTotalStoreCount(monthlyCounts);
+    }
+  }, [storeData]);
+
+  // Calculate activation rate data
+  useEffect(() => {
+    if (processedData && Object.keys(monthlyTotalStoreCount).length > 0) {
+      const activationData: Array<{ 
+        month: string; 
+        activationRate: number; 
+        totalStores: number; 
+        activeStores: number; 
+        monthlyOrders: number; 
+      }> = [];
+      
+      // Get months from processedData that have store counts
+      const monthsWithStores = Object.keys(processedData.monthlyStoreCounts);
+      console.log(monthlyTotalStoreCount)
+      
+      monthsWithStores.forEach(month => {
+        const activeStores = processedData.monthlyStoreCounts[month]?.size || 0;
+        const totalStores = monthlyTotalStoreCount[month] || 0;
+        
+        if (totalStores > 0) {
+          const activationRate = (activeStores / totalStores) * 100;
+          const monthlyOrders = processedData.monthlyOrderCounts[month] || 0;
+          activationData.push({
+            month,
+            activationRate: Math.round(activationRate * 100) / 100, // Round to 2 decimal places
+            totalStores,
+            activeStores,
+            monthlyOrders,
+          });
+        }
+      });
+      
+      // Sort by month
+      activationData.sort((a, b) => {
+        const dateA = new Date(a.month);
+        const dateB = new Date(b.month);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setActivationRateData(activationData);
+      console.log('Activation Rate Data:', activationData);
+    }
+  }, [processedData, monthlyTotalStoreCount]);
+
   useEffect(() => {
     if (processedData) {
       // Extract unique areas from the data
@@ -263,11 +343,9 @@ export default function Dashboard() {
     if (selectedArea && order.area !== selectedArea) return false;
     const orderMonthYear = order.month.toLowerCase();
 
-    console.log(orderMonthYear)
-
     // Check if the order's month is in the selected months
     const selectedMonths = dateRange.month.split(",");
-    console.log(selectedMonths)
+
     return selectedMonths.includes(orderMonthYear);
   });
 
@@ -441,6 +519,7 @@ export default function Dashboard() {
                           title="Total Invoice"
                           value={processedData.thisMonthMetrics.totalInvoice}
                           isCurrency
+                          onClick={() => setPaymentModalOpen(true)}
                         />
                       </Grid>
                       <Grid item xs={12} sm={6} md={3}>
@@ -450,86 +529,50 @@ export default function Dashboard() {
                           isCurrency
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total Lunas"
-                          value={processedData.thisMonthMetrics.totalLunas}
-                          isCurrency
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total Belum Lunas"
-                          value={processedData.thisMonthMetrics.totalBelumLunas}
-                          isCurrency
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total COD"
-                          value={processedData.thisMonthMetrics.totalCOD}
-                          isCurrency
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total TOP"
-                          value={processedData.thisMonthMetrics.totalTOP}
-                          isCurrency
-                        />
-                      </Grid>
                     </Grid>
                   </Box>
                 )}
 
-                {/* Store Metrics */}
-                {processedData && (
-                  <Box mb={4}>
-                    <StoreMetrics
-                      storeSummaries={processedData.storeSummaries}
-                      monthlyMetrics={{
-                        totalInvoice: processedData.overallTotalInvoice,
-                        totalProfit: processedData.overallProfit,
-                        totalOrders: processedData.totalOrderCount,
-                        totalStores: Object.keys(processedData.storeSummaries)
-                          .length,
-                        totalLunas: processedData.overallLunas,
-                        totalBelumLunas: processedData.overallBelumLunas,
-                        totalCOD: processedData.overallCOD,
-                        totalTOP: processedData.overallTOP,
-                      }}
-                      period={period}
-                    />
-                  </Box>
-                )}
+                
 
                 {/* Line Chart */}
                 <Box mb={4}>
                   <Grid container spacing={3}>
-                    <Grid item xs={12} lg={8}>
+                    <Grid item xs={12} lg={12}>
                       <InvoiceLineChart
                         data={processedData?.chartData || []}
                         timePeriod={timePeriod}
                       />
                     </Grid>
-                    <Grid item xs={12} lg={4}>
+                    {/* <Grid item xs={12} lg={4}>
                       <MonthlyStoreChart
                         data={processedData?.monthlyStoreCounts || {}}
                         monthlyOrders={processedData?.monthlyOrderCounts || {}}
                       />
-                    </Grid>
+                    </Grid> */}
                   </Grid>
                 </Box>
+
+                {/* Activation Rate Chart */}
+                {activationRateData.length > 0 && (
+                  <Box mb={4}>
+                    <ActivationRateChart data={activationRateData} />
+                  </Box>
+                )}
+
+                
 
                 {/* NOO Chart */}
                 <Box mb={4}>
                   <NOOChart data={nooData} />
                 </Box>
 
-                {/* NOO Area Chart */}
-                <Box mb={4}>
-                  <NOOAreaChart data={nooData} />
-                </Box>
+                {/* NOO Area Chart - Only show when no specific area is selected */}
+                {!area && (
+                  <Box mb={4}>
+                    <NOOAreaChart data={nooData} />
+                  </Box>
+                )}
 
                 {/* Store Summary Table */}
                 {processedData && (
@@ -549,8 +592,8 @@ export default function Dashboard() {
                   </Box>
                 )}
 
-                {/* Area Chart */}
-                {processedData && (
+                {/* Area Chart - Only show when no specific area is selected */}
+                {processedData && !area && (
                   <Box mb={4}>
                     <AreaChart
                       areaData={processedData.areaSummaries}
@@ -558,6 +601,7 @@ export default function Dashboard() {
                     />
                   </Box>
                 )}
+            
 
                 {/* Segment Performance Chart */}
                 {processedData &&
@@ -593,6 +637,8 @@ export default function Dashboard() {
                   </Box>
                 )}
 
+                
+
                 {/* Orders Table */}
                 {validOrders && (
                   <Box>
@@ -601,12 +647,47 @@ export default function Dashboard() {
                         data={processedData.dueDateStatusCounts}
                       />
                     )}
+
+                    {/* Store Metrics */}
+                    {processedData && (
+                      <Box mb={4} mt={4}>
+                        <TotalSummaries
+                          monthlyMetrics={{
+                            totalInvoice: processedData.overallTotalInvoice,
+                            totalProfit: processedData.overallProfit,
+                            totalOrders: processedData.totalOrderCount,
+                            totalStores: Object.keys(processedData.storeSummaries)
+                              .length,
+                            totalLunas: processedData.overallLunas,
+                            totalBelumLunas: processedData.overallBelumLunas,
+                            totalCOD: processedData.overallCOD,
+                            totalTOP: processedData.overallTOP,
+                          }}
+                          period={period}
+                        />
+                      </Box>
+                    )}
                     <OrdersTable orders={filteredOrders} exportOrderDetails={true}/>
                   </Box>
                 )}
               </>
             )}
           </>
+        )}
+
+        {/* Payment Details Modal */}
+        {processedData && (
+          <PaymentDetailsModal
+            open={paymentModalOpen}
+            onClose={() => setPaymentModalOpen(false)}
+            paymentData={{
+              // totalInvoice: processedData.thisMonthMetrics.totalInvoice,
+              totalLunas: processedData.thisMonthMetrics.totalLunas,
+              totalBelumLunas: processedData.thisMonthMetrics.totalBelumLunas,
+              totalCOD: processedData.thisMonthMetrics.totalCOD,
+              totalTOP: processedData.thisMonthMetrics.totalTOP,
+            }}
+          />
         )}
       </>
     </PageContainer>

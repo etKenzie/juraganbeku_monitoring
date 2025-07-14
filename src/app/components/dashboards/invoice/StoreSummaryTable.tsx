@@ -6,6 +6,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   Checkbox,
+  Chip,
   Collapse,
   FormControlLabel,
   FormGroup,
@@ -43,10 +44,14 @@ interface DisplayStoreSummary {
   activeMonths: number;
   averageOrderValue: number;
   userId: string;
+  storeStatus: "Active" | "D1" | "D2" | "Inactive";
+  lastOrderDate?: string;
 }
 
 const headCells: HeadCell[] = [
   { id: "storeName", label: "Store Name", numeric: false },
+  { id: "storeStatus", label: "Status", numeric: false },
+  { id: "lastOrderDate", label: "Last Order Date", numeric: false },
   { id: "orderCount", label: "Total Orders", numeric: true },
   { id: "totalInvoice", label: "Total Invoice", numeric: true },
   { id: "totalProfit", label: "Total Profit", numeric: true },
@@ -54,20 +59,36 @@ const headCells: HeadCell[] = [
   { id: "averageOrderValue", label: "Average Order Value", numeric: true },
 ];
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Active":
+      return "success";
+    case "D1":
+      return "warning";
+    case "D2":
+      return "error";
+    case "Inactive":
+      return "default";
+    default:
+      return "default";
+  }
+};
+
 interface StoreSummaryTableProps {
   storeSummaries: { [key: string]: StoreSummary };
 }
 
 export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableProps) {
-  const [order, setOrder] = useState<Order>("asc");
-  const [orderBy, setOrderBy] = useState<keyof DisplayStoreSummary>("storeName");
+  const [order, setOrder] = useState<Order>("desc");
+  const [orderBy, setOrderBy] = useState<keyof DisplayStoreSummary>("lastOrderDate");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedStore, setSelectedStore] = useState<StoreSummary | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [showMonthFilter, setShowMonthFilter] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set());
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
 
   // Get all unique months from all stores
   const allMonths = useMemo(() => {
@@ -78,6 +99,15 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
     return Array.from(months).sort();
   }, [storeSummaries]);
 
+  // Get all unique statuses
+  const allStatuses = useMemo(() => {
+    const statuses = new Set<string>();
+    Object.values(storeSummaries).forEach(store => {
+      statuses.add(store.storeStatus);
+    });
+    return Array.from(statuses).sort();
+  }, [storeSummaries]);
+
   const handleMonthChange = (month: string) => {
     const newSelectedMonths = new Set(selectedMonths);
     if (newSelectedMonths.has(month)) {
@@ -86,6 +116,17 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
       newSelectedMonths.add(month);
     }
     setSelectedMonths(newSelectedMonths);
+    setPage(0); // Reset to first page when filter changes
+  };
+
+  const handleStatusChange = (status: string) => {
+    const newSelectedStatuses = new Set(selectedStatuses);
+    if (newSelectedStatuses.has(status)) {
+      newSelectedStatuses.delete(status);
+    } else {
+      newSelectedStatuses.add(status);
+    }
+    setSelectedStatuses(newSelectedStatuses);
     setPage(0); // Reset to first page when filter changes
   };
 
@@ -128,6 +169,13 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
         }
       }
 
+      // Status filter
+      if (selectedStatuses.size > 0) {
+        if (!selectedStatuses.has(summary.storeStatus)) {
+          return false;
+        }
+      }
+
       return true;
     })
     .map(([id, summary]) => ({
@@ -139,10 +187,29 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
       activeMonths: summary.activeMonths.size,
       averageOrderValue: summary.averageOrderValue,
       userId: summary.userId,
+      storeStatus: summary.storeStatus,
+      lastOrderDate: summary.lastOrderDate,
     }))
     .sort((a, b) => {
       const aValue = a[orderBy];
       const bValue = b[orderBy];
+      
+      // Handle undefined values
+      if (aValue === undefined && bValue === undefined) return 0;
+      if (aValue === undefined) return order === "asc" ? 1 : -1;
+      if (bValue === undefined) return order === "asc" ? -1 : 1;
+      
+      // Special handling for date sorting
+      if (orderBy === "lastOrderDate") {
+        const aDate = aValue ? new Date(aValue as string).getTime() : 0;
+        const bDate = bValue ? new Date(bValue as string).getTime() : 0;
+        if (order === "asc") {
+          return aDate - bDate;
+        } else {
+          return bDate - aDate;
+        }
+      }
+      
       if (order === "asc") {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {
@@ -171,8 +238,8 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
         <Typography variant="h6">Store Summary</Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <IconButton 
-            onClick={() => setShowMonthFilter(!showMonthFilter)}
-            color={selectedMonths.size > 0 ? "primary" : "default"}
+            onClick={() => setShowFilters(!showFilters)}
+            color={selectedStatuses.size > 0 || selectedMonths.size > 0 ? "primary" : "default"}
           >
             <FilterListIcon />
           </IconButton>
@@ -186,23 +253,49 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
         </Box>
       </Box>
 
-      <Collapse in={showMonthFilter}>
+      <Collapse in={showFilters}>
         <Box sx={{ mb: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>Filter by Active Months</Typography>
-          <FormGroup row>
-            {allMonths.map((month) => (
-              <FormControlLabel
-                key={month}
-                control={
-                  <Checkbox
-                    checked={selectedMonths.has(month)}
-                    onChange={() => handleMonthChange(month)}
-                  />
-                }
-                label={month}
-              />
-            ))}
-          </FormGroup>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Filter by Store Status</Typography>
+            <FormGroup row>
+              {allStatuses.map((status) => (
+                <FormControlLabel
+                  key={status}
+                  control={
+                    <Checkbox
+                      checked={selectedStatuses.has(status)}
+                      onChange={() => handleStatusChange(status)}
+                    />
+                  }
+                  label={
+                    <Chip 
+                      label={status} 
+                      color={getStatusColor(status) as any}
+                      size="small"
+                      variant="outlined"
+                    />
+                  }
+                />
+              ))}
+            </FormGroup>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Filter by Active Months</Typography>
+            <FormGroup row>
+              {allMonths.map((month) => (
+                <FormControlLabel
+                  key={month}
+                  control={
+                    <Checkbox
+                      checked={selectedMonths.has(month)}
+                      onChange={() => handleMonthChange(month)}
+                    />
+                  }
+                  label={month}
+                />
+              ))}
+            </FormGroup>
+          </Box>
         </Box>
       </Collapse>
 
@@ -261,6 +354,14 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
                   sx={{ cursor: 'pointer' }}
                 >
                   <TableCell>{store.storeName}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={store.storeStatus} 
+                      color={getStatusColor(store.storeStatus) as any}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>{store.lastOrderDate ? new Date(store.lastOrderDate).toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell align="right">{store.orderCount}</TableCell>
                   <TableCell align="right">{formatCurrency(store.totalInvoice)}</TableCell>
                   <TableCell align="right">{formatCurrency(store.totalProfit)}</TableCell>

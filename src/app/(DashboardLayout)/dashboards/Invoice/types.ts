@@ -97,4 +97,6 @@ export interface StoreSummary {
   activeMonths: Set<string>;
   averageOrderValue: number;
   orders: OrderData[];
+  storeStatus: "Active" | "D1" | "D2" | "Inactive";
+  lastOrderDate?: string;
 }

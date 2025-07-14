@@ -3,6 +3,7 @@ import { formatCurrency } from "@/app/utils/formatNumber";
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -27,6 +28,21 @@ interface StoreDetailsModalProps {
   onClose: () => void;
   store: StoreSummary;
 }
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Active":
+      return "success";
+    case "D1":
+      return "warning";
+    case "D2":
+      return "error";
+    case "Inactive":
+      return "default";
+    default:
+      return "default";
+  }
+};
 
 const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
   open,
@@ -142,6 +158,19 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
                   <Typography>
                     Active Months: {store.activeMonths.size}
                   </Typography>
+                  <Typography>
+                    Store Status:{" "}
+                    <Chip 
+                      label={store.storeStatus} 
+                      color={getStatusColor(store.storeStatus) as any}
+                      size="small"
+                    />
+                  </Typography>
+                  {store.lastOrderDate && (
+                    <Typography>
+                      Last Order Date: {new Date(store.lastOrderDate).toLocaleDateString()}
+                    </Typography>
+                  )}
                   <Typography color="error">
                     Total Hutang:{" "}
                     {formatCurrency(

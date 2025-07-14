@@ -86,8 +86,8 @@ export default function StockPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [orderBy, setOrderBy] = useState<string | null>(null);
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
-  const [showZeroStock, setShowZeroStock] = useState(true);
-  const [showNoPrice, setShowNoPrice] = useState(true);
+  const [showZeroStock, setShowZeroStock] = useState(false);
+  const [showNoPrice, setShowNoPrice] = useState(false);
 
   // Fetch data
   useEffect(() => {

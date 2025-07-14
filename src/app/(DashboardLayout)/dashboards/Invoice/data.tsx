@@ -19,6 +19,36 @@ export const calculateDueDateStatus = (
   return "60 DPD";
 };
 
+export const calculateStoreStatus = (
+  orders: OrderData[]
+): { status: "Active" | "D1" | "D2" | "Inactive"; lastOrderDate?: string } => {
+  if (!orders || orders.length === 0) {
+    return { status: "Inactive" };
+  }
+
+  // Find the most recent order date
+  const lastOrder = orders.reduce((latest, order) => {
+    const orderDate = new Date(order.order_date);
+    const latestDate = latest ? new Date(latest.order_date) : new Date(0);
+    return orderDate > latestDate ? order : latest;
+  });
+
+  const lastOrderDate = new Date(lastOrder.order_date);
+  const today = new Date();
+  const diffTime = today.getTime() - lastOrderDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 30) {
+    return { status: "Active", lastOrderDate: lastOrder.order_date };
+  } else if (diffDays <= 60) {
+    return { status: "D1", lastOrderDate: lastOrder.order_date };
+  } else if (diffDays <= 90) {
+    return { status: "D2", lastOrderDate: lastOrder.order_date };
+  } else {
+    return { status: "Inactive", lastOrderDate: lastOrder.order_date };
+  }
+};
+
 export const useInvoiceData = () => {
   const processChartData = (
     orders: OrderData[]
@@ -464,6 +494,7 @@ export const useInvoiceData = () => {
           activeMonths: new Set(),
           averageOrderValue: 0,
           orders: [],
+          storeStatus: "Inactive",
         };
       }
 
@@ -497,6 +528,14 @@ export const useInvoiceData = () => {
 
       result.hubSummaries[hub].totalPembayaran += order.total_pembayaran || 0;
       result.hubSummaries[hub].orderCount++;
+    });
+
+    // Calculate store status for each store after all orders are processed
+    Object.keys(result.storeSummaries).forEach((userId) => {
+      const store = result.storeSummaries[userId];
+      const { status, lastOrderDate } = calculateStoreStatus(store.orders);
+      store.storeStatus = status;
+      store.lastOrderDate = lastOrderDate;
     });
 
     // Calculate final metrics for most recent month

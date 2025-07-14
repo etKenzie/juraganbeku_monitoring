@@ -6,6 +6,7 @@ import { AppDispatch } from "../../store";
 
 const ORDER_DASHBOARD_URL = `https://dev.tokopandai.id/api/order/dashboard`;
 const ORDER_NOO_URL = "https://dev.tokopandai.id/api/order/stores-order-once";
+const ACTIVE_USERS_URL = "https://dev.tokopandai.id/api/order/active-user";
 const UPDATE_ORDER_ITEMS_URL =
   "https://dev.tokopandai.id/api/order/order-items";
 
@@ -87,6 +88,19 @@ export interface OrderData {
   // ... other existing fields ...
 }
 
+export interface StoreData {
+  user_id: string;
+  reseller_name: string;
+  store_name: string;
+  reseller_code: string;
+  phone_number: string;
+  segment: string;
+  business_type: string;
+  sub_business_type: string;
+  first_active: string;
+  period_month: string;
+}
+
 export interface StateType {
   dashboardData: DashboardData[];
   geraiData: GeraiData[];
@@ -96,6 +110,7 @@ export interface StateType {
   meta: { totalItems: number } | null;
   orders: OrderData[];
   nooData: OrderData[];
+  storeData: StoreData[];
   pendingRequests: number;
 }
 
@@ -108,6 +123,7 @@ const initialState: StateType = {
   meta: null,
   orders: [],
   nooData: [],
+  storeData: [],
   pendingRequests: 0,
 };
 
@@ -160,6 +176,9 @@ const invoiceSlice = createSlice({
     getNOOSuccess(state, action: PayloadAction<OrderData[]>) {
       state.nooData = action.payload;
     },
+    getStoreDataSuccess(state, action: PayloadAction<StoreData[]>) {
+      state.storeData = action.payload;
+    },
   },
 });
 
@@ -171,6 +190,7 @@ export const {
   //   getGeraiData,
   getOrdersSuccess,
   getNOOSuccess,
+  getStoreDataSuccess,
 } = invoiceSlice.actions;
 
 interface OrderQuery {
@@ -229,7 +249,7 @@ export const fetchNOO =
       const request = `${ORDER_NOO_URL}${
         searchParams.toString() ? `?${searchParams.toString()}` : ""
       }`;
-      console.log(request);
+      // console.log(request);
 
       const response = await axios.get(request, {
         // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
@@ -263,7 +283,7 @@ export const updateOrderItems =
       const response = await axios.patch(UPDATE_ORDER_ITEMS_URL, payload, {
         // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
       });
-      console.log(response);
+      // console.log(response);
 
       if (response.data.code === 200) {
         dispatch(endLoading());
@@ -281,5 +301,38 @@ export const updateOrderItems =
       throw error;
     }
   };
+
+export const fetchStoreData = (params?: { area?: string }) => async (dispatch: AppDispatch) => {
+  dispatch(startLoading());
+  try {
+    const AUTH_TOKEN = getCookie("token");
+
+    const searchParams = new URLSearchParams();
+    searchParams.append("limit", "10000");
+    searchParams.append("page", "1");
+    searchParams.append("sortBy", "desc");
+    
+    if (params?.area) {
+      searchParams.append("area", params.area);
+    }
+
+    const request = `${ACTIVE_USERS_URL}?${searchParams.toString()}`;
+    console.log(request);
+
+    const response = await axios.get(request, {
+      // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+    });
+
+    if (response.data.code === 200) {
+      dispatch(getStoreDataSuccess(response.data.data.data));
+      dispatch(endLoading());
+    } else {
+      dispatch(hasError(response.data.message || "Failed to fetch store data"));
+    }
+  } catch (error: any) {
+    dispatch(hasError(error.message || "Failed to fetch store data"));
+    throw new Error("AUTH_ERROR");
+  }
+};
 
 export default invoiceSlice.reducer;
