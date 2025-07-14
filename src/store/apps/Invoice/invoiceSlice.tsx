@@ -99,6 +99,7 @@ export interface StoreData {
   sub_business_type: string;
   first_active: string;
   period_month: string;
+  first_order_month: string;
 }
 
 export interface StateType {

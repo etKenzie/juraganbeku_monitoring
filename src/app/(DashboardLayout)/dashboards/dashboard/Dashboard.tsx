@@ -270,14 +270,14 @@ export default function Dashboard() {
       const monthlyCounts: Record<string, number> = {};
       
       // Get all unique months from store data
-      const allMonths = storeData.map(store => store.period_month);
+      const allMonths = storeData.map(store => store.first_order_month);
       const uniqueMonths = Array.from(new Set(allMonths)).sort();
       
       // For each month, count all stores that have period_month <= that month
       uniqueMonths.forEach(month => {
         const monthDate = new Date(month);
         const count = storeData.filter(store => {
-          const storeMonthDate = new Date(store.period_month);
+          const storeMonthDate = new Date(store.first_order_month);
           return storeMonthDate <= monthDate;
         }).length;
         monthlyCounts[month] = count;

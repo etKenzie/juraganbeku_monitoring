@@ -11,6 +11,7 @@ import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
+import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import DueDateStatusBarChart from "@/app/components/dashboards/pending/DueDateStatusBarChart";
 import PaymentStatusPieChart from "@/app/components/dashboards/pending/PaymentStatusPieChart";
 import { useAuth } from "@/contexts/AuthContext";
@@ -366,9 +367,13 @@ export default function PendingDashboard() {
                 <Grid item xs={12} md={12}>
                   <DueDateStatusBarChart data={dueDateStatusMetrics} />
                 </Grid>
-              
               </Grid>
-              
+              {/* Store Summary Table for total owed per store */}
+              {processedData && (
+                <Box mb={4}>
+                  <StoreSummaryTable storeSummaries={processedData.storeSummaries} />
+                </Box>
+              )}
               {/* Orders Table */}
               {validOrders && (
                 <Box>
