@@ -2,19 +2,21 @@
 import { formatCurrency } from "@/app/utils/formatNumber";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
-    Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Divider,
-    IconButton,
-    List,
-    ListItem,
-    ListItemText,
-    Tooltip,
-    Typography
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  MenuItem,
+  Select,
+  Tooltip,
+  Typography
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
@@ -33,6 +35,7 @@ const NOOChart = ({ data }: NOOChartProps) => {
   const [isClient, setIsClient] = React.useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<'nooCount' | 'totalInvoice' | 'totalProfit'>('nooCount');
 
   React.useEffect(() => {
     setIsClient(true);
@@ -54,24 +57,28 @@ const NOOChart = ({ data }: NOOChartProps) => {
     []
   );
 
-  // Process data to count unique stores per month
+  // Process data to count unique stores per month and sum invoice/profit
   const monthlyData = React.useMemo(() => {
     // First, get the first order date for each store
     const storeFirstOrders = data.reduce((acc: Record<string, { month: string, order: OrderData }>, order) => {
       const storeId = order.user_id;
       const monthYear = order.month.toLowerCase();
-      
       if (!acc[storeId] || new Date(order.order_date) < new Date(acc[storeId].order.order_date)) {
         acc[storeId] = { month: monthYear, order };
       }
       return acc;
     }, {});
 
-    // Then, count stores per month
-    const monthlyCounts = Object.values(storeFirstOrders).reduce((acc: Record<string, number>, { month }) => {
-      acc[month] = (acc[month] || 0) + 1;
-      return acc;
-    }, {});
+    // Then, aggregate per month
+    const monthlyCounts: Record<string, { nooCount: number; totalInvoice: number; totalProfit: number }> = {};
+    Object.values(storeFirstOrders).forEach(({ month, order }) => {
+      if (!monthlyCounts[month]) {
+        monthlyCounts[month] = { nooCount: 0, totalInvoice: 0, totalProfit: 0 };
+      }
+      monthlyCounts[month].nooCount += 1;
+      monthlyCounts[month].totalInvoice += order.total_invoice;
+      monthlyCounts[month].totalProfit += order.profit || 0;
+    });
 
     return { monthlyCounts, storeFirstOrders };
   }, [data]);
@@ -84,33 +91,52 @@ const NOOChart = ({ data }: NOOChartProps) => {
     return dateA.getTime() - dateB.getTime(); // Earliest to latest
   });
 
-  const nooCounts = months.map(month => monthlyData.monthlyCounts[month]);
+  const nooCounts = months.map(month => monthlyData.monthlyCounts[month].nooCount);
+  const totalInvoices = months.map(month => monthlyData.monthlyCounts[month].totalInvoice);
+  const totalProfits = months.map(month => monthlyData.monthlyCounts[month].totalProfit);
+
+  // Remove formatY and use formatCurrency only for display
+  let chartData: number[] = [];
+  let chartLabel = '';
+  if (selectedMetric === 'nooCount') {
+    chartData = nooCounts;
+    chartLabel = 'New Ordering Outlets';
+  } else if (selectedMetric === 'totalInvoice') {
+    chartData = totalInvoices;
+    chartLabel = 'Total Invoice';
+  } else if (selectedMetric === 'totalProfit') {
+    chartData = totalProfits;
+    chartLabel = 'Total Profit';
+  }
 
   // Calculate average and find max count
-  const average = nooCounts.reduce((acc, curr) => acc + curr, 0) / nooCounts.length;
-  const maxCount = Math.max(...nooCounts);
-  const mostRecentMonth = months[months.length - 1]; // Changed back to last item
-  const mostRecentCount = monthlyData.monthlyCounts[mostRecentMonth] || 0;
+  const average = chartData.length > 0 ? chartData.reduce((acc, curr) => acc + curr, 0) / chartData.length : 0;
+  const maxCount = chartData.length > 0 ? Math.max(...chartData) : 0;
+  const mostRecentMonth = months[months.length - 1];
+  const mostRecentValue = monthlyData.monthlyCounts[mostRecentMonth]?.[selectedMetric] || 0;
 
   const neutral = theme.palette.grey[300];
   const highlightColor = theme.palette.primary.main;
-  const colors = months.map((month) =>
-    monthlyData.monthlyCounts[month] === maxCount ? highlightColor : neutral
+  const colors = chartData.map((val) =>
+    val === maxCount ? highlightColor : neutral
   );
 
   const insightText = (
     <span>
       Average of{" "}
       <strong style={{ color: theme.palette.primary.main }}>
-        {average.toFixed(1)}
+        {formatCurrency(average)}
       </strong>{" "}
-      new stores over{" "}
+      {selectedMetric === 'nooCount' ? 'new stores' : (selectedMetric === 'totalInvoice' ? 'invoice' : 'profit')} over{" "}
       <strong style={{ color: theme.palette.primary.main }}>
         {months.length}
       </strong>{" "}
       months
     </span>
   );
+
+  // Capitalize the first letter of each month for display
+  const displayMonths = months.map(m => m.charAt(0).toUpperCase() + m.slice(1));
 
   const options: any = {
     chart: {
@@ -123,13 +149,11 @@ const NOOChart = ({ data }: NOOChartProps) => {
       height: 280,
       events: {
         click: (event: any, chartContext: any, config: any) => {
-          console.log('Chart clicked:', config);
           if (config.dataPointIndex !== undefined) {
             handleBarClick(months[config.dataPointIndex]);
           }
         },
         dataPointClick: (event: any, chartContext: any, config: any) => {
-          console.log('Data point clicked:', config);
           handleBarClick(months[config.dataPointIndex]);
         }
       },
@@ -144,7 +168,11 @@ const NOOChart = ({ data }: NOOChartProps) => {
       },
     },
     dataLabels: {
-      enabled: false,
+      enabled: true,
+      formatter: (val: number) => formatCurrency(val),
+      style: {
+        colors: ["#111"]
+      },
     },
     legend: {
       show: false,
@@ -157,45 +185,16 @@ const NOOChart = ({ data }: NOOChartProps) => {
       },
     },
     xaxis: {
-      categories: months,
+      categories: displayMonths,
       axisBorder: {
         show: false,
       },
     },
     yaxis: {
       labels: {
-        show: false,
+        show: true,
+        formatter: (val: number) => formatCurrency(val),
       },
-    },
-    states: {
-      hover: {
-        filter: {
-          type: "darken",
-          value: 0.1,
-        },
-      },
-      active: {
-        filter: {
-          type: "none",
-        },
-      },
-    },
-    annotations: {
-      yaxis: [
-        {
-          y: average,
-          borderColor: theme.palette.primary.main,
-          borderWidth: 3,
-          strokeDashArray: 0,
-          label: {
-            borderColor: theme.palette.primary.main,
-            style: {
-              color: "#fff",
-              background: theme.palette.primary.main,
-            },
-          },
-        },
-      ],
     },
     tooltip: {
       theme: theme.palette.mode === "dark" ? "dark" : "light",
@@ -204,8 +203,8 @@ const NOOChart = ({ data }: NOOChartProps) => {
 
   const series = [
     {
-      name: "New Ordering Outlets",
-      data: nooCounts,
+      name: chartLabel,
+      data: chartData,
     },
   ];
 
@@ -254,17 +253,28 @@ const NOOChart = ({ data }: NOOChartProps) => {
       <DashboardWidgetCard
         title="New Ordering Outlets"
         subtitle={insightText}
-        dataLabel1="Current Month"
-        dataItem1={mostRecentCount.toString()}
+        action={
+          <Box display="flex" alignItems="center" gap={2}>
+            <Select
+              value={selectedMetric}
+              onChange={e => setSelectedMetric(e.target.value as any)}
+              size="small"
+            >
+              <MenuItem value="nooCount">NOO Count</MenuItem>
+              <MenuItem value="totalInvoice">Total Invoice</MenuItem>
+              <MenuItem value="totalProfit">Total Profit</MenuItem>
+            </Select>
+            <Tooltip title="Download Chart">
+              <IconButton onClick={handleDownload} size="small">
+                <IconDownload size={20} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        }
+        dataLabel1={selectedMetric === 'nooCount' ? 'Current Month NOO' : (selectedMetric === 'totalInvoice' ? 'Current Month Invoice' : 'Current Month Profit')}
+        dataItem1={formatCurrency(mostRecentValue)}
         dataLabel2="Total Months"
         dataItem2={months.length.toString()}
-        action={
-          <Tooltip title="Download Chart">
-            <IconButton onClick={handleDownload} size="small">
-              <IconDownload size={20} />
-            </IconButton>
-          </Tooltip>
-        }
       >
         <Box height="300px" width="100%">
           {isClient && (
