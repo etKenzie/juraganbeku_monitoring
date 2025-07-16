@@ -344,6 +344,7 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
     orders.forEach((order) => {
       if (exportOrderDetails && order.detail_order && order.detail_order.length > 0) {
         order.detail_order.forEach((item, idx) => {
+          idx = 0;
           rows.push({
             order_code: idx === 0 ? order.order_code : '',
             reseller_name: idx === 0 ? order.reseller_name : '',
