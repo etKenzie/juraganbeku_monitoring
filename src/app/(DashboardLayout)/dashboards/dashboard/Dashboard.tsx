@@ -36,6 +36,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { goalProfit } from "../../goalProfit";
 import { AreaData, ProcessedData } from "./types";
 
 interface StoreSummary {
@@ -113,7 +114,7 @@ export default function Dashboard() {
   );
   const [isDataEmpty, setIsDataEmpty] = useState(false);
 
-  const [period, setPeriod] = useState("thisYear");
+  const [period, setPeriod] = useState("thisMonth");
   const [customMonth, setCustomMonth] = useState(new Date().getMonth());
   const [customYear, setCustomYear] = useState(new Date().getFullYear());
   const [sortTime, setSortTime] = useState<"asc" | "desc">("desc");
@@ -158,10 +159,10 @@ export default function Dashboard() {
     };
 
     switch (period) {
-      case "thisYear":
-        // For this year, show all months of current year
+      case "thisMonth":
+        // For thisMonth, show all months from January to current month of current year
         const months = [];
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i <= currentMonth; i++) {
           const monthDate = new Date(currentYear, i, 1);
           const monthName = getEnglishMonthName(monthDate);
           months.push(`${monthName} ${currentYear}`);
@@ -181,6 +182,7 @@ export default function Dashboard() {
           month: customMonths.join(","),
         };
       default:
+        // Fallback to all months of current year
         const defaultMonths = [];
         for (let i = 0; i < 12; i++) {
           const monthDate = new Date(currentYear, i, 1);
@@ -197,6 +199,7 @@ export default function Dashboard() {
     () => getDateRange(period),
     [period, customMonth, customYear]
   );
+  console.log(dateRange)
 
   const handleApplyFilters = async () => {
     try {
@@ -395,7 +398,7 @@ export default function Dashboard() {
                     onChange={(e) => setPeriod(e.target.value)}
                     label="Time Period"
                   >
-                    <MenuItem value="thisYear">This Month</MenuItem>
+                    <MenuItem value="thisMonth">This Month</MenuItem>
                     <MenuItem value="custom">Custom Month</MenuItem>
                   </Select>
                 </FormControl>
@@ -502,19 +505,33 @@ export default function Dashboard() {
                 {processedData && (
                   <Box mb={4}>
                     <Grid container spacing={3}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      {/* Profit Goal FIRST */}
+                      <Grid item xs={12} sm={6} md={4}>
                         <InvoiceSummaryCard
-                          title="Total Orders"
-                          value={processedData.thisMonthMetrics.totalOrders}
+                          title="Profit Goal"
+                          value={(() => {
+                            const areaKey = selectedArea || area || "NATIONAL";
+                            let monthString = "";
+                            if (dateRange && dateRange.month) {
+                              const monthsArr = dateRange.month.split(",");
+                              monthString = monthsArr[monthsArr.length - 1].trim();
+                            }
+                            const value = goalProfit[areaKey]?.[monthString];
+                            return value || 0;
+                          })()}
+                          isCurrency
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      {/* Total Profit SECOND */}
+                      <Grid item xs={12} sm={6} md={4}>
                         <InvoiceSummaryCard
-                          title="Total Stores"
-                          value={processedData.thisMonthMetrics.totalStores}
+                          title="Total Profit"
+                          value={processedData.thisMonthMetrics.totalProfit}
+                          isCurrency
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      {/* Total Invoice THIRD */}
+                      <Grid item xs={12} sm={6} md={4}>
                         <InvoiceSummaryCard
                           title="Total Invoice"
                           value={processedData.thisMonthMetrics.totalInvoice}
@@ -522,11 +539,31 @@ export default function Dashboard() {
                           onClick={() => setPaymentModalOpen(true)}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      {/* Total Orders FOURTH */}
+                      <Grid item xs={12} sm={6} md={4}>
                         <InvoiceSummaryCard
-                          title="Total Profit"
-                          value={processedData.thisMonthMetrics.totalProfit}
-                          isCurrency
+                          title="Total Orders"
+                          value={processedData.thisMonthMetrics.totalOrders}
+                        />
+                      </Grid>
+                      {/* Total Stores FIFTH */}
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InvoiceSummaryCard
+                          title="Total Stores"
+                          value={processedData.thisMonthMetrics.totalStores}
+                        />
+                      </Grid>
+                      {/* Activation Rate LAST */}
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InvoiceSummaryCard
+                          title="Activation Rate"
+                          value={(() => {
+                            if (activationRateData && activationRateData.length > 0) {
+                              return activationRateData[activationRateData.length - 1].activationRate + "%";
+                            }
+                            return "0%";
+                          })()}
+                          isCurrency={false}
                         />
                       </Grid>
                     </Grid>

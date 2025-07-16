@@ -21,7 +21,7 @@ export const calculateDueDateStatus = (
 
 export const calculateStoreStatus = (
   orders: OrderData[]
-): { status: "Active" | "D1" | "D2" | "Inactive"; lastOrderDate?: string } => {
+): { status: "Active" | "D1" | "D2" | "D3" | "Inactive"; lastOrderDate?: string } => {
   if (!orders || orders.length === 0) {
     return { status: "Inactive" };
   }
@@ -44,6 +44,8 @@ export const calculateStoreStatus = (
     return { status: "D1", lastOrderDate: lastOrder.order_date };
   } else if (diffDays <= 90) {
     return { status: "D2", lastOrderDate: lastOrder.order_date };
+  } else if (diffDays <= 120) {
+    return { status: "D3", lastOrderDate: lastOrder.order_date };
   } else {
     return { status: "Inactive", lastOrderDate: lastOrder.order_date };
   }

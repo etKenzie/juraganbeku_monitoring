@@ -4,7 +4,7 @@ import { Box, Typography } from "@mui/material";
 
 interface InvoiceSummaryCardProps {
   title: string;
-  value: number;
+  value: number | string;
   isCurrency?: boolean;
   onClick?: () => void;
 }
@@ -15,7 +15,12 @@ const InvoiceSummaryCard = ({
   isCurrency = false,
   onClick,
 }: InvoiceSummaryCardProps) => {
-  const formattedValue = isCurrency ? formatCurrency(value) : formatLargeNumber(value);
+  let formattedValue: string;
+  if (typeof value === "number") {
+    formattedValue = isCurrency ? formatCurrency(value) : formatLargeNumber(value);
+  } else {
+    formattedValue = value;
+  }
 
   return (
     <Box

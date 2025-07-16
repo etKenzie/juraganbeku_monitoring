@@ -1,7 +1,6 @@
 import { getTitleKey } from "@/utils/brands/brandUtils";
 import {
-  IconAlignBoxBottomCenter,
-  IconClock,
+  IconCash,
   IconFileInvoice,
   IconHome,
   IconList,
@@ -31,7 +30,7 @@ const brandTitle = getTitleKey(brandId);
 const Menuitems: MenuitemsType[] = [
   {
     navlabel: true,
-    subheader: "Home",
+    subheader: "Distribusi",
   },
   {
     id: uniqueId(),
@@ -39,6 +38,20 @@ const Menuitems: MenuitemsType[] = [
     title: "Home",
     icon: IconHome,
     href: "/",
+  },
+  
+  {
+    id: uniqueId(),
+    // title: brandTitle,
+    title: "Sales",
+    icon: IconCash,
+    href: "/dashboards/dashboard",
+  },
+  {
+    id: uniqueId(),
+    title: "Invoice",
+    icon: IconFileInvoice,
+    href: "/dashboards/pending",
   },
   {
     id: uniqueId(),
@@ -48,23 +61,18 @@ const Menuitems: MenuitemsType[] = [
     href: "/dashboards/stock",
   },
   {
-    id: uniqueId(),
-    // title: brandTitle,
-    title: "Dashboard",
-    icon: IconAlignBoxBottomCenter,
-    href: "/dashboards/dashboard",
-  },
-  {
-    id: uniqueId(),
-    title: "Pending",
-    icon: IconClock,
-    href: "/dashboards/pending",
+    navlabel: true,
+    subheader: "Services",
   },
   {
     id: uniqueId(),
     title: "Invoice",
     icon: IconFileInvoice,
     href: "/dashboards/invoice",
+  },
+  {
+    navlabel: true,
+    subheader: "Other",
   },
   {
     id: uniqueId(),

@@ -64,8 +64,10 @@ const getStatusColor = (status: string) => {
     case "Active":
       return "success";
     case "D1":
-      return "warning";
+      return "info";
     case "D2":
+      return "warning";
+    case "D3":
       return "error";
     case "Inactive":
       return "default";
@@ -96,7 +98,15 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
     Object.values(storeSummaries).forEach(store => {
       store.activeMonths.forEach(month => months.add(month));
     });
-    return Array.from(months).sort();
+    // Sort by date (month year)
+    return Array.from(months).sort((a, b) => {
+      // Parse month and year
+      const [monthA, yearA] = a.split(" ");
+      const [monthB, yearB] = b.split(" ");
+      const dateA = new Date(`${monthA} 1, ${yearA}`);
+      const dateB = new Date(`${monthB} 1, ${yearB}`);
+      return dateA.getTime() - dateB.getTime();
+    });
   }, [storeSummaries]);
 
   // Get all unique statuses

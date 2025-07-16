@@ -1,5 +1,6 @@
 "use client";
 
+import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +11,7 @@ import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Select, Stack, Ty
 import { useEffect, useMemo, useState } from "react";
 import Loading from "../loading";
 import { useInvoiceData } from "./dashboards/dashboard/data";
+import { goalProfit } from "./goalProfit";
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
@@ -19,6 +21,13 @@ export default function DashboardPage() {
     nooData: state.invoiceReducer.nooData,
     loading: state.invoiceReducer.loading,
   }));
+
+  // Compose month string for API
+  const getMonthString = (month: number, year: number) => {
+    const date = new Date(year, month, 1);
+    const monthName = date.toLocaleString("en-US", { month: "long" }).toLowerCase();
+    return `${monthName} ${year}`;
+  };
 
   // Filters
   const [area, setArea] = useState(() => {
@@ -31,6 +40,7 @@ export default function DashboardPage() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const[monthString, setMonthString] = useState(getMonthString(selectedMonth, selectedYear))
   const [filters, setFilters] = useState<{ area: string; segment: string; month: number; year: number }>({
     area,
     segment: "",
@@ -43,12 +53,7 @@ export default function DashboardPage() {
     setFilters({ area, segment, month: selectedMonth, year: selectedYear });
   };
 
-  // Compose month string for API
-  const getMonthString = (month: number, year: number) => {
-    const date = new Date(year, month, 1);
-    const monthName = date.toLocaleString("en-US", { month: "long" }).toLowerCase();
-    return `${monthName} ${year}`;
-  };
+  
 
   // Fetch data when filters are set
   useEffect(() => {
@@ -57,7 +62,7 @@ export default function DashboardPage() {
     if (role?.includes("tangerang")) AREA = "TANGERANG";
     if (role?.includes("surabaya")) AREA = "SURABAYA";
     if (role?.includes("jakarta")) AREA = "JAKARTA";
-    const monthString = getMonthString(filters.month, filters.year);
+    setMonthString(getMonthString(filters.month, filters.year));
     dispatch(
       fetchOrders({
         sortTime: "desc",
@@ -178,45 +183,51 @@ export default function DashboardPage() {
       {/* Summary Cards */}
       {processedData && (
         <Box mb={3}>
-          <Grid container spacing={2}>
-            
-            <Grid item xs={12} sm={6} md={2.4}>
-              <Box p={2} bgcolor="#f5f5f5" borderRadius={2}>
-                <Typography variant="subtitle1">Total Invoice</Typography>
-                <Typography variant="h6">
-                  {processedData.thisMonthMetrics.totalInvoice?.toLocaleString("id-ID", { style: "currency", currency: "IDR" }) || 0}
-                </Typography>
-              </Box>
+          <Grid container spacing={3}>
+            {/* Profit Goal Card FIRST */}
+            <Grid item xs={12} sm={6} md={4}>
+              <InvoiceSummaryCard
+                title="Profit Goal"
+                value={(() => {
+                  const areaKey = area || "NATIONAL";
+                  const value = goalProfit[areaKey]?.[monthString];
+                  return value || 0;
+                })()}
+                isCurrency
+              />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <Box p={2} bgcolor="#f5f5f5" borderRadius={2}>
-                <Typography variant="subtitle1">Total Profit</Typography>
-                <Typography variant="h6">
-                  {processedData.thisMonthMetrics.totalProfit?.toLocaleString("id-ID", { style: "currency", currency: "IDR" }) || 0}
-                </Typography>
-              </Box>
+            <Grid item xs={12} sm={6} md={4}>
+              <InvoiceSummaryCard
+                title="Total Profit"
+                value={processedData.thisMonthMetrics.totalProfit}
+                isCurrency
+              />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <Box p={2} bgcolor="#f5f5f5" borderRadius={2}>
-                <Typography variant="subtitle1">Total Stores</Typography>
-                <Typography variant="h6">
-                  {processedData.thisMonthMetrics.totalStores || 0}
-                </Typography>
-              </Box>
+            {/* Existing summary cards */}
+            <Grid item xs={12} sm={6} md={4}>
+              <InvoiceSummaryCard
+                title="Total Invoice"
+                value={processedData.thisMonthMetrics.totalInvoice}
+                isCurrency
+              />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <Box p={2} bgcolor="#f5f5f5" borderRadius={2}>
-                <Typography variant="subtitle1">Total Orders</Typography>
-                <Typography variant="h6">
-                  {processedData.thisMonthMetrics.totalOrders || 0}
-                </Typography>
-              </Box>
+            <Grid item xs={12} sm={6} md={4}>
+              <InvoiceSummaryCard
+                title="Total Stores"
+                value={processedData.thisMonthMetrics.totalStores}
+              />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <Box p={2} bgcolor="#f5f5f5" borderRadius={2}>
-                <Typography variant="subtitle1">New NOOs</Typography>
-                <Typography variant="h6">{nooForSelectedMonth}</Typography>
-              </Box>
+            <Grid item xs={12} sm={6} md={4}>
+              <InvoiceSummaryCard
+                title="Total Orders"
+                value={processedData.thisMonthMetrics.totalOrders}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <InvoiceSummaryCard
+                title="New NOOs"
+                value={nooForSelectedMonth}
+              />
             </Grid>
           </Grid>
         </Box>
