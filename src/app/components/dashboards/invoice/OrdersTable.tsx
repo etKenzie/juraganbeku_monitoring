@@ -365,6 +365,7 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
             profit: idx === 0 ? order.profit : '',
             Tags: idx === 0 ? getOrderTagsString(order) : '',
             // Order item details
+            order_item_id: item.order_item_id,
             product_name: item.product_name,
             quantity: item.order_quantity,
             buy_price: item.buy_price,
