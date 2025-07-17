@@ -188,6 +188,24 @@ export default function DashboardPage() {
     return <Loading />;
   }
 
+  // Role-based access control
+  const hasAccess = [
+    "admin",
+    "tangerang",
+    "jakarta",
+    "surabaya",
+    "dashboard",
+  ].some((r) => role?.includes(r));
+  if (!hasAccess) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+        <Typography variant="h5" color="error">
+          You don't have access to this page.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box p={4}>
       <Typography variant="h4" mb={3}>

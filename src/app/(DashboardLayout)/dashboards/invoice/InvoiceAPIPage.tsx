@@ -23,6 +23,7 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InvoiceData {
   kode_gerai: string;
@@ -58,6 +59,7 @@ interface Company {
 }
 
 const InvoiceAPIPage: React.FC = () => {
+  const { role } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   // Active states (used for fetching)
   const [selectedCompanySlug, setSelectedCompanySlug] = useState<string>("");
@@ -211,6 +213,20 @@ const InvoiceAPIPage: React.FC = () => {
 
   return (
     <Box p={3}>
+      {/* Role-based access control */}
+      {(() => {
+        const allowed = ["invoice services", "admin"].some((r) => role?.includes(r));
+        if (!allowed) {
+          return (
+            <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+              <Typography variant="h5" color="error">
+                You don't have access to this page.
+              </Typography>
+            </Box>
+          );
+        }
+        return null;
+      })()}
       {loading ? (
         <Loading />
       ) : (

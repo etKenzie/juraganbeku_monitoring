@@ -224,7 +224,7 @@ export default function PendingDashboard() {
   if (loading) {
     return <Loading />;
   }
-  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya", "dashboard"].some(r => role?.includes(r));
+  const hasAccess = ["admin", "tangerang", "jakarta", "surabaya", "dashboard", "invoice distribution"].some(r => role?.includes(r));
 
   return (
     <PageContainer title="Pending Invoices Dashboard" description="Dashboard for pending invoices">

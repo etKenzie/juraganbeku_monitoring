@@ -24,6 +24,7 @@ import {
     Typography,
 } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const API_URL = "https://dev.tokopandai.id/api/product/";
 
@@ -71,6 +72,7 @@ const HUB_OPTIONS = [
 ];
 
 export default function StockPage() {
+  const { role } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +90,24 @@ export default function StockPage() {
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [showZeroStock, setShowZeroStock] = useState(false);
   const [showNoPrice, setShowNoPrice] = useState(false);
+
+  // Role-based access control
+  const hasAccess = [
+    "admin",
+    "tangerang",
+    "jakarta",
+    "surabaya",
+    "dashboard",
+  ].some((r) => role?.includes(r));
+  if (!hasAccess) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+        <Typography variant="h5" color="error">
+          You don't have access to this page.
+        </Typography>
+      </Box>
+    );
+  }
 
   // Fetch data
   useEffect(() => {

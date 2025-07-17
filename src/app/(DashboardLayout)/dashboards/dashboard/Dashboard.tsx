@@ -74,6 +74,8 @@ export default function Dashboard() {
 
   const { role } = useAuth();
 
+  
+
   // Get orders from the Redux store
   const { orders, nooData, storeData, loading, error } = useSelector(
     (state: RootState) => ({
@@ -364,6 +366,8 @@ export default function Dashboard() {
     "surabaya",
     "dashboard",
   ].some((r) => role?.includes(r));
+
+  
 
   // Calculate NOOs for the selected month
   let selectedMonth = "";
