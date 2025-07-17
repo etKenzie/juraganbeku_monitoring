@@ -12,8 +12,12 @@ export const formatCurrency = (num: number | undefined | null): string => {
   if (num === undefined || num === null) {
     return 'Rp 0';
   }
-  if (num < 1000) {
-    return `${num.toLocaleString()}`;
+
+  const rounded = Math.round(num);
+
+  if (rounded < 1000) {
+    return `${rounded.toLocaleString()}`;
   }
-  return `Rp ${num.toLocaleString()}`;
-}; 
+
+  return `Rp ${rounded.toLocaleString()}`;
+};
