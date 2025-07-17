@@ -38,6 +38,7 @@ import {
 import { useRouter } from "next/navigation";
 import { goalProfit } from "../../goalProfit";
 import { AreaData, ProcessedData } from "./types";
+import SummaryTiles from "@/app/components/dashboards/shared/SummaryTiles";
 
 interface StoreSummary {
   storeName: string;
@@ -199,7 +200,7 @@ export default function Dashboard() {
     () => getDateRange(period),
     [period, customMonth, customYear]
   );
-  console.log(dateRange)
+  // console.log(dateRange)
 
   const handleApplyFilters = async () => {
     try {
@@ -303,7 +304,6 @@ export default function Dashboard() {
       
       // Get months from processedData that have store counts
       const monthsWithStores = Object.keys(processedData.monthlyStoreCounts);
-      console.log(monthlyTotalStoreCount)
       
       monthsWithStores.forEach(month => {
         const activeStores = processedData.monthlyStoreCounts[month]?.size || 0;
@@ -330,7 +330,6 @@ export default function Dashboard() {
       });
       
       setActivationRateData(activationData);
-      console.log('Activation Rate Data:', activationData);
     }
   }, [processedData, monthlyTotalStoreCount]);
 
@@ -341,6 +340,7 @@ export default function Dashboard() {
       setAreas(uniqueAreas);
     }
   }, [processedData]);
+
 
   let filteredOrders = validOrders.filter((order) => {
     if (selectedArea && order.area !== selectedArea) return false;
@@ -364,6 +364,20 @@ export default function Dashboard() {
     "surabaya",
     "dashboard",
   ].some((r) => role?.includes(r));
+
+  // Calculate NOOs for the selected month
+  let selectedMonth = "";
+  if (dateRange && dateRange.month) {
+    const monthsArr = dateRange.month.split(",");
+    selectedMonth = monthsArr[monthsArr.length - 1].trim();
+    if (selectedMonth) {
+      selectedMonth = selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1);
+    }
+  
+  }
+  const nooCount = (nooData && Array.isArray(nooData))
+    ? nooData.filter((noo: any) => noo.month === selectedMonth).length
+    : 0;
 
   return (
     <PageContainer
@@ -504,69 +518,34 @@ export default function Dashboard() {
                 {/* Summary Cards */}
                 {processedData && (
                   <Box mb={4}>
-                    <Grid container spacing={3}>
-                      {/* Profit Goal FIRST */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <InvoiceSummaryCard
-                          title="Profit Goal"
-                          value={(() => {
-                            const areaKey = selectedArea || area || "NATIONAL";
-                            let monthString = "";
-                            if (dateRange && dateRange.month) {
-                              const monthsArr = dateRange.month.split(",");
-                              monthString = monthsArr[monthsArr.length - 1].trim();
-                            }
-                            const value = goalProfit[areaKey]?.[monthString];
-                            return value || 0;
-                          })()}
-                          isCurrency
-                        />
-                      </Grid>
-                      {/* Total Profit SECOND */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <InvoiceSummaryCard
-                          title="Total Profit"
-                          value={processedData.thisMonthMetrics.totalProfit}
-                          isCurrency
-                        />
-                      </Grid>
-                      {/* Total Invoice THIRD */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <InvoiceSummaryCard
-                          title="Total Invoice"
-                          value={processedData.thisMonthMetrics.totalInvoice}
-                          isCurrency
-                          onClick={() => setPaymentModalOpen(true)}
-                        />
-                      </Grid>
-                      {/* Total Orders FOURTH */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <InvoiceSummaryCard
-                          title="Total Orders"
-                          value={processedData.thisMonthMetrics.totalOrders}
-                        />
-                      </Grid>
-                      {/* Total Stores FIFTH */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <InvoiceSummaryCard
-                          title="Total Stores"
-                          value={processedData.thisMonthMetrics.totalStores}
-                        />
-                      </Grid>
-                      {/* Activation Rate LAST */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <InvoiceSummaryCard
-                          title="Activation Rate"
-                          value={(() => {
-                            if (activationRateData && activationRateData.length > 0) {
-                              return activationRateData[activationRateData.length - 1].activationRate + "%";
-                            }
-                            return "0%";
-                          })()}
-                          isCurrency={false}
-                        />
-                      </Grid>
-                    </Grid>
+                    {(() => {
+                      const areaKey = selectedArea || area || "NATIONAL";
+                      let monthString = "";
+                      if (dateRange && dateRange.month) {
+                        const monthsArr = dateRange.month.split(",");
+                        monthString = monthsArr[monthsArr.length - 1].trim();
+                      }
+                      const goal = goalProfit[areaKey]?.[monthString] || 0;
+                      const profit = processedData.thisMonthMetrics.totalProfit || 0;
+                      const remaining = goal - profit;
+                      const isNegative = remaining > 0;
+                      const invoice = processedData.thisMonthMetrics.totalInvoice;
+                      const margin = (!invoice || invoice === 0) ? "-" : (profit / invoice * 100).toFixed(2) + "%";
+                      const progress = (!goal || goal === 0) ? "-" : (profit / goal * 100).toFixed(2) + "%";
+                      const tiles = [
+                        { title: "Total Invoice", value: processedData.thisMonthMetrics.totalInvoice, isCurrency: true },
+                        { title: "Profit Goal", value: goal, isCurrency: true },
+                        { title: "Total Profit", value: profit, isCurrency: true },
+                        { title: "Profit Progress", value: progress, isCurrency: false },
+                        { title: "Profit Remaining", value: isNegative ? remaining : remaining, isCurrency: true, color: isNegative ? 'red' : 'green', fontWeight: 700 },
+                        { title: "Active Stores", value: processedData.thisMonthMetrics.totalStores },
+                        { title: "Total Orders", value: processedData.thisMonthMetrics.totalOrders },
+                        { title: "NOOs", value: nooCount },
+                        { title: "Margin", value: margin, isCurrency: false },
+                        { title: "Activation Rate", value: (activationRateData && activationRateData.length > 0) ? activationRateData[activationRateData.length - 1].activationRate + "%" : "0%", isCurrency: false },
+                      ];
+                      return <SummaryTiles tiles={tiles} md={2.4} />;
+                    })()}
                   </Box>
                 )}
 

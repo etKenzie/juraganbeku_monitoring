@@ -4,7 +4,7 @@ import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSumma
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchNOO, fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
+import { fetchNOO, fetchOrders, fetchStoreData } from "@/store/apps/Invoice/invoiceSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
 import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Select, Stack, Typography } from "@mui/material";
@@ -12,12 +12,14 @@ import { useEffect, useMemo, useState } from "react";
 import Loading from "../loading";
 import { useInvoiceData } from "./dashboards/dashboard/data";
 import { goalProfit } from "./goalProfit";
+import SummaryTiles from "@/app/components/dashboards/shared/SummaryTiles";
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const { role } = useAuth();
-  const { orders, nooData, loading } = useSelector((state: RootState) => ({
+  const { orders, nooData, loading, storeData } = useSelector((state: RootState) => ({
     orders: state.invoiceReducer.orders,
+    storeData: state.invoiceReducer.storeData,
     nooData: state.invoiceReducer.nooData,
     loading: state.invoiceReducer.loading,
   }));
@@ -62,11 +64,11 @@ export default function DashboardPage() {
     if (role?.includes("tangerang")) AREA = "TANGERANG";
     if (role?.includes("surabaya")) AREA = "SURABAYA";
     if (role?.includes("jakarta")) AREA = "JAKARTA";
-    setMonthString(getMonthString(filters.month, filters.year));
+    const newMonthString = getMonthString(filters.month, filters.year);
     dispatch(
       fetchOrders({
         sortTime: "desc",
-        month: monthString,
+        month: newMonthString,
         area: AREA,
         segment: filters.segment,
       })
@@ -74,11 +76,14 @@ export default function DashboardPage() {
     dispatch(
       fetchNOO({
         sortTime: "desc",
-        month: monthString,
+        month: newMonthString,
         area: AREA,
         segment: filters.segment,
       })
+      
     );
+    dispatch(fetchStoreData({ area: AREA }) as any),
+    setMonthString(newMonthString); // If you still need to keep monthString in state for other reasons
     // eslint-disable-next-line
   }, [filters]);
 
@@ -103,6 +108,59 @@ export default function DashboardPage() {
     if (!filters) return null;
     return processData(validOrders, filters.month, filters.year);
   }, [validOrders, filters, processData]);
+
+  // Calculate monthlyTotalStoreCount from storeData using useMemo
+  const monthlyTotalStoreCount = useMemo(() => {
+    if (!storeData || storeData.length === 0) return {};
+    const monthlyCounts: Record<string, number> = {};
+    const allMonths = storeData.map(store => store.first_order_month);
+    const uniqueMonths = Array.from(new Set(allMonths)).sort();
+    uniqueMonths.forEach(month => {
+      const monthDate = new Date(month);
+      const count = storeData.filter(store => {
+        const storeMonthDate = new Date(store.first_order_month);
+        return storeMonthDate <= monthDate;
+      }).length;
+      monthlyCounts[month] = count;
+    });
+    return monthlyCounts;
+  }, [storeData]);
+
+  // Calculate activation rate data using useMemo
+  const activationRateData = useMemo(() => {
+    if (!processedData || Object.keys(monthlyTotalStoreCount).length === 0) return [];
+    const activationData: Array<{
+      month: string;
+      activationRate: number;
+      totalStores: number;
+      activeStores: number;
+      monthlyOrders: number;
+    }> = [];
+    const monthsWithStores = Object.keys(processedData.monthlyStoreCounts);
+    monthsWithStores.forEach(month => {
+      const activeStores = processedData.monthlyStoreCounts[month]?.size || 0;
+      const totalStores = monthlyTotalStoreCount[month] || 0;
+      if (totalStores > 0) {
+        const activationRate = (activeStores / totalStores) * 100;
+        const monthlyOrders = processedData.monthlyOrderCounts[month] || 0;
+        activationData.push({
+          month,
+          activationRate: Math.round(activationRate * 100) / 100,
+          totalStores,
+          activeStores,
+          monthlyOrders,
+        });
+      }
+    });
+    activationData.sort((a, b) => {
+      const dateA = new Date(a.month);
+      const dateB = new Date(b.month);
+      return dateA.getTime() - dateB.getTime();
+    });
+    return activationData;
+  }, [processedData, monthlyTotalStoreCount]);
+
+  console.log(activationRateData)
 
   // Areas for filter dropdown
   const areas = useMemo(() => {
@@ -183,53 +241,30 @@ export default function DashboardPage() {
       {/* Summary Cards */}
       {processedData && (
         <Box mb={3}>
-          <Grid container spacing={3}>
-            {/* Profit Goal Card FIRST */}
-            <Grid item xs={12} sm={6} md={4}>
-              <InvoiceSummaryCard
-                title="Profit Goal"
-                value={(() => {
-                  const areaKey = area || "NATIONAL";
-                  const value = goalProfit[areaKey]?.[monthString];
-                  return value || 0;
-                })()}
-                isCurrency
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <InvoiceSummaryCard
-                title="Total Profit"
-                value={processedData.thisMonthMetrics.totalProfit}
-                isCurrency
-              />
-            </Grid>
-            {/* Existing summary cards */}
-            <Grid item xs={12} sm={6} md={4}>
-              <InvoiceSummaryCard
-                title="Total Invoice"
-                value={processedData.thisMonthMetrics.totalInvoice}
-                isCurrency
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <InvoiceSummaryCard
-                title="Total Stores"
-                value={processedData.thisMonthMetrics.totalStores}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <InvoiceSummaryCard
-                title="Total Orders"
-                value={processedData.thisMonthMetrics.totalOrders}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <InvoiceSummaryCard
-                title="New NOOs"
-                value={nooForSelectedMonth}
-              />
-            </Grid>
-          </Grid>
+          {(() => {
+            // Prepare tile data array
+            const areaKey = filters.area || "NATIONAL";
+            const goal = goalProfit[areaKey]?.[monthString] || 0;
+            const profit = processedData.thisMonthMetrics.totalProfit || 0;
+            const remaining = goal - profit;
+            const isNegative = remaining > 0;
+            const invoice = processedData.thisMonthMetrics.totalInvoice;
+            const margin = (!invoice || invoice === 0) ? "-" : (profit / invoice * 100).toFixed(2) + "%";
+            const progress = (!goal || goal === 0) ? "-" : (profit / goal * 100).toFixed(2) + "%";
+            const tiles = [
+              { title: "Total Invoice", value: processedData.thisMonthMetrics.totalInvoice, isCurrency: true },
+              { title: "Profit Goal", value: goal, isCurrency: true },
+              { title: "Total Profit", value: profit, isCurrency: true },
+              { title: "Profit Progress", value: progress, isCurrency: false },
+              { title: "Profit Remaining", value: isNegative ? remaining : remaining, isCurrency: true, color: isNegative ? 'red' : 'green', fontWeight: 700 },
+              { title: "Active Stores", value: processedData.thisMonthMetrics.totalStores },
+              { title: "Total Orders", value: processedData.thisMonthMetrics.totalOrders },
+              { title: "NOOs", value: nooForSelectedMonth },
+              { title: "Margin", value: margin, isCurrency: false },
+              { title: "Activation Rate", value: (activationRateData && activationRateData.length > 0) ? activationRateData[activationRateData.length - 1].activationRate + "%" : "0%", isCurrency: false },
+            ];
+            return <SummaryTiles tiles={tiles} md={2.4} />;
+          })()}
         </Box>
       )}
       

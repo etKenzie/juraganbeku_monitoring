@@ -303,7 +303,7 @@ export const updateOrderItems =
     }
   };
 
-export const fetchStoreData = (params?: { area?: string }) => async (dispatch: AppDispatch) => {
+export const fetchStoreData = (params?: { area?: string, month?: string }) => async (dispatch: AppDispatch) => {
   dispatch(startLoading());
   try {
     const AUTH_TOKEN = getCookie("token");
@@ -313,9 +313,12 @@ export const fetchStoreData = (params?: { area?: string }) => async (dispatch: A
     searchParams.append("page", "1");
     searchParams.append("sortBy", "desc");
     
-    if (params?.area) {
-      searchParams.append("area", params.area);
-    }
+      if (params?.area) {
+        searchParams.append("area", params.area);
+      }
+      if (params?.month) {
+        searchParams.append("month", params.month);
+      }
 
     const request = `${ACTIVE_USERS_URL}?${searchParams.toString()}`;
     console.log(request);
