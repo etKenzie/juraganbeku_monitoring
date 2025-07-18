@@ -140,6 +140,11 @@ export default function Dashboard() {
   const [areas, setAreas] = useState<string[]>([]);
   const [allAreas, setAllAreas] = useState<string[]>([]);
   const [segment, setSegment] = useState<string>("");
+  // Track the area used for the last processedData fetch
+  const [processedArea, setProcessedArea] = useState(area);
+  // Track the last applied month/year for summary tiles
+  const [appliedMonth, setAppliedMonth] = useState(customMonth);
+  const [appliedYear, setAppliedYear] = useState(customYear);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [monthlyTotalStoreCount, setMonthlyTotalStoreCount] = useState<Record<string, number>>({});
@@ -239,6 +244,9 @@ export default function Dashboard() {
         ),
         dispatch(fetchStoreData({ area: AREA }) as any),
       ]);
+      setProcessedArea(AREA);
+      setAppliedMonth(customMonth);
+      setAppliedYear(customYear);
     } catch (error) {
       console.error("Fetch error:", error);
       setIsDataEmpty(true);
@@ -376,17 +384,15 @@ export default function Dashboard() {
   
 
   // Calculate NOOs for the selected month
-  let selectedMonth = "";
-  if (dateRange && dateRange.month) {
-    const monthsArr = dateRange.month.split(",");
-    selectedMonth = monthsArr[monthsArr.length - 1].trim();
-    if (selectedMonth) {
-      selectedMonth = selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1);
-    }
-  
-  }
+  // Use appliedMonth/appliedYear for NOOCount
+  const getMonthString = (month: number, year: number) => {
+    const date = new Date(year, month, 1);
+    const monthName = date.toLocaleString("en-US", { month: "long" }).toLowerCase();
+    return monthName.charAt(0).toUpperCase() + monthName.slice(1) + ` ${year}`;
+  };
+  const appliedMonthString = getMonthString(appliedMonth, appliedYear);
   const nooCount = (nooData && Array.isArray(nooData))
-    ? nooData.filter((noo: any) => noo.month === selectedMonth).length
+    ? nooData.filter((noo: any) => noo.month === appliedMonthString).length
     : 0;
 
   return (
@@ -529,12 +535,14 @@ export default function Dashboard() {
                 {processedData && (
                   <Box mb={4}>
                     {(() => {
-                      const areaKey = area || "NATIONAL";
-                      let monthString = "";
-                      if (dateRange && dateRange.month) {
-                        const monthsArr = dateRange.month.split(",");
-                        monthString = monthsArr[monthsArr.length - 1].trim();
-                      }
+                      const areaKey = processedArea || "NATIONAL";
+                      // Use appliedMonth/appliedYear for monthString
+                      const getMonthString = (month: number, year: number) => {
+                        const date = new Date(year, month, 1);
+                        const monthName = date.toLocaleString("en-US", { month: "long" }).toLowerCase();
+                        return `${monthName} ${year}`;
+                      };
+                      const monthString = getMonthString(appliedMonth, appliedYear);
                       const goal = goalProfit[areaKey]?.[monthString] || 0;
                       const profit = processedData.thisMonthMetrics.totalProfit || 0;
                       const remaining = goal - profit;
