@@ -529,7 +529,7 @@ export default function Dashboard() {
                 {processedData && (
                   <Box mb={4}>
                     {(() => {
-                      const areaKey = selectedArea || area || "NATIONAL";
+                      const areaKey = area || "NATIONAL";
                       let monthString = "";
                       if (dateRange && dateRange.month) {
                         const monthsArr = dateRange.month.split(",");
