@@ -137,7 +137,8 @@ export default function Dashboard() {
     if (role?.includes("jakarta")) return "JAKARTA";
     return "";
   });
-  const [areas, setAreas] = useState<string[]>([""]);
+  const [areas, setAreas] = useState<string[]>([]);
+  const [allAreas, setAllAreas] = useState<string[]>([]);
   const [segment, setSegment] = useState<string>("");
   const [hasInitialized, setHasInitialized] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -340,6 +341,11 @@ export default function Dashboard() {
       // Extract unique areas from the data
       const uniqueAreas = Object.keys(processedData.areaSummaries);
       setAreas(uniqueAreas);
+      // Merge new areas into allAreas
+      setAllAreas(prev => {
+        const merged = new Set([...prev, ...uniqueAreas]);
+        return Array.from(merged);
+      });
     }
   }, [processedData]);
 
@@ -472,7 +478,7 @@ export default function Dashboard() {
                   sx={{ flexBasis: "30%", flexGrow: 1 }}
                 >
                   <MenuItem value="">All Areas</MenuItem>
-                  {areas
+                  {allAreas
                     .filter((areaOption) => areaOption !== "")
                     .map((areaOption) => (
                       <MenuItem key={areaOption} value={areaOption}>

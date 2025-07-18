@@ -58,8 +58,34 @@ interface Company {
   desc: string;
 }
 
+// Helper to parse pickup_date string as local date
+function parsePickupDate(str: string): Date {
+  // Example: "07-06-2025, 13:21"
+  if (!str) return new Date(0);
+  const [datePart, timePart] = str.split(",");
+  if (!datePart) return new Date(0);
+  const [day, month, year] = datePart.trim().split("-").map(Number);
+  let hours = 0, minutes = 0;
+  if (timePart) {
+    [hours, minutes] = timePart.trim().split(":").map(Number);
+  }
+  // Construct as local time
+  return new Date(year, month - 1, day, hours, minutes);
+}
+
 const InvoiceAPIPage: React.FC = () => {
   const { role } = useAuth();
+  // Role-based access control
+  const allowed = ["invoice services", "admin"].some((r) => role?.includes(r));
+  if (!allowed) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+        <Typography variant="h5" color="error">
+          You don't have access to this page.
+        </Typography>
+      </Box>
+    );
+  }
   const [companies, setCompanies] = useState<Company[]>([]);
   // Active states (used for fetching)
   const [selectedCompanySlug, setSelectedCompanySlug] = useState<string>("");
@@ -124,6 +150,7 @@ const InvoiceAPIPage: React.FC = () => {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+    console.log(url)
   }, [selectedCompanySlug, selectedStartDate, selectedEndDate]);
 
   // Get unique gerai for filtering
@@ -142,11 +169,8 @@ const InvoiceAPIPage: React.FC = () => {
         (inv.kode_gerai || "").toLowerCase().includes(search.toLowerCase()) ||
         (inv.nama_gerai || "").toLowerCase().includes(search.toLowerCase()) ||
         (inv.va_number || "").toLowerCase().includes(search.toLowerCase());
-      // Date range filter (sales_date)
-      const salesDate = new Date(inv.sales_date);
-      const matchesStart = selectedStartDate ? salesDate >= new Date(selectedStartDate) : true;
-      const matchesEnd = selectedEndDate ? salesDate <= new Date(selectedEndDate + 'T23:59:59') : true;
-      return matchesGerai && matchesSearch && matchesStart && matchesEnd;
+    
+      return matchesGerai && matchesSearch;
     });
   }, [invoices, filterGerai, search, selectedStartDate, selectedEndDate]);
 
@@ -160,10 +184,18 @@ const InvoiceAPIPage: React.FC = () => {
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return order === 'asc' ? aValue - bValue : bValue - aValue;
       }
-      // For dates
-      if (orderBy === 'sales_date' || orderBy === 'pickup_date') {
-        const aDate = new Date(aValue as string).getTime();
-        const bDate = new Date(bValue as string).getTime();
+      // For pickup_date (custom format)
+      if (orderBy === 'pickup_date') {
+        const aDate = parsePickupDate(aValue as string).getTime();
+        const bDate = parsePickupDate(bValue as string).getTime();
+        return order === 'asc' ? aDate - bDate : bDate - aDate;
+      }
+      // For sales_date (assume DD-MM-YYYY)
+      if (orderBy === 'sales_date') {
+        const [aday, amonth, ayear] = (aValue as string).split("-").map(Number);
+        const [bday, bmonth, byear] = (bValue as string).split("-").map(Number);
+        const aDate = new Date(ayear, amonth - 1, aday).getTime();
+        const bDate = new Date(byear, bmonth - 1, bday).getTime();
         return order === 'asc' ? aDate - bDate : bDate - aDate;
       }
       // For strings
@@ -211,22 +243,10 @@ const InvoiceAPIPage: React.FC = () => {
     setOrderBy(property);
   };
 
+  console.log(invoices)
+
   return (
     <Box p={3}>
-      {/* Role-based access control */}
-      {(() => {
-        const allowed = ["invoice services", "admin"].some((r) => role?.includes(r));
-        if (!allowed) {
-          return (
-            <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
-              <Typography variant="h5" color="error">
-                You don't have access to this page.
-              </Typography>
-            </Box>
-          );
-        }
-        return null;
-      })()}
       {loading ? (
         <Loading />
       ) : (
