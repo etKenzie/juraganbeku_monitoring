@@ -90,6 +90,8 @@ export default function PendingDashboard() {
   // Month/year filter for transactions
   const [txMonth, setTxMonth] = useState<number>(new Date().getMonth());
   const [txYear, setTxYear] = useState<number>(new Date().getFullYear());
+  const [appliedTxMonth, setAppliedTxMonth] = useState<number>(new Date().getMonth());
+  const [appliedTxYear, setAppliedTxYear] = useState<number>(new Date().getFullYear());
 
   // Helper to get month name
   function getMonthName(monthIdx: number) {
@@ -144,6 +146,8 @@ export default function PendingDashboard() {
   const handleApplyFilters = async () => {
     try {
       setArea(areaInput); // Only update area filter on apply
+      setAppliedTxMonth(txMonth);
+      setAppliedTxYear(txYear);
       let AREA = areaInput;
       if (role?.includes("tangerang")) {
         AREA = "TANGERANG"
@@ -158,6 +162,7 @@ export default function PendingDashboard() {
         fetchOrders({
           sortTime,
           area: AREA,
+          month: txMonthFilter,
           segment: segment,
           payment: "BELUM LUNAS, PARTIAL, WAITING VALIDATION BY FINANCE"
         })
@@ -312,11 +317,11 @@ export default function PendingDashboard() {
 
   // Calculate total transaction amount for the selected month and area
   const thisMonthTransactionAmount = useMemo(() => {
-    const monthName = `${getMonthName(txMonth)} ${txYear}`;
+    const monthName = `${getMonthName(appliedTxMonth)} ${appliedTxYear}`;
     return transactions
       .filter(t => (t.month === monthName) && (!area || t.area === area || t.Area === area))
       .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  }, [transactions, txMonth, txYear, area]);
+  }, [transactions, appliedTxMonth, appliedTxYear, area]);
 
   // Show loading screen while data is being fetched
   if (loading) {
@@ -327,67 +332,77 @@ export default function PendingDashboard() {
   return (
     <PageContainer title="Pending Invoices Dashboard" description="Dashboard for pending invoices">
       <>
-        {/* Filter Subtitles and Controls */}
-        <Box mb={3}>
-          {/* <Typography variant="subtitle1" fontWeight={600} mb={1}>Invoice Filters</Typography>
-          <Grid container spacing={2} mb={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="Sort Time"
-                select
-                value={sortTime}
-                onChange={(e) => setSortTime(e.target.value as 'asc' | 'desc')}
-                fullWidth
-              >
-                <MenuItem value="desc">Newest First</MenuItem>
-                <MenuItem value="asc">Oldest First</MenuItem>
-              </TextField>
-            </Grid>
-          </Grid> */}
-          <Typography variant="subtitle1" fontWeight={600} mb={1}>Transaction Filters</Typography>
-          <Grid container spacing={2} mb={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                select
-                label="Month"
-                value={txMonth}
-                onChange={e => setTxMonth(Number(e.target.value))}
-                fullWidth
-              >
-                {Array.from({ length: 12 }, (_, i) => (
-                  <MenuItem key={i} value={i}>
-                    {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                select
-                label="Year"
-                value={txYear}
-                onChange={e => setTxYear(Number(e.target.value))}
-                fullWidth
-              >
-                {Array.from({ length: 5 }, (_, i) => {
-                  const year = new Date().getFullYear() - i;
-                  return (
-                    <MenuItem key={year} value={year}>{year}</MenuItem>
-                  );
-                })}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              {/* <Button
-                variant="contained"
-                color="primary"
-                onClick={() => { handleApplyFilters(); fetchTransactions(); }}
-                disabled={transactionLoading}
-              >
-                Apply Filter
-              </Button> */}
-            </Grid>
-          </Grid>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
+          <Box display="flex" gap={2} alignItems="center" width="100%">
+            <TextField
+              label="Select Area"
+              select
+              value={areaInput}
+              onChange={(e) => setAreaInput(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ flexBasis: '20%' }}
+            >
+              <MenuItem value="">All Areas</MenuItem>
+              <MenuItem value="TANGERANG">TANGERANG</MenuItem>
+              <MenuItem value="CENTRAL">CENTRAL</MenuItem>
+              <MenuItem value="JAKARTA">JAKARTA</MenuItem>
+              <MenuItem value="SURABAYA">SURABAYA</MenuItem>
+            </TextField>
+            <TextField
+              label="Select Segment"
+              select
+              value={segment}
+              onChange={(e) => setSegment(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ flexBasis: '20%' }}
+            >
+              <MenuItem value="">All Segments</MenuItem>
+              <MenuItem value="HORECA">HORECA</MenuItem>
+              <MenuItem value="RESELLER">RESELLER</MenuItem>
+              <MenuItem value="OTHER">OTHER</MenuItem>
+            </TextField>
+            <TextField
+              select
+              label="Month"
+              value={txMonth}
+              onChange={e => setTxMonth(Number(e.target.value))}
+              sx={{ flexBasis: '20%' }}
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <MenuItem key={i} value={i}>
+                  {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Year"
+              value={txYear}
+              onChange={e => setTxYear(Number(e.target.value))}
+              sx={{ flexBasis: '20%' }}
+            >
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = new Date().getFullYear() - i;
+                return (
+                  <MenuItem key={year} value={year}>{year}</MenuItem>
+                );
+              })}
+            </TextField>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => { handleApplyFilters(); fetchTransactions(); }}
+              disabled={loading || transactionLoading}
+              sx={{ flexBasis: '20%', height: '56px' }}
+            >
+              Apply Filters
+            </Button>
+          </Box>
         </Box>
         {!hasAccess ? (
           <Box
@@ -401,53 +416,6 @@ export default function PendingDashboard() {
             </Typography>
           </Box>
         ) : <>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={3}
-            >
-              <Box display="flex" gap={2} alignItems="center" width="100%">
-                <TextField
-                  label="Select Area"
-                  select
-                  value={areaInput}
-                  onChange={(e) => setAreaInput(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  sx={{ flexBasis: "30%", flexGrow: 1 }}
-                >
-                  <MenuItem value="">All Areas</MenuItem>
-                  <MenuItem value="TANGERANG">TANGERANG</MenuItem>
-                  <MenuItem value="CENTRAL">CENTRAL</MenuItem>
-                  <MenuItem value="JAKARTA">JAKARTA</MenuItem>
-                  <MenuItem value="SURABAYA">SURABAYA</MenuItem>
-                </TextField>
-
-                <TextField
-                  label="Select Segment"
-                  select
-                  value={segment}
-                  onChange={(e) => setSegment(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  sx={{ flexBasis: "30%", flexGrow: 1 }}
-                >
-                  <MenuItem value="">All Segments</MenuItem>
-                  <MenuItem value="HORECA">HORECA</MenuItem>
-                  <MenuItem value="RESELLER">RESELLER</MenuItem>
-                  <MenuItem value="OTHER">OTHER</MenuItem>
-                </TextField>
-
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => { handleApplyFilters(); fetchTransactions(); }}
-                  disabled={transactionLoading}
-                >
-                  Apply Filters
-                </Button>
-              </Box>
-            </Box>
-
             {isDataEmpty ? (
               <Box
                 display="flex"
@@ -464,7 +432,38 @@ export default function PendingDashboard() {
                 {/* Summary Cards */}
                 {processedData && (
                   <Box mb={4}>
-                    <Typography variant="h6" mb={2}>Overall Summary</Typography>
+                   <Typography variant="h6" mb={2}>Month Summary</Typography>
+                    <Grid container spacing={3} mb={4}>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Orders"
+                          value={processedData.thisMonthMetrics.totalOrders}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Invoice"
+                          value={processedData.thisMonthMetrics.totalInvoice}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Profit"
+                          value={processedData.thisMonthMetrics.totalProfit}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Transaction Amount"
+                          value={thisMonthTransactionAmount}
+                          isCurrency
+                        />
+                      </Grid>
+                    </Grid>
+
+                    <Typography variant="h6" mb={2}>Year Summary</Typography>
                     <Grid container spacing={3} mb={4}>
                       <Grid item xs={12} sm={6} md={3}>
                         <InvoiceSummaryCard
@@ -495,36 +494,7 @@ export default function PendingDashboard() {
                       </Grid>
                     </Grid>
                     
-                    <Typography variant="h6" mb={2}>This Month's Summary</Typography>
-                    <Grid container spacing={3} mb={4}>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total Pending Orders"
-                          value={processedData.thisMonthMetrics.totalOrders}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total Pending Invoice"
-                          value={processedData.thisMonthMetrics.totalInvoice}
-                          isCurrency
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total Pending Profit"
-                          value={processedData.thisMonthMetrics.totalProfit}
-                          isCurrency
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
-                        <InvoiceSummaryCard
-                          title="Total Transaction Amount"
-                          value={thisMonthTransactionAmount}
-                          isCurrency
-                        />
-                      </Grid>
-                    </Grid>
+                   
 
                     
                   </Box>
