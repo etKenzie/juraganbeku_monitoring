@@ -14,8 +14,10 @@ import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import DueDateStatusBarChart from "@/app/components/dashboards/pending/DueDateStatusBarChart";
 import PaymentStatusPieChart from "@/app/components/dashboards/pending/PaymentStatusPieChart";
+import DashboardCard from "@/app/components/shared/DashboardCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
+import axiosServices from "@/utils/axios";
 import {
   Box,
   Button,
@@ -24,6 +26,9 @@ import {
   TextField,
   Typography
 } from "@mui/material";
+import { useCallback } from "react";
+import TransactionAmountLineChart from "./TransactionAmountLineChart";
+import TransactionTable from "./TransactionTable";
 
 interface PaymentStatusData {
   status: string;
@@ -72,14 +77,74 @@ export default function PendingDashboard() {
     if (role?.includes("jakarta")) return "JAKARTA";
     return "";
   });
-  const [areas, setAreas] = useState<string[]>([""]);
+  // Area input for UI, only applied on filter click
+  const [areaInput, setAreaInput] = useState(area);
   const [segment, setSegment] = useState<string>("");
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
+
+  // Transaction state
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactionLoading, setTransactionLoading] = useState(false);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
+  // Month/year filter for transactions
+  const [txMonth, setTxMonth] = useState<number>(new Date().getMonth());
+  const [txYear, setTxYear] = useState<number>(new Date().getFullYear());
+
+  // Helper to get month name
+  function getMonthName(monthIdx: number) {
+    const name = new Date(2000, monthIdx, 1).toLocaleString("en-US", { month: "long" });
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  }
+
+  // Generate a comma-separated list of the last 12 months up to the selected month/year
+  const txMonthFilter = (() => {
+    const months: string[] = [];
+    let month = txMonth;
+    let year = txYear;
+    for (let i = 0; i < 12; i++) {
+      months.unshift(`${getMonthName(month)} ${year}`);
+      month--;
+      if (month < 0) {
+        month = 11;
+        year--;
+      }
+    }
+    return months.join(",");
+  })();
+
+  const fetchTransactions = useCallback(async () => {
+    setTransactionLoading(true);
+    setTransactionError(null);
+    try {
+      console.log(txMonthFilter)
+      console.log(area)
+      const res = await axiosServices.get(
+        `https://charlie.tokopandai.id/toko-pandai-api/v1/jurbek/transaction`,
+        {
+          params: {
+            month_filter: txMonthFilter,
+            area: area // always pass area
+          },
+          headers: {
+            // token: "ca90810c1350c554a91e24b9a7b0ec9147a916b2eddc8ded5b2bcdc07c47c291f3080fe5f5fb409795b055bb47d834a59f0d101e",
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+      console.log(res)
+      setTransactions(res.data.result || []);
+    } catch (err: any) {
+      setTransactionError(err?.message || "Failed to fetch transactions");
+    } finally {
+      setTransactionLoading(false);
+    }
+  }, [txMonthFilter, area]);
 
   const handleApplyFilters = async () => {
     try {
-
-      let AREA = area;
+      setArea(areaInput); // Only update area filter on apply
+      let AREA = areaInput;
       if (role?.includes("tangerang")) {
         AREA = "TANGERANG"
       }
@@ -89,8 +154,6 @@ export default function PendingDashboard() {
       if (role?.includes("jakarta")) {
         AREA = "JAKARTA"
       }
-
-     
       await dispatch(
         fetchOrders({
           sortTime,
@@ -107,19 +170,24 @@ export default function PendingDashboard() {
 
   useEffect(() => {
     if (role && !hasInitialized) {
-      if (role.includes("surabaya")) setArea("SURABAYA");
-      else if (role.includes("tangerang")) setArea("TANGERANG");
-      else if (role.includes("jakarta")) setArea("JAKARTA");
+      let initialArea = "";
+      if (role.includes("surabaya")) initialArea = "SURABAYA";
+      else if (role.includes("tangerang")) initialArea = "TANGERANG";
+      else if (role.includes("jakarta")) initialArea = "JAKARTA";
+      setArea(initialArea);
+      setAreaInput(initialArea);
       setHasInitialized(true); // prevent re-setting area
     }
   }, [role, hasInitialized]);
 
-  // Add initial data fetch when component mounts
   useEffect(() => {
-    if (hasInitialized) {
+    if (initialLoad) {
+      // Fetch both orders and transactions on first load
       handleApplyFilters();
+      fetchTransactions();
+      setInitialLoad(false);
     }
-  }, [hasInitialized]);
+  }, [initialLoad, fetchTransactions]);
 
   useEffect(() => {
     if (validOrders && validOrders.length > 0) {
@@ -135,7 +203,7 @@ export default function PendingDashboard() {
     if (processedData) {
       // Extract unique areas from the data
       const uniqueAreas = Object.keys(processedData.areaSummaries);
-      setAreas(uniqueAreas);
+      // setAreas(uniqueAreas); // This line is removed as per the edit hint
     }
   }, [processedData]);
 
@@ -220,6 +288,36 @@ export default function PendingDashboard() {
 
   const dueDateStatusMetrics: DueDateStatusData[] = Object.values(dueDateStatusData);
 
+  // Calculate total transaction amount per month for chart
+  const transactionAmountByMonth = useMemo(() => {
+    const map = new Map<string, number>();
+    transactions.forEach((t) => {
+      if (!t.month) return;
+      const month = t.month;
+      const amount = Number(t.amount) || 0;
+      map.set(month, (map.get(month) || 0) + amount);
+    });
+    // Sort months chronologically if possible
+    return Array.from(map.entries()).sort((a, b) => {
+      // Try to parse as date for sorting
+      const dateA = new Date("1 " + a[0]);
+      const dateB = new Date("1 " + b[0]);
+      return dateA.getTime() - dateB.getTime();
+    });
+  }, [transactions]);
+
+  const totalTransactionAmount = useMemo(() => {
+    return transactions.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  }, [transactions]);
+
+  // Calculate total transaction amount for the selected month and area
+  const thisMonthTransactionAmount = useMemo(() => {
+    const monthName = `${getMonthName(txMonth)} ${txYear}`;
+    return transactions
+      .filter(t => (t.month === monthName) && (!area || t.area === area || t.Area === area))
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  }, [transactions, txMonth, txYear, area]);
+
   // Show loading screen while data is being fetched
   if (loading) {
     return <Loading />;
@@ -229,160 +327,247 @@ export default function PendingDashboard() {
   return (
     <PageContainer title="Pending Invoices Dashboard" description="Dashboard for pending invoices">
       <>
-      {!hasAccess ? (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          height="60vh"
-        >
-          <Typography variant="h5" color="error">
-            You don't have access to this page.
-          </Typography>
-        </Box>
-      ) : <>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={3}
-          >
-            <Box display="flex" gap={2} alignItems="center" width="100%">
+        {/* Filter Subtitles and Controls */}
+        <Box mb={3}>
+          {/* <Typography variant="subtitle1" fontWeight={600} mb={1}>Invoice Filters</Typography>
+          <Grid container spacing={2} mb={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
-                label="Select Area"
+                label="Sort Time"
                 select
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ flexBasis: "30%", flexGrow: 1 }}
+                value={sortTime}
+                onChange={(e) => setSortTime(e.target.value as 'asc' | 'desc')}
+                fullWidth
               >
-                <MenuItem value="">All Areas</MenuItem>
-                {areas
-                  .filter((areaOption) => areaOption !== "")
-                  .map((areaOption) => (
-                    <MenuItem key={areaOption} value={areaOption}>
-                      {areaOption}
-                    </MenuItem>
-                  ))}
+                <MenuItem value="desc">Newest First</MenuItem>
+                <MenuItem value="asc">Oldest First</MenuItem>
               </TextField>
-
+            </Grid>
+          </Grid> */}
+          <Typography variant="subtitle1" fontWeight={600} mb={1}>Transaction Filters</Typography>
+          <Grid container spacing={2} mb={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
-                label="Select Segment"
                 select
-                value={segment}
-                onChange={(e) => setSegment(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ flexBasis: "30%", flexGrow: 1 }}
+                label="Month"
+                value={txMonth}
+                onChange={e => setTxMonth(Number(e.target.value))}
+                fullWidth
               >
-                <MenuItem value="">All Segments</MenuItem>
-                <MenuItem value="HORECA">HORECA</MenuItem>
-                <MenuItem value="RESELLER">RESELLER</MenuItem>
-                <MenuItem value="OTHER">OTHER</MenuItem>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <MenuItem key={i} value={i}>
+                    {new Date(2000, i, 1).toLocaleString("default", { month: "long" })}
+                  </MenuItem>
+                ))}
               </TextField>
-
-              <Button
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                select
+                label="Year"
+                value={txYear}
+                onChange={e => setTxYear(Number(e.target.value))}
+                fullWidth
+              >
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <MenuItem key={year} value={year}>{year}</MenuItem>
+                  );
+                })}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              {/* <Button
                 variant="contained"
                 color="primary"
-                onClick={handleApplyFilters}
-                sx={{ flexBasis: "20%", flexGrow: 1 }}
+                onClick={() => { handleApplyFilters(); fetchTransactions(); }}
+                disabled={transactionLoading}
               >
-                Apply Filters
-              </Button>
-            </Box>
+                Apply Filter
+              </Button> */}
+            </Grid>
+          </Grid>
+        </Box>
+        {!hasAccess ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="60vh"
+          >
+            <Typography variant="h5" color="error">
+              You don't have access to this page.
+            </Typography>
           </Box>
-
-          {isDataEmpty ? (
+        ) : <>
             <Box
               display="flex"
-              justifyContent="center"
+              justifyContent="space-between"
               alignItems="center"
-              height="50vh"
+              mb={3}
             >
-              <Typography variant="h6" color="textSecondary">
-                No pending invoices found.
-              </Typography>
+              <Box display="flex" gap={2} alignItems="center" width="100%">
+                <TextField
+                  label="Select Area"
+                  select
+                  value={areaInput}
+                  onChange={(e) => setAreaInput(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ flexBasis: "30%", flexGrow: 1 }}
+                >
+                  <MenuItem value="">All Areas</MenuItem>
+                  <MenuItem value="TANGERANG">TANGERANG</MenuItem>
+                  <MenuItem value="CENTRAL">CENTRAL</MenuItem>
+                  <MenuItem value="JAKARTA">JAKARTA</MenuItem>
+                  <MenuItem value="SURABAYA">SURABAYA</MenuItem>
+                </TextField>
+
+                <TextField
+                  label="Select Segment"
+                  select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ flexBasis: "30%", flexGrow: 1 }}
+                >
+                  <MenuItem value="">All Segments</MenuItem>
+                  <MenuItem value="HORECA">HORECA</MenuItem>
+                  <MenuItem value="RESELLER">RESELLER</MenuItem>
+                  <MenuItem value="OTHER">OTHER</MenuItem>
+                </TextField>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => { handleApplyFilters(); fetchTransactions(); }}
+                  disabled={transactionLoading}
+                >
+                  Apply Filters
+                </Button>
+              </Box>
             </Box>
-          ) : (
-            <>
-              {/* Summary Cards */}
-              {processedData && (
-                <Box mb={4}>
-                  <Typography variant="h6" mb={2}>Overall Summary</Typography>
-                  <Grid container spacing={3} mb={4}>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <InvoiceSummaryCard
-                        title="Total Pending Orders"
-                        value={validOrders.length}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <InvoiceSummaryCard
-                        title="Total Pending Invoice"
-                        value={validOrders.reduce((sum, order) => sum + order.total_invoice, 0)}
-                        isCurrency
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <InvoiceSummaryCard
-                        title="Total Pending Profit"
-                        value={validOrders.reduce((sum, order) => sum + order.profit, 0)}
-                        isCurrency
-                      />
-                    </Grid>
-                  </Grid>
-                  
-                  <Typography variant="h6" mb={2}>This Month's Summary</Typography>
-                  <Grid container spacing={3} mb={4}>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <InvoiceSummaryCard
-                        title="Total Pending Orders"
-                        value={processedData.thisMonthMetrics.totalOrders}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <InvoiceSummaryCard
-                        title="Total Pending Invoice"
-                        value={processedData.thisMonthMetrics.totalInvoice}
-                        isCurrency
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <InvoiceSummaryCard
-                        title="Total Pending Profit"
-                        value={processedData.thisMonthMetrics.totalProfit}
-                        isCurrency
-                      />
-                    </Grid>
-                  </Grid>
 
-                  
-                </Box>
-              )}
+            {isDataEmpty ? (
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                height="50vh"
+              >
+                <Typography variant="h6" color="textSecondary">
+                  No pending invoices found.
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                {/* Summary Cards */}
+                {processedData && (
+                  <Box mb={4}>
+                    <Typography variant="h6" mb={2}>Overall Summary</Typography>
+                    <Grid container spacing={3} mb={4}>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Orders"
+                          value={validOrders.length}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Invoice"
+                          value={validOrders.reduce((sum, order) => sum + order.total_invoice, 0)}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Profit"
+                          value={validOrders.reduce((sum, order) => sum + order.profit, 0)}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Transaction Amount"
+                          value={totalTransactionAmount}
+                          isCurrency
+                        />
+                      </Grid>
+                    </Grid>
+                    
+                    <Typography variant="h6" mb={2}>This Month's Summary</Typography>
+                    <Grid container spacing={3} mb={4}>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Orders"
+                          value={processedData.thisMonthMetrics.totalOrders}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Invoice"
+                          value={processedData.thisMonthMetrics.totalInvoice}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Pending Profit"
+                          value={processedData.thisMonthMetrics.totalProfit}
+                          isCurrency
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InvoiceSummaryCard
+                          title="Total Transaction Amount"
+                          value={thisMonthTransactionAmount}
+                          isCurrency
+                        />
+                      </Grid>
+                    </Grid>
 
-              {/* Charts */}
-              <Grid container spacing={3} mb={4}>
-                <Grid item xs={12} md={12}>
-                  <PaymentStatusPieChart data={paymentStatusMetrics} />
-                </Grid>
-                <Grid item xs={12} md={12}>
-                  <DueDateStatusBarChart data={dueDateStatusMetrics} />
-                </Grid>
-              </Grid>
-              {/* Store Summary Table for total owed per store */}
-              {processedData && (
+                    
+                  </Box>
+                )}
+                {/* Transaction Amount Line Chart */}
                 <Box mb={4}>
-                  <StoreSummaryTable storeSummaries={processedData.storeSummaries} />
+                  <DashboardCard>
+                    <TransactionAmountLineChart rawTransactions={transactions} />
+                  </DashboardCard>
                 </Box>
-              )}
-              {/* Orders Table */}
-              {validOrders && (
-                <Box>
-                  <OrdersTable orders={validOrders} exportOrderDetails={false}/>
+                {/* Charts */}
+                <Grid container spacing={3} mb={4}>
+                  <Grid item xs={12} md={12}>
+                    <PaymentStatusPieChart data={paymentStatusMetrics} />
+                  </Grid>
+                  <Grid item xs={12} md={12}>
+                    <DueDateStatusBarChart data={dueDateStatusMetrics} />
+                  </Grid>
+                </Grid>
+                {/* Store Summary Table for total owed per store */}
+                {processedData && (
+                  <Box mb={4}>
+                    <StoreSummaryTable storeSummaries={processedData.storeSummaries} />
+                  </Box>
+                )}
+                {/* Orders Table */}
+                {validOrders && (
+                  <Box>
+                    <OrdersTable orders={validOrders} exportOrderDetails={false}/>
+                  </Box>
+                )}
+                {/* Transaction Table */}
+                <Box mt={4}>
+                  <Typography variant="h6" mb={2}>Transactions</Typography>
+                  <TransactionTable
+                    transactions={transactions}
+                    loading={transactionLoading}
+                    error={transactionError}
+                  />
                 </Box>
-              )}
-            </>
-          )}
-        </>}
+              </>
+            )}
+          </>}
       </>
     </PageContainer>
   );

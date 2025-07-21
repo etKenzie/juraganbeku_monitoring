@@ -11,7 +11,6 @@ import ActivationRateChart from "@/app/components/dashboards/invoice/ActivationR
 import AreaChart from "@/app/components/dashboards/invoice/AreaChart";
 import DueDateStatusChart from "@/app/components/dashboards/invoice/DueDateStatusChart";
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
-import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";
 import NOOAreaChart from "@/app/components/dashboards/invoice/NOOAreaChart";
 import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
@@ -21,6 +20,7 @@ import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSumm
 import SegmentPerformanceChart from "@/app/components/dashboards/invoice/SegmentPerformanceChart";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import TotalSummaries from "@/app/components/dashboards/invoice/YearlyTotal";
+import SummaryTiles from "@/app/components/dashboards/shared/SummaryTiles";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
@@ -37,22 +37,8 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { goalProfit } from "../../goalProfit";
-import { AreaData, ProcessedData } from "./types";
-import SummaryTiles from "@/app/components/dashboards/shared/SummaryTiles";
+import { ProcessedData } from "./types";
 
-interface StoreSummary {
-  storeName: string;
-  orderCount: number;
-  totalInvoice: number;
-  totalProfit: number;
-  averageOrderValue: number;
-  activeMonths: Set<string>;
-  orders: OrderData[];
-}
-
-interface ExtendedAreaData extends AreaData {
-  activeMonths: Set<string>;
-}
 
 interface PaymentStatusMetrics {
   totalOrders: number;

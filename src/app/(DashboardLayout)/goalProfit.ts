@@ -13,7 +13,7 @@ export const goalProfit: AreaGoalProfit = {
     'april 2025': 156852000,
     'may 2025': 160000000,
     'june 2025': 175000000,
-    'july 2025': 162700000,
+    'july 2025': 166000000,
   },
   JAKARTA: {
     'january 2025': 51000000,
