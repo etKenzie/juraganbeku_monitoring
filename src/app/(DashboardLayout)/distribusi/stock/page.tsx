@@ -1,30 +1,30 @@
 "use client";
+import { useAuth } from "@/contexts/AuthContext";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-    Box,
-    Checkbox,
-    CircularProgress,
-    FormControl,
-    FormControlLabel,
-    Grid,
-    InputAdornment,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TableSortLabel,
-    TextField,
-    Typography,
+  Box,
+  Checkbox,
+  CircularProgress,
+  FormControl,
+  FormControlLabel,
+  Grid,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TableSortLabel,
+  TextField,
+  Typography,
 } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const API_URL = "https://dev.tokopandai.id/api/product/";
 
@@ -90,24 +90,6 @@ export default function StockPage() {
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [showZeroStock, setShowZeroStock] = useState(false);
   const [showNoPrice, setShowNoPrice] = useState(false);
-
-  // Role-based access control
-  const hasAccess = [
-    "admin",
-    "tangerang",
-    "jakarta",
-    "surabaya",
-    "dashboard",
-  ].some((r) => role?.includes(r));
-  if (!hasAccess) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
-        <Typography variant="h5" color="error">
-          You don't have access to this page.
-        </Typography>
-      </Box>
-    );
-  }
 
   // Fetch data
   useEffect(() => {
@@ -211,6 +193,25 @@ export default function StockPage() {
     setPage(0);
   };
 
+  // Role-based access control (must be after all hooks)
+  const hasAccess = [
+    "admin",
+    "tangerang",
+    "jakarta",
+    "surabaya",
+    "dashboard",
+  ].some((r) => role?.includes(r));
+
+  if (!hasAccess) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+        <Typography variant="h5" color="error">
+          You don't have access to this page.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box p={4}>
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
@@ -260,7 +261,11 @@ export default function StockPage() {
             />
           </Grid>
           {/* Area, Segment, Hub: no 'All' option, use static options */}
-          {["area", "segment", "hub"].map((key) => (
+          {[
+            "area",
+            "segment",
+            "hub"
+          ].map((key) => (
             <Grid item xs={12} sm={3} md={2} key={key}>
               <FormControl fullWidth>
                 <InputLabel>{key.charAt(0).toUpperCase() + key.slice(1)}</InputLabel>
@@ -279,7 +284,10 @@ export default function StockPage() {
             </Grid>
           ))}
           {/* Brand and Category: dynamic, with 'All' option */}
-          {["brand", "category"].map((key) => (
+          {[
+            "brand",
+            "category"
+          ].map((key) => (
             <Grid item xs={12} sm={3} md={2} key={key}>
               <FormControl fullWidth>
                 <InputLabel>{key.charAt(0).toUpperCase() + key.slice(1)}</InputLabel>

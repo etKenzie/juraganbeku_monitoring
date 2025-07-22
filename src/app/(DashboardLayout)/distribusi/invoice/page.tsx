@@ -3,10 +3,10 @@ import { fetchOrders } from "@/store/apps/Invoice/invoiceSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
 import { useEffect, useMemo, useState } from "react";
-import { useInvoiceData } from "../dashboard/data";
+import { useInvoiceData } from "../sales/data";
 
-import { calculateDueDateStatus } from "@/app/(DashboardLayout)/dashboards/dashboard/data";
-import { AreaData } from "@/app/(DashboardLayout)/dashboards/dashboard/types";
+import { calculateDueDateStatus } from "@/app/(DashboardLayout)/distribusi/sales/data";
+import { AreaData } from "@/app/(DashboardLayout)/distribusi/sales/types";
 import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
 import InvoiceSummaryCard from "@/app/components/dashboards/invoice/InvoiceSummaryCard";

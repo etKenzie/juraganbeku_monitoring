@@ -1,5 +1,6 @@
 "use client";
 import Loading from "@/app/(DashboardLayout)/loading";
+import { useAuth } from "@/contexts/AuthContext";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
@@ -23,7 +24,6 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface InvoiceData {
   kode_gerai: string;

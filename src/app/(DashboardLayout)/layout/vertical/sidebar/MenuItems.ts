@@ -45,20 +45,20 @@ const Menuitems: MenuitemsType[] = [
     // title: brandTitle,
     title: "Sales",
     icon: IconCash,
-    href: "/dashboards/dashboard",
+    href: "/distribusi/sales",
   },
   {
     id: uniqueId(),
     title: "Invoice",
     icon: IconFileInvoice,
-    href: "/dashboards/pending",
+    href: "/distribusi/invoice",
   },
   {
     id: uniqueId(),
     // title: brandTitle,
     title: "Stock",
     icon: IconStack,
-    href: "/dashboards/stock",
+    href: "/distribusi/stock",
   },
   {
     navlabel: true,
@@ -68,7 +68,7 @@ const Menuitems: MenuitemsType[] = [
     id: uniqueId(),
     title: "Invoice",
     icon: IconFileInvoice,
-    href: "/dashboards/invoice",
+    href: "/services/invoice",
   },
   {
     navlabel: true,
