@@ -528,7 +528,6 @@ export default function PendingDashboard() {
                 )}
                 {/* Transaction Table */}
                 <Box mt={4}>
-                  <Typography variant="h6" mb={2}>Transactions</Typography>
                   <TransactionTable
                     transactions={transactions}
                     loading={transactionLoading}

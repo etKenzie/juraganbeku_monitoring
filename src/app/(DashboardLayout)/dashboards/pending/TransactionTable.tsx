@@ -1,19 +1,20 @@
+import DownloadButton from "@/app/components/common/DownloadButton";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-    Box,
-    CircularProgress,
-    InputAdornment,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField,
-    Typography,
+  Box,
+  CircularProgress,
+  InputAdornment,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Typography,
 } from "@mui/material";
 import React, { useMemo, useState } from "react";
 
@@ -78,6 +79,21 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, loadi
     });
   }, [transactions, search]);
 
+  // Prepare data for Excel export
+  const prepareDataForExport = (txs: any[]) => {
+    return txs.map(t => ({
+      'Tx ID': t.transid,
+      'Type': t.trans_type,
+      'Date': t.trans_date ? formatDateStr(t.trans_date) : '-',
+      'Amount': Number(t.amount) || 0,
+      'Description': t.desc,
+      'Balance': Number(t.saldo) || 0,
+      'Area': t.area,
+      'Order': parseOrder(t.desc),
+      'Month': t.month,
+    }));
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
@@ -115,6 +131,16 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, loadi
 
   return (
     <Box>
+      <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h6">Transactions</Typography>
+        <DownloadButton
+          data={prepareDataForExport(filtered)}
+          filename="transactions"
+          sheetName="Transactions"
+          variant="outlined"
+          size="small"
+        />
+      </Box>
       <Box mb={2}>
         <TextField
           placeholder="Search by description, area, or order..."

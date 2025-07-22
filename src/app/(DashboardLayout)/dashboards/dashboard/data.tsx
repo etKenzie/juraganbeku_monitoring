@@ -60,27 +60,24 @@ export const useInvoiceData = () => {
     totalInvoice: number;
     totalProfit: number;
   }> => {
-    // Group orders by month
-    const monthlyData = orders.reduce(
+    // Group orders by date to provide daily granularity for the chart
+    const dailyData = orders.reduce(
       (acc, order) => {
-        const monthKey = order.month;
+        const dateKey = order.order_date; // Assuming YYYY-MM-DD format
 
-        if (!acc[monthKey]) {
-          acc[monthKey] = {
+        if (!acc[dateKey]) {
+          acc[dateKey] = {
             date: order.order_date,
-            month: monthKey,
+            month: order.month,
             totalInvoice: 0,
             totalProfit: 0,
-            orderCount: 0,
           };
         }
 
-        acc[monthKey].totalInvoice += order.total_invoice;
+        acc[dateKey].totalInvoice += order.total_invoice;
         if (order.profit > 0) {
-          acc[monthKey].totalProfit += order.profit;
+          acc[dateKey].totalProfit += order.profit;
         }
-
-        acc[monthKey].orderCount += 1;
 
         return acc;
       },
@@ -91,18 +88,12 @@ export const useInvoiceData = () => {
           month: string;
           totalInvoice: number;
           totalProfit: number;
-          orderCount: number;
         }
       >
     );
 
-    // Convert to array and calculate average profit per order
-    return Object.values(monthlyData).map((data) => ({
-      date: data.date,
-      month: data.month,
-      totalInvoice: data.totalInvoice,
-      totalProfit: data.totalProfit,
-    }));
+    // Convert the aggregated daily data into an array
+    return Object.values(dailyData);
   };
 
   const processData = (

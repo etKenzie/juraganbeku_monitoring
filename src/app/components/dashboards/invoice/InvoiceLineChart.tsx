@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
-import { format } from "date-fns";
+import { format, startOfWeek } from "date-fns";
 import dynamic from "next/dynamic";
 import React from "react";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -40,8 +40,11 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
     // Group data by month or week
     const groupedData = React.useMemo(() => {
       const result: Record<string, { totalInvoice: number; totalProfit: number }> = {};
-      console.log(data)
-      data.forEach(item => {
+      
+      // 1. Sort data to ensure chronological order
+      const sortedData = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      sortedData.forEach(item => {
         const date = new Date(item.date);
   
         let key: string;
@@ -49,8 +52,11 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
         if (viewType === "monthly") {
           key = item.month;
         } else {
-          const weekNumber = Math.ceil(date.getDate() / 7);
-          key = `Week ${weekNumber} ${format(date, "MMM yyyy")}`;
+          // 2. Use a robust method to determine the start of the week
+          const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // Start week on Monday
+          const monthAbbr = format(weekStartDate, "MMM").toUpperCase();
+          const weekOfMonth = Math.ceil(weekStartDate.getDate() / 7);
+          key = `${monthAbbr} W${weekOfMonth}`;
         }
         
         if (!result[key]) {
@@ -64,9 +70,10 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
       return result;
     }, [data, viewType]);
 
-    const categories = Object.keys(groupedData).reverse();
-    const invoiceData = Object.values(groupedData).map(d => d.totalInvoice).reverse();
-    const profitData = Object.values(groupedData).map(d => d.totalProfit).reverse();
+    // 3. Reverse the order to show most recent data on the right
+    const categories = Object.keys(groupedData);
+    const invoiceData = Object.values(groupedData).map(d => d.totalInvoice);
+    const profitData = Object.values(groupedData).map(d => d.totalProfit);
 
     const handleDownload = () => {
       if (typeof window === "undefined") return;
