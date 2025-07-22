@@ -1,4 +1,4 @@
-import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/dashboard/types";
+import { StoreSummary } from "@/app/(DashboardLayout)/distribusi/sales/types";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
   Box,

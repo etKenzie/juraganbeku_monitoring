@@ -67,6 +67,7 @@ export interface ProcessedData {
   };
   monthlyStoreCounts: { [key: string]: Set<string> };
   monthlyOrderCounts: { [key: string]: number };
+  weeklyData: { [key: string]: { totalInvoice: number; totalProfit: number } }; // New field for weekly data
   dueDateStatusCounts: {
     current: number;
     below14DPD: number;

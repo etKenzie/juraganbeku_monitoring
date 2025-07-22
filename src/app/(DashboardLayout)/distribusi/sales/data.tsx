@@ -1,5 +1,21 @@
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
+import { format, startOfWeek } from "date-fns";
 import { ProcessedData } from "./types";
+
+// Centralized week calculation function
+export const getWeekKey = (date: Date) => {
+  const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // Start week on Monday
+  const monthAbbr = format(weekStartDate, "MMM").toUpperCase();
+  const weekOfMonth = Math.ceil(weekStartDate.getDate() / 7);
+  return `${monthAbbr} W${weekOfMonth}`;
+};
+
+// Centralized week calculation function for simple labels (W1, W2, etc.)
+export const getSimpleWeekKey = (date: Date) => {
+  const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // Start week on Monday
+  const weekOfMonth = Math.ceil(weekStartDate.getDate() / 7);
+  return `W${weekOfMonth}`;
+};
 
 export const calculateDueDateStatus = (
   dueDate: string,
@@ -131,6 +147,7 @@ export const useInvoiceData = () => {
         },
         monthlyStoreCounts: {},
         monthlyOrderCounts: {},
+        weeklyData: {}, // Initialize weekly data
         dueDateStatusCounts: {
           current: 0,
           below14DPD: 0,
@@ -181,6 +198,7 @@ export const useInvoiceData = () => {
       },
       monthlyStoreCounts: {},
       monthlyOrderCounts: {},
+      weeklyData: {}, // Initialize weekly data
       dueDateStatusCounts: {
         current: 0,
         below14DPD: 0,
@@ -192,6 +210,21 @@ export const useInvoiceData = () => {
       paymentStatusMetrics: {},
       chartData: processChartData(uniqueOrders),
     };
+
+    // Calculate weekly data from chartData
+    const weeklyData: { [key: string]: { totalInvoice: number; totalProfit: number } } = {};
+    result.chartData.forEach(item => {
+      const date = new Date(item.date);
+      const weekKey = getWeekKey(date);
+      
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = { totalInvoice: 0, totalProfit: 0 };
+      }
+      
+      weeklyData[weekKey].totalInvoice += item.totalInvoice;
+      weeklyData[weekKey].totalProfit += item.totalProfit;
+    });
+    result.weeklyData = weeklyData;
 
     // Find the most recent month in the data
     const allMonths = uniqueOrders.map((order) => {

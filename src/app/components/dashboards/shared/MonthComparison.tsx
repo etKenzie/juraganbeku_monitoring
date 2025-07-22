@@ -1,3 +1,4 @@
+import { getSimpleWeekKey, getWeekKey } from "@/app/(DashboardLayout)/distribusi/sales/data";
 import { Box, FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { useMemo, useState } from "react";
 
@@ -23,7 +24,7 @@ interface MonthMetrics {
   totalOrders: number;
   margin: string;
   activationRate: string;
-  weekInvoices: Record<string, number>; // e.g. { 'JAN W1': 12345, ... }
+  weekInvoices: Record<string, number>; // e.g. { 'W1': 12345, ... }
 }
 
 function formatValue(val: any, isCurrency: boolean) {
@@ -31,11 +32,6 @@ function formatValue(val: any, isCurrency: boolean) {
   if (isCurrency) return `Rp ${Number(val).toLocaleString()}`;
   if (typeof val === "number") return val.toLocaleString();
   return val;
-}
-
-function getWeekKey(date: Date) {
-  const weekOfMonth = Math.ceil(date.getDate() / 7);
-  return `W${weekOfMonth}`;
 }
 
 export default function MonthComparison({ processedData, availableMonths }: MonthComparisonProps) {
@@ -75,14 +71,28 @@ export default function MonthComparison({ processedData, availableMonths }: Mont
     const margin = (!totalInvoice || totalInvoice === 0) ? "-" : ((totalProfit / totalInvoice) * 100).toFixed(2) + "%";
     // Activation rate
     const activationRate = (!activeStores || !processedData.storeSummaries) ? "-" : ((activeStores / Object.keys(processedData.storeSummaries).length) * 100).toFixed(2) + "%";
-    // Week invoices (InvoiceLineChart logic)
+    // Week invoices using centralized weekly data
     const weekInvoices: Record<string, number> = {};
-    chartData.forEach((d: any) => {
-      const date = new Date(d.date);
-      const key = getWeekKey(date);
-      if (!weekInvoices[key]) weekInvoices[key] = 0;
-      weekInvoices[key] += d.totalInvoice || 0;
-    });
+    
+    // Filter weeklyData for this month and convert to simple week keys
+    if (processedData.weeklyData) {
+      Object.entries(processedData.weeklyData).forEach(([weekKey, data]) => {
+        const weekData = data as { totalInvoice: number; totalProfit: number };
+        // Check if this week belongs to the selected month
+        const weekChartData = chartData.filter((d: any) => {
+          const date = new Date(d.date);
+          const fullWeekKey = getWeekKey(date); // Use the full week key for comparison
+          return fullWeekKey === weekKey;
+        });
+        
+        if (weekChartData.length > 0) {
+          // Convert to simple week key (W1, W2, etc.)
+          const simpleKey = getSimpleWeekKey(new Date(weekChartData[0].date));
+          weekInvoices[simpleKey] = weekData.totalInvoice;
+        }
+      });
+    }
+    
     return {
       totalInvoice,
       totalProfit,

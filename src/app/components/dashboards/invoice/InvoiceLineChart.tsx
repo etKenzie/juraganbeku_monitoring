@@ -1,4 +1,5 @@
 "use client";
+import { getWeekKey } from "@/app/(DashboardLayout)/distribusi/sales/data";
 import DashboardCard from "@/app/components/shared/DashboardCard";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
@@ -10,7 +11,6 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { IconDownload } from "@tabler/icons-react";
-import { format, startOfWeek } from "date-fns";
 import dynamic from "next/dynamic";
 import React from "react";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -23,10 +23,11 @@ interface InvoiceLineChartProps {
     totalProfit: number;
   }[];
   timePeriod: string;
+  weeklyData?: { [key: string]: { totalInvoice: number; totalProfit: number } };
 }
 
 const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
-  ({ data, timePeriod }, ref) => {
+  ({ data, timePeriod, weeklyData }, ref) => {
     const [viewType, setViewType] = React.useState<"monthly" | "weekly">("monthly");
     const chartId = React.useMemo(
       () => `invoice-chart-${Math.random().toString(36).substr(2, 9)}`,
@@ -39,6 +40,11 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
 
     // Group data by month or week
     const groupedData = React.useMemo(() => {
+      if (viewType === "weekly" && weeklyData) {
+        // Use centralized weekly data if available
+        return weeklyData;
+      }
+      
       const result: Record<string, { totalInvoice: number; totalProfit: number }> = {};
       
       // 1. Sort data to ensure chronological order
@@ -52,11 +58,8 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
         if (viewType === "monthly") {
           key = item.month;
         } else {
-          // 2. Use a robust method to determine the start of the week
-          const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // Start week on Monday
-          const monthAbbr = format(weekStartDate, "MMM").toUpperCase();
-          const weekOfMonth = Math.ceil(weekStartDate.getDate() / 7);
-          key = `${monthAbbr} W${weekOfMonth}`;
+          // 2. Use centralized week calculation
+          key = getWeekKey(date);
         }
         
         if (!result[key]) {
@@ -68,12 +71,19 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
       });
       
       return result;
-    }, [data, viewType]);
+    }, [data, viewType, weeklyData]);
 
-    // 3. Reverse the order to show most recent data on the right
+    // 3. Sort and prepare data for chart
     const categories = Object.keys(groupedData);
     const invoiceData = Object.values(groupedData).map(d => d.totalInvoice);
     const profitData = Object.values(groupedData).map(d => d.totalProfit);
+
+    // Reverse weekly data to show most recent on the right
+    if (viewType === "weekly" && weeklyData) {
+      categories.reverse();
+      invoiceData.reverse();
+      profitData.reverse();
+    }
 
     const handleDownload = () => {
       if (typeof window === "undefined") return;

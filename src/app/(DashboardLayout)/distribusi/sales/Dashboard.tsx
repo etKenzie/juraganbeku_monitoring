@@ -563,6 +563,7 @@ export default function Dashboard() {
                       <InvoiceLineChart
                         data={processedData?.chartData || []}
                         timePeriod={timePeriod}
+                        weeklyData={processedData?.weeklyData}
                       />
                     </Grid>
                     {/* <Grid item xs={12} lg={4}>
@@ -599,7 +600,6 @@ export default function Dashboard() {
                 {!area && processedData && (
                   <MonthComparison
                     processedData={processedData}
-                    goalProfit={goalProfit[processedArea]}
                     availableMonths={Object.keys(processedData.monthlyStoreCounts || {})}
                   />
                 )}

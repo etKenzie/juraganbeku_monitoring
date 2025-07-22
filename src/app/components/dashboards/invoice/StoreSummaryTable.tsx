@@ -1,5 +1,5 @@
 "use client";
-import { StoreSummary } from "@/app/(DashboardLayout)/dashboards/dashboard/types";
+import { StoreSummary } from "@/app/(DashboardLayout)/distribusi/sales/types";
 import DownloadButton from "@/app/components/common/DownloadButton";
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from "@mui/icons-material/Search";

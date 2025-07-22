@@ -1,5 +1,5 @@
 "use client";
-import { AreaData } from "@/app/(DashboardLayout)/dashboards/dashboard/types";
+import { AreaData } from "@/app/(DashboardLayout)/distribusi/sales/types";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import {
   Box,
