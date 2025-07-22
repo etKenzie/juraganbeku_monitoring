@@ -20,6 +20,7 @@ import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSumm
 import SegmentPerformanceChart from "@/app/components/dashboards/invoice/SegmentPerformanceChart";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import TotalSummaries from "@/app/components/dashboards/invoice/YearlyTotal";
+import MonthComparison from "@/app/components/dashboards/shared/MonthComparison";
 import SummaryTiles from "@/app/components/dashboards/shared/SummaryTiles";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
@@ -592,6 +593,15 @@ export default function Dashboard() {
                   <Box mb={4}>
                     <NOOAreaChart data={nooData} />
                   </Box>
+                )}
+
+                {/* Month Comparison - Only show when no specific area is selected */}
+                {!area && processedData && (
+                  <MonthComparison
+                    processedData={processedData}
+                    goalProfit={goalProfit[processedArea]}
+                    availableMonths={Object.keys(processedData.monthlyStoreCounts || {})}
+                  />
                 )}
 
                 {/* Store Summary Table */}
