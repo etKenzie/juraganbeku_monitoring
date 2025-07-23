@@ -21,9 +21,10 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  Typography,
+  Typography
 } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
+import TablePDFGenerateButton from "./components/TablePDFGenerateButton";
 
 interface InvoiceData {
   kode_gerai: string;
@@ -251,10 +252,21 @@ const InvoiceAPIPage: React.FC = () => {
         <Loading />
       ) : (
         <>
-          <Typography variant="h4" mb={3}>
-            Invoice List
-          </Typography>
-          {/* Company selector and date range at the top */}
+          {/* Header with title and PDF button */}
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h4">
+              Invoice List
+            </Typography>
+            <TablePDFGenerateButton
+              invoices={filteredInvoices}
+              company={companies.find(c => c.slug === selectedCompanySlug) || companies[0]}
+              variant="contained"
+              size="large"
+              tooltipText={`Generate PDF with all ${filteredInvoices.length} invoice records`}
+            />
+          </Box>
+          
+          {/* Company selector and date range */}
           <Box mb={3} display="flex" alignItems="center" gap={2}>
             <FormControl fullWidth sx={{ maxWidth: 300 }}>
               <InputLabel>Select Company</InputLabel>
@@ -310,6 +322,7 @@ const InvoiceAPIPage: React.FC = () => {
               Apply
             </Button>
           </Box>
+          
           <Grid container spacing={3} mb={3}>
             <Grid item xs={12} sm={6} md={3}>
               <Paper sx={{ p: 2 }}>
@@ -330,8 +343,9 @@ const InvoiceAPIPage: React.FC = () => {
               </Paper>
             </Grid>
           </Grid>
+          
           <Grid container spacing={2} mb={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth
                 variant="outlined"
@@ -347,7 +361,7 @@ const InvoiceAPIPage: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth>
                 <InputLabel>Filter by Gerai</InputLabel>
                 <Select
@@ -364,7 +378,7 @@ const InvoiceAPIPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={4}>
               <Button
                 variant="outlined"
                 onClick={() => {
@@ -381,6 +395,7 @@ const InvoiceAPIPage: React.FC = () => {
               </Button>
             </Grid>
           </Grid>
+          
           {/* Show table or no data message */}
           {Array.isArray(invoices) && invoices.length > 0 ? (
             <Paper>
@@ -451,6 +466,7 @@ const InvoiceAPIPage: React.FC = () => {
                           Pickup Date
                         </TableSortLabel>
                       </TableCell>
+
                     </TableRow>
                   </TableHead>
                   <TableBody>
