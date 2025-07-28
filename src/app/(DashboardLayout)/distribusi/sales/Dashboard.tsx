@@ -586,7 +586,7 @@ export default function Dashboard() {
 
                 {/* NOO Chart */}
                 <Box mb={4}>
-                  <NOOChart data={nooData} />
+                  <NOOChart data={nooData} storeSummaries={processedData?.storeSummaries} />
                 </Box>
 
                 {/* NOO Area Chart - Only show when no specific area is selected */}
@@ -597,7 +597,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Month Comparison - Only show when no specific area is selected */}
-                {!area && processedData && (
+                {processedData && (
                   <MonthComparison
                     processedData={processedData}
                     availableMonths={Object.keys(processedData.monthlyStoreCounts || {})}

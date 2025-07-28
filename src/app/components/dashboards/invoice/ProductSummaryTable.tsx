@@ -60,7 +60,7 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
-  console.log(productSummaries)
+  // console.log(productSummaries)
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);

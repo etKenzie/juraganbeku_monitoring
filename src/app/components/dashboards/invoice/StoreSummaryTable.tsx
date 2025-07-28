@@ -108,6 +108,7 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
       return dateA.getTime() - dateB.getTime();
     });
   }, [storeSummaries]);
+  console.log(storeSummaries)
 
   // Get all unique statuses
   const allStatuses = useMemo(() => {

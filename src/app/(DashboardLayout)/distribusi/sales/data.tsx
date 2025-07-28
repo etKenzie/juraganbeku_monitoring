@@ -620,7 +620,7 @@ export const useInvoiceData = () => {
           storeStatus: "Inactive",
         };
       }
-
+      
       result.storeSummaries[userId].totalInvoice += order.total_invoice || 0;
       if (order.profit > 0) {
         result.storeSummaries[userId].totalProfit += order.profit;

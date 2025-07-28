@@ -28,14 +28,15 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 interface NOOChartProps {
   data: OrderData[];
+  storeSummaries?: { [key: string]: any };
 }
 
-const NOOChart = ({ data }: NOOChartProps) => {
+const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
   const theme = useTheme();
   const [isClient, setIsClient] = React.useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<'nooCount' | 'totalInvoice' | 'totalProfit' | 'averageInvoice' | 'averageProfit'>('nooCount');
+  const [selectedMetric, setSelectedMetric] = useState<'nooCount' | 'totalInvoice' | 'totalProfit' | 'averageInvoice' | 'averageProfit' | 'totalMonthInvoice' | 'totalMonthProfit' | 'totalMonthOrders'>('nooCount');
 
   React.useEffect(() => {
     setIsClient(true);
@@ -126,6 +127,122 @@ const NOOChart = ({ data }: NOOChartProps) => {
   } else if (selectedMetric === 'averageProfit') {
     chartData = averageProfits;
     chartLabel = 'Average Profit';
+  } else if (selectedMetric === 'totalMonthInvoice') {
+    // Calculate total month invoice by summing up all store totals for each month
+    chartData = months.map(month => {
+      let totalMonthInvoice = 0;
+      // Use storeSummaries if available, otherwise fall back to monthlyData
+      if (storeSummaries) {
+        // Only include stores that first appeared in this month (like the modal)
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            // Get the store summary for this store
+            const storeSummary = storeSummaries[firstOrder.user_id];
+            if (storeSummary) {
+              const storeOrders = storeSummary.orders.filter((storeOrder: OrderData) => 
+                storeOrder.month.toLowerCase() === month.toLowerCase()
+              );
+              // Calculate the store's total month invoice (same as modal calculation)
+              const storeMonthInvoice = storeOrders.reduce((sum: number, storeOrder: OrderData) => 
+                sum + (storeOrder.total_invoice || 0), 0
+              );
+              totalMonthInvoice += storeMonthInvoice;
+            }
+          }
+        });
+      } else {
+        // Fallback to original calculation
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            const storeOrders = data.filter(dataOrder => 
+              dataOrder.user_id === firstOrder.user_id && 
+              dataOrder.month.toLowerCase() === month.toLowerCase()
+            );
+            totalMonthInvoice += storeOrders.reduce((sum, storeOrder) => 
+              sum + (storeOrder.total_invoice || 0), 0
+            );
+          }
+        });
+      }
+      return totalMonthInvoice;
+    });
+    chartLabel = 'Total Month Invoice';
+  } else if (selectedMetric === 'totalMonthProfit') {
+    // Calculate total month profit by summing up all store totals for each month
+    chartData = months.map(month => {
+      let totalMonthProfit = 0;
+      // Use storeSummaries if available, otherwise fall back to monthlyData
+      if (storeSummaries) {
+        // Only include stores that first appeared in this month (like the modal)
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            // Get the store summary for this store
+            const storeSummary = storeSummaries[firstOrder.user_id];
+            if (storeSummary) {
+              const storeOrders = storeSummary.orders.filter((storeOrder: OrderData) => 
+                storeOrder.month.toLowerCase() === month.toLowerCase()
+              );
+              // Calculate the store's total month profit (same as modal calculation)
+              const storeMonthProfit = storeOrders.reduce((sum: number, storeOrder: OrderData) => 
+                sum + (storeOrder.profit || 0), 0
+              );
+              totalMonthProfit += storeMonthProfit;
+            }
+          }
+        });
+      } else {
+        // Fallback to original calculation
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            const storeOrders = data.filter(dataOrder => 
+              dataOrder.user_id === firstOrder.user_id && 
+              dataOrder.month.toLowerCase() === month.toLowerCase()
+            );
+            totalMonthProfit += storeOrders.reduce((sum, storeOrder) => 
+              sum + (storeOrder.profit || 0), 0
+            );
+          }
+        });
+      }
+      return totalMonthProfit;
+    });
+    chartLabel = 'Total Month Profit';
+  } else if (selectedMetric === 'totalMonthOrders') {
+    // Calculate total month orders by summing up all store totals for each month
+    chartData = months.map(month => {
+      let totalMonthOrders = 0;
+      // Use storeSummaries if available, otherwise fall back to monthlyData
+      if (storeSummaries) {
+        // Only include stores that first appeared in this month (like the modal)
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            // Get the store summary for this store
+            const storeSummary = storeSummaries[firstOrder.user_id];
+            if (storeSummary) {
+              const storeOrders = storeSummary.orders.filter((storeOrder: OrderData) => 
+                storeOrder.month.toLowerCase() === month.toLowerCase()
+              );
+              // Calculate the store's total month orders (same as modal calculation)
+              const storeMonthOrders = storeOrders.length;
+              totalMonthOrders += storeMonthOrders;
+            }
+          }
+        });
+      } else {
+        // Fallback to original calculation
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            const storeOrders = data.filter(dataOrder => 
+              dataOrder.user_id === firstOrder.user_id && 
+              dataOrder.month.toLowerCase() === month.toLowerCase()
+            );
+            totalMonthOrders += storeOrders.length;
+          }
+        });
+      }
+      return totalMonthOrders;
+    });
+    chartLabel = 'Total Month Orders';
   }
 
   // Calculate average and find max count
@@ -134,6 +251,8 @@ const NOOChart = ({ data }: NOOChartProps) => {
   const mostRecentMonth = months[months.length - 1];
   let mostRecentValue = 0;
   if (selectedMetric === 'averageInvoice' || selectedMetric === 'averageProfit') {
+    mostRecentValue = chartData[chartData.length - 1] || 0;
+  } else if (selectedMetric === 'totalMonthInvoice' || selectedMetric === 'totalMonthProfit' || selectedMetric === 'totalMonthOrders') {
     mostRecentValue = chartData[chartData.length - 1] || 0;
   } else {
     mostRecentValue = monthlyData.monthlyCounts[mostRecentMonth]?.[selectedMetric as 'nooCount' | 'totalInvoice' | 'totalProfit'] || 0;
@@ -151,7 +270,10 @@ const NOOChart = ({ data }: NOOChartProps) => {
       <strong style={{ color: theme.palette.primary.main }}>
         {formatCurrency(average)}
       </strong>{" "}
-      {selectedMetric === 'nooCount' ? 'new stores' : (selectedMetric === 'totalInvoice' ? 'invoice' : 'profit')} over{" "}
+      {selectedMetric === 'nooCount' ? 'new stores' : 
+       selectedMetric === 'totalInvoice' || selectedMetric === 'totalMonthInvoice' ? 'invoice' : 
+       selectedMetric === 'totalProfit' || selectedMetric === 'totalMonthProfit' ? 'profit' :
+       selectedMetric === 'totalMonthOrders' ? 'orders' : 'profit'} over{" "}
       <strong style={{ color: theme.palette.primary.main }}>
         {months.length}
       </strong>{" "}
@@ -289,6 +411,9 @@ const NOOChart = ({ data }: NOOChartProps) => {
               <MenuItem value="totalProfit">Total Profit</MenuItem>
               <MenuItem value="averageInvoice">Average Invoice</MenuItem>
               <MenuItem value="averageProfit">Average Profit</MenuItem>
+              <MenuItem value="totalMonthInvoice">Total Month Invoice</MenuItem>
+              <MenuItem value="totalMonthProfit">Total Month Profit</MenuItem>
+              <MenuItem value="totalMonthOrders">Total Month Orders</MenuItem>
             </Select>
             <Tooltip title="Download Chart">
               <IconButton onClick={handleDownload} size="small">
@@ -303,6 +428,9 @@ const NOOChart = ({ data }: NOOChartProps) => {
           if (selectedMetric === 'totalProfit') return 'Current Month Profit';
           if (selectedMetric === 'averageInvoice') return 'Current Month Avg Invoice';
           if (selectedMetric === 'averageProfit') return 'Current Month Avg Profit';
+          if (selectedMetric === 'totalMonthInvoice') return 'Current Month Total Invoice';
+          if (selectedMetric === 'totalMonthProfit') return 'Current Month Total Profit';
+          if (selectedMetric === 'totalMonthOrders') return 'Current Month Total Orders';
           return '';
         })()}
         dataItem1={formatCurrency(mostRecentValue)}
@@ -371,6 +499,37 @@ const NOOChart = ({ data }: NOOChartProps) => {
                           <Typography variant="body2" color="text.secondary">
                             Total Invoice: {formatCurrency(order.total_invoice)}
                           </Typography>
+                          {storeSummaries && storeSummaries[order.user_id] && selectedMonth && (
+                            (() => {
+                              // Calculate first month metrics for this store based on selected month
+                              const storeOrders = storeSummaries[order.user_id].orders;
+                              const monthOrders = storeOrders.filter((storeOrder: OrderData) => 
+                                storeOrder.month.toLowerCase() === selectedMonth.toLowerCase()
+                              );
+                              
+                              const firstMonthInvoice = monthOrders.reduce((sum: number, storeOrder: OrderData) => 
+                                sum + (storeOrder.total_invoice || 0), 0
+                              );
+                              const firstMonthProfit = monthOrders.reduce((sum: number, storeOrder: OrderData) => 
+                                sum + (storeOrder.profit || 0), 0
+                              );
+                              const firstMonthOrders = monthOrders.length;
+                              
+                              return (
+                                <>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Total Month Invoice: {formatCurrency(firstMonthInvoice)}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Total Month Profit: {formatCurrency(firstMonthProfit)}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Total Month Orders: {firstMonthOrders}
+                                  </Typography>
+                                </>
+                              );
+                            })()
+                          )}
                         </Box>
                       }
                     />
