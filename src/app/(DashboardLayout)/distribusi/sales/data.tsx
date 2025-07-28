@@ -212,17 +212,114 @@ export const useInvoiceData = () => {
     };
 
     // Calculate weekly data from chartData
-    const weeklyData: { [key: string]: { totalInvoice: number; totalProfit: number } } = {};
+    const weeklyData: { [key: string]: { 
+      totalInvoice: number; 
+      totalProfit: number; 
+      activeStores: number; 
+      totalOrders: number; 
+      margin: string; 
+    } } = {};
+    
+    // Group orders by month first, then by week
+    const monthlyWeeklyOrders: { [monthKey: string]: { [weekKey: string]: OrderData[] } } = {};
+    
+    uniqueOrders.forEach(order => {
+      const orderDate = new Date(order.order_date);
+      const orderMonth = order.month.toLowerCase(); // e.g., "april 2025"
+      
+      // Get the month and year from order.month
+      const monthParts = orderMonth.split(' ');
+      const monthName = monthParts[0]; // e.g., "april"
+      const year = monthParts[1]; // e.g., "2025"
+      
+      // Convert month name to abbreviation for week key
+      const monthAbbrMap: { [key: string]: string } = {
+        'january': 'JAN', 'february': 'FEB', 'march': 'MAR', 'april': 'APR',
+        'may': 'MAY', 'june': 'JUN', 'july': 'JUL', 'august': 'AUG',
+        'september': 'SEP', 'october': 'OCT', 'november': 'NOV', 'december': 'DEC'
+      };
+      
+      const monthAbbr = monthAbbrMap[monthName] || monthName.toUpperCase();
+      
+      // Check if the order date matches the order.month
+      const orderDateMonth = orderDate.toLocaleString("en-US", { month: "long" }).toLowerCase();
+      const orderDateYear = orderDate.getFullYear().toString();
+      const orderDateMonthString = `${orderDateMonth} ${orderDateYear}`;
+      
+      let weekKey: string;
+      
+      if (orderDateMonthString === orderMonth) {
+        // Date matches the month - use the actual week from the date
+        const weekOfMonth = Math.ceil(orderDate.getDate() / 7);
+        weekKey = `${monthAbbr} W${weekOfMonth}`;
+      } else {
+        // Date doesn't match the month - determine if it's from previous or next month
+        const orderDateObj = new Date(orderDate);
+        const orderMonthObj = new Date(`${monthName} 1, ${year}`);
+        
+        if (orderDateObj < orderMonthObj) {
+          // Date is from previous month - put it in W1
+          weekKey = `${monthAbbr} W1`;
+        } else {
+          // Date is from next month - put it in the last week
+          // First check if W5 already exists in this month
+          const existingWeeks = Object.keys(monthlyWeeklyOrders[orderMonth] || {});
+          const hasW5 = existingWeeks.some(week => week.includes('W5'));
+          
+          if (hasW5) {
+            weekKey = `${monthAbbr} W5`;
+          } else {
+            weekKey = `${monthAbbr} W4`;
+          }
+        }
+      }
+      
+      // Initialize month if not exists
+      if (!monthlyWeeklyOrders[orderMonth]) {
+        monthlyWeeklyOrders[orderMonth] = {};
+      }
+      
+      // Initialize week if not exists
+      if (!monthlyWeeklyOrders[orderMonth][weekKey]) {
+        monthlyWeeklyOrders[orderMonth][weekKey] = [];
+      }
+      
+      monthlyWeeklyOrders[orderMonth][weekKey].push(order);
+    });
+    
+    // Calculate weekly metrics
+    Object.entries(monthlyWeeklyOrders).forEach(([monthKey, weekOrders]) => {
+      Object.entries(weekOrders).forEach(([weekKey, orders]) => {
+        const totalInvoice = orders.reduce((sum, order) => sum + (order.total_invoice || 0), 0);
+        const totalProfit = orders.reduce((sum, order) => sum + (order.profit || 0), 0);
+        const totalOrders = orders.length;
+        const activeStores = new Set(orders.map(order => order.user_id)).size;
+        const margin = (!totalInvoice || totalInvoice === 0) ? "-" : ((totalProfit / totalInvoice) * 100).toFixed(2) + "%";
+        
+        weeklyData[weekKey] = {
+          totalInvoice,
+          totalProfit,
+          activeStores,
+          totalOrders,
+          margin,
+        };
+      });
+    });
+    
     result.chartData.forEach(item => {
       const date = new Date(item.date);
       const weekKey = getWeekKey(date);
       
+      // Ensure the week exists in weeklyData (in case chartData has weeks not in orders)
       if (!weeklyData[weekKey]) {
-        weeklyData[weekKey] = { totalInvoice: 0, totalProfit: 0 };
+        weeklyData[weekKey] = {
+          totalInvoice: 0,
+          totalProfit: 0,
+          activeStores: 0,
+          totalOrders: 0,
+          margin: "-",
+        };
       }
-      
-      weeklyData[weekKey].totalInvoice += item.totalInvoice;
-      weeklyData[weekKey].totalProfit += item.totalProfit;
     });
     result.weeklyData = weeklyData;
 

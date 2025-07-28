@@ -2,14 +2,13 @@ import { getSimpleWeekKey, getWeekKey } from "@/app/(DashboardLayout)/distribusi
 import { Box, FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { useMemo, useState } from "react";
 
-// Define the metrics to compare (should match your SummaryTiles)
+// Define the metrics to compare (removed activation rate)
 const METRICS = [
   { key: "totalInvoice", label: "Total Invoice", isCurrency: true },
   { key: "totalProfit", label: "Total Profit", isCurrency: true },
   { key: "activeStores", label: "Active Stores", isCurrency: false },
   { key: "totalOrders", label: "Total Orders", isCurrency: false },
   { key: "margin", label: "Margin", isCurrency: false },
-  { key: "activationRate", label: "Activation Rate", isCurrency: false },
 ];
 
 interface MonthComparisonProps {
@@ -17,14 +16,23 @@ interface MonthComparisonProps {
   availableMonths?: string[];
 }
 
-interface MonthMetrics {
+interface WeekMetrics {
   totalInvoice: number;
   totalProfit: number;
   activeStores: number;
   totalOrders: number;
   margin: string;
-  activationRate: string;
-  weekInvoices: Record<string, number>; // e.g. { 'W1': 12345, ... }
+}
+
+interface MonthMetrics {
+  weeks: Record<string, WeekMetrics>; // e.g. { 'W1': { totalInvoice: 12345, ... }, ... }
+  monthly: {
+    totalInvoice: number;
+    totalProfit: number;
+    activeStores: number;
+    totalOrders: number;
+    margin: string;
+  };
 }
 
 function formatValue(val: any, isCurrency: boolean) {
@@ -52,78 +60,113 @@ export default function MonthComparison({ processedData, availableMonths }: Mont
   // Helper to get metrics for a month
   function getMetrics(month: string): MonthMetrics {
     if (!processedData) return {
-      totalInvoice: 0,
-      totalProfit: 0,
-      activeStores: 0,
-      totalOrders: 0,
-      margin: "-",
-      activationRate: "-",
-      weekInvoices: {},
+      weeks: {},
+      monthly: {
+        totalInvoice: 0,
+        totalProfit: 0,
+        activeStores: 0,
+        totalOrders: 0,
+        margin: "-",
+      },
     };
-    // Total Invoice and Total Profit from chartData (sum for the month)
-    const chartData = processedData.chartData?.filter((d: any) => d.month === month) || [];
-    const totalInvoice = chartData.reduce((sum: number, d: any) => sum + (d.totalInvoice || 0), 0);
-    const totalProfit = chartData.reduce((sum: number, d: any) => sum + (d.totalProfit || 0), 0);
-    // Orders and stores
-    const totalOrders = processedData.monthlyOrderCounts?.[month] || 0;
-    const activeStores = processedData.monthlyStoreCounts?.[month]?.size || 0;
-    // Margin
-    const margin = (!totalInvoice || totalInvoice === 0) ? "-" : ((totalProfit / totalInvoice) * 100).toFixed(2) + "%";
-    // Activation rate
-    const activationRate = (!activeStores || !processedData.storeSummaries) ? "-" : ((activeStores / Object.keys(processedData.storeSummaries).length) * 100).toFixed(2) + "%";
-    // Week invoices using centralized weekly data
-    const weekInvoices: Record<string, number> = {};
+
+    // Initialize weekly metrics
+    const weeks: Record<string, WeekMetrics> = {};
+    const weekKeys = ['W1', 'W2', 'W3', 'W4', 'W5'];
     
-    // Filter weeklyData for this month and convert to simple week keys
+    // Initialize all weeks with default values
+    weekKeys.forEach(weekKey => {
+      weeks[weekKey] = {
+        totalInvoice: 0,
+        totalProfit: 0,
+        activeStores: 0,
+        totalOrders: 0,
+        margin: "-",
+      };
+    });
+
+    // Use enhanced weeklyData directly from processedData
     if (processedData.weeklyData) {
       Object.entries(processedData.weeklyData).forEach(([weekKey, data]) => {
-        const weekData = data as { totalInvoice: number; totalProfit: number };
-        // Check if this week belongs to the selected month
-        const weekChartData = chartData.filter((d: any) => {
-          const date = new Date(d.date);
-          const fullWeekKey = getWeekKey(date); // Use the full week key for comparison
-          return fullWeekKey === weekKey;
-        });
+        const weekData = data as { 
+          totalInvoice: number; 
+          totalProfit: number; 
+          activeStores: number; 
+          totalOrders: number; 
+          margin: string; 
+        };
         
-        if (weekChartData.length > 0) {
-          // Convert to simple week key (W1, W2, etc.)
-          const simpleKey = getSimpleWeekKey(new Date(weekChartData[0].date));
-          weekInvoices[simpleKey] = weekData.totalInvoice;
+        // Check if this week belongs to the selected month by parsing the week key
+        // weekKey format: "APR W1", "FEB W2", etc.
+        const weekKeyParts = weekKey.split(' ');
+        if (weekKeyParts.length >= 2) {
+          const monthAbbr = weekKeyParts[0]; // e.g., "APR", "FEB"
+          
+          // Convert month abbreviation to full month name
+          const monthMap: { [key: string]: string } = {
+            'JAN': 'january', 'FEB': 'february', 'MAR': 'march', 'APR': 'april',
+            'MAY': 'may', 'JUN': 'june', 'JUL': 'july', 'AUG': 'august',
+            'SEP': 'september', 'OCT': 'october', 'NOV': 'november', 'DEC': 'december'
+          };
+          
+          const monthNameLower = monthMap[monthAbbr] || monthAbbr.toLowerCase();
+          // Capitalize first letter to match dropdown format (e.g., "June 2025")
+          const monthName = monthNameLower.charAt(0).toUpperCase() + monthNameLower.slice(1);
+          
+          // Extract year from the month string (e.g., "april 2025")
+          const monthParts = month.split(' ');
+          const year = monthParts[monthParts.length - 1];
+          
+          const weekMonthString = `${monthName} ${year}`;
+         
+          if (weekMonthString === month) {
+            // Convert to simple week key (W1, W2, etc.)
+            const weekNum = weekKeyParts[1].replace('W', ''); // Extract week number
+            const simpleKey = `W${weekNum}`;
+            
+            // Only add if it's a valid week key (W1-W5)
+            if (['W1', 'W2', 'W3', 'W4', 'W5'].includes(simpleKey)) {
+              weeks[simpleKey] = {
+                totalInvoice: weekData.totalInvoice || 0,
+                totalProfit: weekData.totalProfit || 0,
+                activeStores: weekData.activeStores || 0,
+                totalOrders: weekData.totalOrders || 0,
+                margin: weekData.margin || "-",
+              };
+            }
+          }
         }
       });
     }
+
+    // Calculate monthly totals
+    const monthlyStores = processedData.monthlyStoreCounts?.[month]?.size || 0;
+    const monthlyOrders = processedData.monthlyOrderCounts?.[month] || 0;
     
+    // Get monthly invoice and profit from chartData
+    const monthlyChartData = processedData.chartData?.filter((d: any) => d.month === month) || [];
+    const monthlyInvoice = monthlyChartData.reduce((sum: number, d: any) => sum + (d.totalInvoice || 0), 0);
+    const monthlyProfit = monthlyChartData.reduce((sum: number, d: any) => sum + (d.totalProfit || 0), 0);
+    const monthlyMargin = (!monthlyInvoice || monthlyInvoice === 0) ? "-" : ((monthlyProfit / monthlyInvoice) * 100).toFixed(2) + "%";
+
     return {
-      totalInvoice,
-      totalProfit,
-      activeStores,
-      totalOrders,
-      margin,
-      activationRate,
-      weekInvoices,
+      weeks,
+      monthly: {
+        totalInvoice: monthlyInvoice,
+        totalProfit: monthlyProfit,
+        activeStores: monthlyStores,
+        totalOrders: monthlyOrders,
+        margin: monthlyMargin,
+      },
     };
   }
 
   const metrics1 = getMetrics(month1);
   const metrics2 = getMetrics(month2);
 
-  // Collect all week keys from both months, sorted
-  const allWeekKeys = useMemo(() => {
-    const keys = new Set([
-      ...Object.keys(metrics1.weekInvoices),
-      ...Object.keys(metrics2.weekInvoices),
-    ]);
-    // Sort by week number (W1, W2, ...)
-    return Array.from(keys).sort((a, b) => {
-      const wa = Number(a.replace('W', ''));
-      const wb = Number(b.replace('W', ''));
-      return wa - wb;
-    });
-  }, [metrics1, metrics2]);
-
   return (
     <Paper sx={{ p: 3, mb: 4 }}>
-      <Typography variant="h6" mb={2}>Compare Months</Typography>
+      <Typography variant="h6" mb={2}>Monthly Comparison - Weekly Breakdown</Typography>
       <Box display="flex" gap={2} mb={2}>
         <FormControl sx={{ minWidth: 180 }}>
           <InputLabel>Month 1</InputLabel>
@@ -142,50 +185,96 @@ export default function MonthComparison({ processedData, availableMonths }: Mont
           </Select>
         </FormControl>
       </Box>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Metric</TableCell>
-            <TableCell>{month1}</TableCell>
-            <TableCell>{month2}</TableCell>
-            <TableCell>Difference</TableCell>
-            <TableCell>% Change</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {METRICS.map(metric => {
-            const v1 = metrics1[metric.key as keyof MonthMetrics];
-            const v2 = metrics2[metric.key as keyof MonthMetrics];
-            const diff = (typeof v1 === "number" && typeof v2 === "number") ? v2 - v1 : "-";
-            const pct = (typeof v1 === "number" && typeof v2 === "number" && v1 !== 0) ? (((v2 - v1) / v1) * 100).toFixed(1) + "%" : "-";
-            return (
-              <TableRow key={metric.key}>
-                <TableCell>{metric.label}</TableCell>
-                <TableCell>{formatValue(v1, metric.isCurrency)}</TableCell>
-                <TableCell>{formatValue(v2, metric.isCurrency)}</TableCell>
-                <TableCell>{typeof diff === "number" ? formatValue(diff, metric.isCurrency) : diff}</TableCell>
-                <TableCell>{pct}</TableCell>
-              </TableRow>
-            );
-          })}
-          {/* Add week invoice rows dynamically */}
-          {allWeekKeys.map((key) => {
-            const v1 = metrics1.weekInvoices[key] || 0;
-            const v2 = metrics2.weekInvoices[key] || 0;
-            const diff = (typeof v1 === "number" && typeof v2 === "number") ? v2 - v1 : "-";
-            const pct = (typeof v1 === "number" && typeof v2 === "number" && v1 !== 0) ? (((v2 - v1) / v1) * 100).toFixed(1) + "%" : "-";
-            return (
-              <TableRow key={key}>
-                <TableCell>{key}</TableCell>
-                <TableCell>{formatValue(v1, true)}</TableCell>
-                <TableCell>{formatValue(v2, true)}</TableCell>
-                <TableCell>{typeof diff === "number" ? formatValue(diff, true) : diff}</TableCell>
-                <TableCell>{pct}</TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+      
+      <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}></TableCell>
+              {/* Month 1 columns */}
+              <TableCell colSpan={6} align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>
+                {month1}
+              </TableCell>
+              {/* Month 2 columns */}
+              <TableCell colSpan={6} align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.main', color: 'white' }}>
+                {month2}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold' }}></TableCell>
+              {/* Month 1 week headers */}
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white', minWidth: 80 }}>W1</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white', minWidth: 80 }}>W2</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white', minWidth: 80 }}>W3</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white', minWidth: 80 }}>W4</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white', minWidth: 80 }}>W5</TableCell>
+              {/* Month 1 total header */}
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.dark', color: 'white', minWidth: 100 }}>Total</TableCell>
+              {/* Month 2 week headers */}
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.main', color: 'white', minWidth: 80 }}>W1</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.main', color: 'white', minWidth: 80 }}>W2</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.main', color: 'white', minWidth: 80 }}>W3</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.main', color: 'white', minWidth: 80 }}>W4</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.main', color: 'white', minWidth: 80 }}>W5</TableCell>
+              {/* Month 2 total header */}
+              <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.dark', color: 'white', minWidth: 100 }}>Total</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {METRICS.map(metric => {
+              // Use monthly totals for the Total column
+              let month1Total: string | number;
+              let month2Total: string | number;
+              
+              if (metric.key === 'activeStores') {
+                // Use monthly store count directly
+                month1Total = metrics1.monthly.activeStores;
+                month2Total = metrics2.monthly.activeStores;
+              } else if (metric.key === 'margin') {
+                // Use monthly margin directly
+                month1Total = metrics1.monthly.margin;
+                month2Total = metrics2.monthly.margin;
+              } else {
+                // For other metrics, sum the weekly values
+                month1Total = Object.values(metrics1.weeks).reduce((sum, week) => {
+                  const value = week[metric.key as keyof WeekMetrics];
+                  return sum + (typeof value === 'number' ? value : 0);
+                }, 0);
+                month2Total = Object.values(metrics2.weeks).reduce((sum, week) => {
+                  const value = week[metric.key as keyof WeekMetrics];
+                  return sum + (typeof value === 'number' ? value : 0);
+                }, 0);
+              }
+              
+              return (
+                <TableRow key={metric.key}>
+                  <TableCell sx={{ fontWeight: 'bold' }}>{metric.label}</TableCell>
+                  {/* Month 1 weekly data */}
+                  <TableCell align="center">{formatValue(metrics1.weeks.W1?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics1.weeks.W2?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics1.weeks.W3?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics1.weeks.W4?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics1.weeks.W5?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  {/* Month 1 total */}
+                  <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.50' }}>
+                    {metric.key === 'margin' ? month1Total : formatValue(month1Total, metric.isCurrency)}
+                  </TableCell>
+                  {/* Month 2 weekly data */}
+                  <TableCell align="center">{formatValue(metrics2.weeks.W1?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics2.weeks.W2?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics2.weeks.W3?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics2.weeks.W4?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">{formatValue(metrics2.weeks.W5?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  {/* Month 2 total */}
+                  <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.50' }}>
+                    {metric.key === 'margin' ? month2Total : formatValue(month2Total, metric.isCurrency)}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Box>
     </Paper>
   );
 } 
