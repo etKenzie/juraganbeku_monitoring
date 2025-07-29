@@ -1,4 +1,4 @@
-import { getSimpleWeekKey, getWeekKey } from "@/app/(DashboardLayout)/distribusi/sales/data";
+import { formatCurrency } from "@/app/utils/formatNumber";
 import { Box, FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { useMemo, useState } from "react";
 
@@ -33,13 +33,6 @@ interface MonthMetrics {
     totalOrders: number;
     margin: string;
   };
-}
-
-function formatValue(val: any, isCurrency: boolean) {
-  if (val === undefined || val === null) return "-";
-  if (isCurrency) return `Rp ${Number(val).toLocaleString()}`;
-  if (typeof val === "number") return val.toLocaleString();
-  return val;
 }
 
 export default function MonthComparison({ processedData, availableMonths }: MonthComparisonProps) {
@@ -250,24 +243,74 @@ export default function MonthComparison({ processedData, availableMonths }: Mont
                 <TableRow key={metric.key}>
                   <TableCell sx={{ fontWeight: 'bold' }}>{metric.label}</TableCell>
                   {/* Month 1 weekly data */}
-                  <TableCell align="center">{formatValue(metrics1.weeks.W1?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics1.weeks.W2?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics1.weeks.W3?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics1.weeks.W4?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics1.weeks.W5?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics1.weeks.W1?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics1.weeks.W1?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics1.weeks.W2?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics1.weeks.W2?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics1.weeks.W3?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics1.weeks.W3?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics1.weeks.W4?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics1.weeks.W4?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics1.weeks.W5?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics1.weeks.W5?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
                   {/* Month 1 total */}
                   <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'primary.50' }}>
-                    {metric.key === 'margin' ? month1Total : formatValue(month1Total, metric.isCurrency)}
+                    {metric.key === 'margin' ? month1Total : formatCurrency(month1Total as number, metric.isCurrency)}
                   </TableCell>
                   {/* Month 2 weekly data */}
-                  <TableCell align="center">{formatValue(metrics2.weeks.W1?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics2.weeks.W2?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics2.weeks.W3?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics2.weeks.W4?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
-                  <TableCell align="center">{formatValue(metrics2.weeks.W5?.[metric.key as keyof WeekMetrics], metric.isCurrency)}</TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics2.weeks.W1?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics2.weeks.W1?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics2.weeks.W2?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics2.weeks.W2?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics2.weeks.W3?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics2.weeks.W3?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics2.weeks.W4?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics2.weeks.W4?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
+                  <TableCell align="center">
+                    {metric.key === 'margin' 
+                      ? metrics2.weeks.W5?.[metric.key as keyof WeekMetrics] 
+                      : formatCurrency(metrics2.weeks.W5?.[metric.key as keyof WeekMetrics] as number, metric.isCurrency)
+                    }
+                  </TableCell>
                   {/* Month 2 total */}
                   <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: 'secondary.50' }}>
-                    {metric.key === 'margin' ? month2Total : formatValue(month2Total, metric.isCurrency)}
+                    {metric.key === 'margin' ? month2Total : formatCurrency(month2Total as number, metric.isCurrency)}
                   </TableCell>
                 </TableRow>
               );

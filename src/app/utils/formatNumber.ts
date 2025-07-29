@@ -8,16 +8,19 @@ export const formatLargeNumber = (num: number): string => {
   return num.toString();
 };
 
-export const formatCurrency = (num: number | undefined | null): string => {
+export const formatCurrency = (num: number | undefined | null, isCurrency: boolean = true): string => {
   if (num === undefined || num === null) {
-    return 'Rp 0';
+    return isCurrency ? 'Rp 0' : '0';
   }
 
   const rounded = Math.round(num);
 
+  // if (isCurrency == true) {
+  //   return `Rp ${rounded.toLocaleString()}`;
+  // }
   if (rounded < 1000) {
-    return `${rounded.toLocaleString()}`;
+    return rounded.toLocaleString();
   }
 
-  return `Rp ${rounded.toLocaleString()}`;
+  return isCurrency ? `Rp ${rounded.toLocaleString()}` : rounded.toLocaleString();
 };

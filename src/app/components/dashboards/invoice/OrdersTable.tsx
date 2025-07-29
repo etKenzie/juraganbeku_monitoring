@@ -347,6 +347,7 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
           // idx = 0;
           rows.push({
             order_code: idx === 0 ? order.order_code : '',
+            user_id: idx === 0 ? order.user_id : '',
             reseller_name: idx === 0 ? order.reseller_name : '',
             store_name: idx === 0 ? order.store_name : '',
             segment: idx === 0 ? order.business_type : '',

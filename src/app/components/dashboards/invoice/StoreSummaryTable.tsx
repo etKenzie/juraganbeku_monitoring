@@ -1,6 +1,7 @@
 "use client";
 import { StoreSummary } from "@/app/(DashboardLayout)/distribusi/sales/types";
 import DownloadButton from "@/app/components/common/DownloadButton";
+import { formatCurrency } from "@/app/utils/formatNumber";
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -156,9 +157,6 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
     setPage(0);
   };
 
-  const formatCurrency = (value: number) => {
-    return `Rp ${value.toLocaleString()}`;
-  };
 
   const filteredStores = Object.entries(storeSummaries)
     .filter(([_, summary]) => {
