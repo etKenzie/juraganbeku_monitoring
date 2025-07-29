@@ -350,6 +350,7 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
             reseller_name: idx === 0 ? order.reseller_name : '',
             store_name: idx === 0 ? order.store_name : '',
             segment: idx === 0 ? order.business_type : '',
+            sub_segment: idx === 0 ? order.sub_business_type : '',
             area: idx === 0 ? order.area : '',
             reseller_code: idx === 0 ? order.reseller_code : '',
             phone_number: idx === 0 ? order.phone_number : '',
