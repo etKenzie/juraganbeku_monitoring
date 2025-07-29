@@ -22,6 +22,7 @@ import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryT
 import TotalSummaries from "@/app/components/dashboards/invoice/YearlyTotal";
 import MonthComparison from "@/app/components/dashboards/shared/MonthComparison";
 import SummaryTiles from "@/app/components/dashboards/shared/SummaryTiles";
+import { formatCurrency } from "@/app/utils/formatNumber";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderData } from "@/store/apps/Invoice/invoiceSlice";
 import {
@@ -537,12 +538,21 @@ export default function Dashboard() {
                       const invoice = processedData.thisMonthMetrics.totalInvoice;
                       const margin = (!invoice || invoice === 0) ? "-" : (profit / invoice * 100).toFixed(2) + "%";
                       const progress = (!goal || goal === 0) ? "-" : (profit / goal * 100).toFixed(2) + "%";
+                      // Format profit remaining with sign
+                      const formatProfitRemaining = (value: number) => {
+                        if (value === 0) return value;
+                        const sign = value > 0 ? "-" : "+";
+                        // Use absolute value to avoid double negative signs
+                        const absValue = Math.abs(value);
+                        return `${sign} ${formatCurrency(absValue)}`;
+                      };
+
                       const tiles = [
                         { title: "Total Invoice", value: processedData.thisMonthMetrics.totalInvoice, isCurrency: true },
                         { title: "Profit Goal", value: goal, isCurrency: true },
                         { title: "Total Profit", value: profit, isCurrency: true },
                         { title: "Profit Progress", value: progress, isCurrency: false },
-                        { title: "Profit Remaining", value: isNegative ? remaining : remaining, isCurrency: true, color: isNegative ? 'red' : 'green', fontWeight: 700 },
+                        { title: "Profit Remaining", value: formatProfitRemaining(remaining), isCurrency: true, color: isNegative ? 'red' : 'green', fontWeight: 700 },
                         { title: "Active Stores", value: processedData.thisMonthMetrics.totalStores },
                         { title: "Total Orders", value: processedData.thisMonthMetrics.totalOrders },
                         { title: "NOOs", value: nooCount },

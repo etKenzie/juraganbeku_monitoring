@@ -18,7 +18,7 @@ export const formatCurrency = (num: number | undefined | null, isCurrency: boole
   // if (isCurrency == true) {
   //   return `Rp ${rounded.toLocaleString()}`;
   // }
-  if (rounded < 1000) {
+  if (rounded < 1000 && rounded > 0) {
     return rounded.toLocaleString();
   }
 

@@ -3,6 +3,7 @@
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
 import SummaryTiles from "@/app/components/dashboards/shared/SummaryTiles";
+import { formatCurrency } from "@/app/utils/formatNumber";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNOO, fetchOrders, fetchStoreData } from "@/store/apps/Invoice/invoiceSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
@@ -268,12 +269,21 @@ export default function DashboardPage() {
             const invoice = processedData.thisMonthMetrics.totalInvoice;
             const margin = (!invoice || invoice === 0) ? "-" : (profit / invoice * 100).toFixed(2) + "%";
             const progress = (!goal || goal === 0) ? "-" : (profit / goal * 100).toFixed(2) + "%";
+            // Format profit remaining with sign
+            const formatProfitRemaining = (value: number) => {
+              if (value === 0) return value;
+              const sign = value > 0 ? "-" : "+";
+              // Use absolute value to avoid double negative signs
+              const absValue = Math.abs(value);
+              return `${sign} ${formatCurrency(absValue)}`;
+            };
+
             const tiles = [
               { title: "Total Invoice", value: processedData.thisMonthMetrics.totalInvoice, isCurrency: true },
               { title: "Profit Goal", value: goal, isCurrency: true },
               { title: "Total Profit", value: profit, isCurrency: true },
               { title: "Profit Progress", value: progress, isCurrency: false },
-              { title: "Profit Remaining", value: isNegative ? remaining : remaining, isCurrency: true, color: isNegative ? 'red' : 'green', fontWeight: 700 },
+              { title: "Profit Remaining", value: formatProfitRemaining(remaining), isCurrency: true, color: isNegative ? 'red' : 'green', fontWeight: 700 },
               { title: "Active Stores", value: processedData.thisMonthMetrics.totalStores },
               { title: "Total Orders", value: processedData.thisMonthMetrics.totalOrders },
               { title: "NOOs", value: nooForSelectedMonth },
