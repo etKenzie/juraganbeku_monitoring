@@ -17,10 +17,10 @@ interface SummaryTilesProps {
 
 const SummaryTiles: React.FC<SummaryTilesProps> = ({ tiles, md = 4 }) => {
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={3} alignItems="stretch">
       {tiles.map((tile, idx) => (
         <Grid item xs={12} sm={6} md={md} key={tile.title + idx}>
-          <Box sx={{ color: tile.color, fontWeight: tile.fontWeight }}>
+          <Box sx={{ color: tile.color, fontWeight: tile.fontWeight, height: "100%" }}>
             <InvoiceSummaryCard
               title={tile.title}
               value={tile.value}

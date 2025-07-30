@@ -1,9 +1,9 @@
-import { PDFGenerator, PDFGeneratorFactory } from "../types/InvoicePDFTypes";
 import { DarmiPDFGenerator } from "./generators/DarmiPDFGenerator";
 import { DefaultPDFGenerator } from "./generators/DefaultPDFGenerator";
 import { HangryPDFGenerator } from "./generators/HangryPDFGenerator";
 import { HausPDFGenerator } from "./generators/HausPDFGenerator";
 import { JiwaPDFGenerator } from "./generators/JiwaPDFGenerator";
+import { PDFGenerator, PDFGeneratorFactory } from "./types/InvoicePDFTypes";
 
 export class InvoicePDFGeneratorFactory implements PDFGeneratorFactory {
   createGenerator(companySlug: string): PDFGenerator {

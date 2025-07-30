@@ -1,5 +1,6 @@
 "use client";
 import Loading from "@/app/(DashboardLayout)/loading";
+import TablePDFGenerateButton from "@/app/components/services/invoice/components/TablePDFGenerateButton";
 import { useAuth } from "@/contexts/AuthContext";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -24,7 +25,6 @@ import {
   Typography
 } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
-import TablePDFGenerateButton from "./components/TablePDFGenerateButton";
 
 interface InvoiceData {
   kode_gerai: string;
@@ -262,7 +262,9 @@ const InvoiceAPIPage: React.FC = () => {
               company={companies.find(c => c.slug === selectedCompanySlug) || companies[0]}
               variant="contained"
               size="large"
-              tooltipText={`Generate PDF with all ${filteredInvoices.length} invoice records`}
+              tooltipText={`Generate invoice with all ${filteredInvoices.length} invoice records`}
+              startDate={selectedStartDate}
+              endDate={selectedEndDate}
             />
           </Box>
           

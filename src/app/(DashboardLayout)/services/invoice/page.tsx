@@ -1,5 +1,5 @@
-import InvoiceAPIPage from "./InvoiceAPIPage";
+import InvoiceHistoryPage from "./InvoiceHistoryPage";
 
 export default function Page() {
-  return <InvoiceAPIPage />;
+  return <InvoiceHistoryPage />;
 } 

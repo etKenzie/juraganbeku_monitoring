@@ -1,5 +1,5 @@
-import { PDFInvoiceConfig, PDFInvoiceData } from "../../types/InvoicePDFTypes";
 import { BasePDFGenerator } from "../BasePDFGenerator";
+import { Company, ExtendedInvoiceData, PDFInvoiceConfig } from "../types/InvoicePDFTypes";
 
 export class DefaultPDFGenerator extends BasePDFGenerator {
   constructor() {
@@ -22,22 +22,20 @@ export class DefaultPDFGenerator extends BasePDFGenerator {
     super(config);
   }
 
-  async generatePDF(data: PDFInvoiceData): Promise<void> {
+  async generatePDF(extendedData: ExtendedInvoiceData, company: Company): Promise<void> {
     const doc = this.createDocument();
 
     // Add logo at the top (centered)
-    await this.addLogo(doc, 20, 50, 25);
+    await this.addLogo(doc, 20);
 
-    // Add invoice info using base method
-    this.addInvoiceInfo(doc, data);
+    // Add invoice info using extended data
+    this.addExtendedInvoiceInfo(doc, company, extendedData);
 
-    // Add invoice table using base method
-    this.addInvoiceTable(doc, data);
+    // Add dynamic table using extended data (includes footer handling)
+    this.addDynamicTable(doc, extendedData.table_data);
 
-    // Add footer using base method
-    this.addFooter(doc, data);
-
-    // Save the PDF
-    doc.save(`invoice_${data.invoice.invoice_id}_${data.company.slug}.pdf`);
+    // Save the PDF with the actual invoice number
+    const fileName = `invoice_${extendedData.invoice_no}_${company.slug}.pdf`;
+    doc.save(fileName);
   }
 } 

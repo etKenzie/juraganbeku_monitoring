@@ -66,6 +66,12 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     id: uniqueId(),
+    title: "Cash Pickup",
+    icon: IconCash,
+    href: "/services/cash-pickup",
+  },
+  {
+    id: uniqueId(),
     title: "Invoice",
     icon: IconFileInvoice,
     href: "/services/invoice",

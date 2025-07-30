@@ -16,6 +16,7 @@ import { useInvoiceData } from "../sales/data";
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
+  
   const { role } = useAuth();
   const { orders, nooData, loading, storeData } = useSelector((state: RootState) => ({
     orders: state.invoiceReducer.orders,
@@ -49,6 +50,9 @@ export default function DashboardPage() {
     month: now.getMonth(),
     year: now.getFullYear(),
   });
+
+  // Add allAreas state to track all areas across different filter selections
+  const [allAreas, setAllAreas] = useState<string[]>([]);
 
   // Only fetch/process data after clicking Apply Filters
   const handleApplyFilters = () => {
@@ -162,10 +166,23 @@ export default function DashboardPage() {
 
   console.log(activationRateData)
 
-  // Areas for filter dropdown
-  const areas = useMemo(() => {
-    return processedData ? Object.keys(processedData.areaSummaries) : [];
-  }, [processedData]);
+  let areas;
+
+  // Areas for filter dropdown - merge new areas with existing ones
+  areas = useMemo(() => {
+    const currentAreas = processedData ? Object.keys(processedData.areaSummaries) : [];
+    
+    // Merge current areas with allAreas
+    const mergedAreas = new Set([...allAreas, ...currentAreas]);
+    const newAllAreas = Array.from(mergedAreas);
+    
+    // Update allAreas if there are new areas
+    if (newAllAreas.length !== allAreas.length) {
+      setAllAreas(newAllAreas);
+    }
+    
+    return newAllAreas.filter((a) => a !== "");
+  }, [processedData, allAreas]);
 
   // NOOs for selected month
   const nooForSelectedMonth = useMemo(() => {
@@ -173,16 +190,7 @@ export default function DashboardPage() {
     return nooData.length;
   }, [nooData]);
 
-  // Store list for selected month
-  const storeList = useMemo(() => {
-    if (!processedData) return [];
-    return Object.values(processedData.storeSummaries || {})
-      .map((store: any) => ({
-        storeName: store.storeName,
-        totalInvoice: store.totalInvoice,
-      }))
-      .sort((a, b) => b.totalInvoice - a.totalInvoice);
-  }, [processedData]);
+
 
   if (loading) {
     return <Loading />;

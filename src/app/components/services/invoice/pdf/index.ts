@@ -1,5 +1,5 @@
 // Types
-export * from '../types/InvoicePDFTypes';
+export * from './types/InvoicePDFTypes';
 
 // Base classes
 export { BasePDFGenerator } from './BasePDFGenerator';

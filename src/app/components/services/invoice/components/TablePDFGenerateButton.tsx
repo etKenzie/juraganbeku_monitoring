@@ -1,5 +1,5 @@
 "use client";
-import { PictureAsPdf as PDFIcon } from '@mui/icons-material';
+import { Receipt as InvoiceIcon } from '@mui/icons-material';
 import {
   Alert,
   Button,
@@ -9,8 +9,8 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 import { pdfService } from '../pdf/PDFService';
-import { Company, InvoiceData } from '../types/InvoicePDFTypes';
-import PDFDateSelectionModal from './PDFDateSelectionModal';
+import { Company, InvoiceData } from '../pdf/types/InvoicePDFTypes';
+import InvoicePreviewModal from './InvoicePreviewModal';
 
 interface TablePDFGenerateButtonProps {
   invoices: InvoiceData[];
@@ -20,6 +20,8 @@ interface TablePDFGenerateButtonProps {
   disabled?: boolean;
   showTooltip?: boolean;
   tooltipText?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 const TablePDFGenerateButton: React.FC<TablePDFGenerateButtonProps> = ({
@@ -29,7 +31,9 @@ const TablePDFGenerateButton: React.FC<TablePDFGenerateButtonProps> = ({
   size = 'medium',
   disabled = false,
   showTooltip = true,
-  tooltipText = 'Generate PDF with all invoice data'
+  tooltipText = 'Generate invoice with all invoice data',
+  startDate = '',
+  endDate = ''
 }) => {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -48,18 +52,27 @@ const TablePDFGenerateButton: React.FC<TablePDFGenerateButtonProps> = ({
     setModalOpen(false);
   };
 
-  const handleGeneratePDF = async (selectedDate: string, selectedDueDate: string) => {
+  const handleGenerateInvoice = async (invoiceData: {
+    start_date: string;
+    end_date: string;
+    due_date: string;
+    date: string;
+    invoice_no: string;
+    table_data: {
+      headers: string[];
+      rows: string[][];
+    };
+  }) => {
     if (loading) return;
 
     setLoading(true);
     try {
       // Log all the data that will be used for PDF generation
-      console.log('=== PDF Generation Data ===');
+      console.log('=== Invoice Generation Data ===');
       console.log('Company:', company);
       console.log('Total Invoices:', invoices.length);
-      console.log('Invoices Data:', invoices);
-      console.log('Selected Date:', selectedDate);
-      console.log('Selected Due Date:', selectedDueDate);
+      console.log('Invoice Data:', invoiceData);
+      console.log('Table Data:', invoiceData.table_data);
       
       // Calculate totals
       const totalAmount = invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
@@ -69,35 +82,24 @@ const TablePDFGenerateButton: React.FC<TablePDFGenerateButtonProps> = ({
       console.log('- Total Amount:', totalAmount);
       console.log('- Unique Gerai:', uniqueGerai);
       console.log('- Date Range:', {
-        start: invoices[0]?.sales_date,
-        end: invoices[invoices.length - 1]?.sales_date
+        start: invoiceData.start_date,
+        end: invoiceData.end_date
       });
-      console.log('========================');
+      console.log('============================');
 
-      // For now, just generate the first invoice as a placeholder
-      // In the future, this will generate a comprehensive PDF with all data
-      if (invoices.length > 0) {
-        // Create a modified invoice with the selected dates
-        const modifiedInvoice = {
-          ...invoices[0],
-          sales_date: selectedDate,
-          pickup_date: selectedDueDate
-        };
-        
-        // Pass all invoices for special processing (especially for Jiwa)
-        await pdfService.generateInvoicePDF(modifiedInvoice, company, invoices);
-      }
+      // Pass extended data and company to PDF service
+      await pdfService.generateInvoicePDF(invoiceData, company);
 
       setSnackbar({
         open: true,
-        message: `PDF generated with ${invoices.length} invoice records for ${company.name}`,
+        message: `Invoice generated with ${invoices.length} invoice records for ${company.name}`,
         severity: 'success'
       });
     } catch (error) {
-      console.error('PDF generation failed:', error);
+      console.error('Invoice generation failed:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to generate PDF. Please try again.',
+        message: 'Failed to generate invoice. Please try again.',
         severity: 'error'
       });
     } finally {
@@ -113,7 +115,7 @@ const TablePDFGenerateButton: React.FC<TablePDFGenerateButtonProps> = ({
     <Button
       variant={variant}
       size={size}
-      startIcon={loading ? <CircularProgress size={16} /> : <PDFIcon />}
+      startIcon={loading ? <CircularProgress size={16} /> : <InvoiceIcon />}
       onClick={handleOpenModal}
       disabled={disabled || loading || invoices.length === 0}
       sx={{
@@ -125,7 +127,7 @@ const TablePDFGenerateButton: React.FC<TablePDFGenerateButtonProps> = ({
         })
       }}
     >
-      {loading ? 'Generating...' : 'Generate PDF'}
+      {loading ? 'Generating...' : 'Generate Invoice'}
     </Button>
   );
 
@@ -139,14 +141,14 @@ const TablePDFGenerateButton: React.FC<TablePDFGenerateButtonProps> = ({
         button
       )}
       
-      <PDFDateSelectionModal
+      <InvoicePreviewModal
         open={modalOpen}
         onClose={handleCloseModal}
-        onConfirm={handleGeneratePDF}
-        defaultDate={invoices[0]?.sales_date || ''}
-        defaultDueDate={invoices[0]?.pickup_date || ''}
-        companyName={company.name}
-        invoiceCount={invoices.length}
+        onConfirm={handleGenerateInvoice}
+        invoices={invoices}
+        company={company}
+        startDate={startDate}
+        endDate={endDate}
       />
       
       <Snackbar

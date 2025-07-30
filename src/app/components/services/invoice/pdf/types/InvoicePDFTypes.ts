@@ -16,6 +16,18 @@ export interface Company {
   desc: string;
 }
 
+export interface ExtendedInvoiceData {
+  start_date: string;
+  end_date: string;
+  due_date: string;
+  date: string;
+  invoice_no: string;
+  table_data: {
+    headers: string[];
+    rows: string[][];
+  };
+}
+
 export interface PDFInvoiceConfig {
   companyName: string;
   companyLogo?: string;
@@ -43,7 +55,7 @@ export interface PDFInvoiceData {
 }
 
 export interface PDFGenerator {
-  generatePDF(data: PDFInvoiceData): Promise<void>;
+  generatePDF(extendedData: ExtendedInvoiceData, company: Company): Promise<void>;
   getConfig(): PDFInvoiceConfig;
 }
 
