@@ -188,13 +188,31 @@ export abstract class BasePDFGenerator implements PDFGenerator {
       }
     }
 
-    // Calculate total pages needed
+    // Calculate total pages needed with different row limits for first vs subsequent pages
     const rowHeight = 8; // Height of each row
     const headerHeight = 12; // Height of header section
     const footerHeight = 50; // Space needed for footer
-    const availableHeight = pageHeight - y - footerHeight; // Available space for table content
-    const maxRowsPerPage = Math.floor(availableHeight / rowHeight);
-    const totalPages = Math.ceil(tableData.rows.length / maxRowsPerPage) + 1; // +1 for first page with header
+    
+    // First page has less space due to logo and invoice info
+    const firstPageAvailableHeight = pageHeight - y - footerHeight;
+    const maxRowsFirstPage = Math.floor(firstPageAvailableHeight / rowHeight);
+    
+    // Subsequent pages have more space (start from y=20 after header)
+    const subsequentPageStartY = 20 + headerHeight; // 20 for margin + 12 for header
+    const subsequentPageAvailableHeight = pageHeight - subsequentPageStartY - footerHeight;
+    const maxRowsSubsequentPages = Math.floor(subsequentPageAvailableHeight / rowHeight);
+    
+    // Calculate total pages needed
+    let remainingRows = tableData.rows.length;
+    let totalPages = 1; // Start with first page
+    
+    // Subtract rows that fit on first page
+    remainingRows -= maxRowsFirstPage;
+    
+    // Calculate additional pages needed
+    if (remainingRows > 0) {
+      totalPages += Math.ceil(remainingRows / maxRowsSubsequentPages);
+    }
 
     // Table header with improved styling
     doc.setFillColor(245, 245, 245); // Lighter gray background
@@ -240,16 +258,19 @@ export abstract class BasePDFGenerator implements PDFGenerator {
     let totalAmount = 0;
     let currentRow = 0;
     let pageNumber = 1;
+    let isFirstPage = true;
     
     tableData.rows.forEach((row, rowIndex) => {
       // Check if we need a new page
-      if (currentRow >= maxRowsPerPage) {
+      const currentMaxRows = isFirstPage ? maxRowsFirstPage : maxRowsSubsequentPages;
+      if (currentRow >= currentMaxRows) {
         // Add footer to current page
         this.addFooter(doc, new Date(), pageNumber, totalPages);
         
         // Add page break
         doc.addPage();
         pageNumber++;
+        isFirstPage = false; // Mark as no longer first page
         y = 20; // Reset Y position for new page
         
         // Re-add header on new page
@@ -285,6 +306,9 @@ export abstract class BasePDFGenerator implements PDFGenerator {
         
         y += 12;
         currentRow = 0;
+        
+        // Reset font to normal for table content on subsequent pages
+        doc.setFont('helvetica', 'normal');
       }
       
       // Calculate total from the last column (Total Amount)

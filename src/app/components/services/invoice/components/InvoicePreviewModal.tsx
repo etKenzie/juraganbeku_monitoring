@@ -1,23 +1,23 @@
 "use client";
 import {
-    Alert,
-    Box,
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Grid,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography
 } from '@mui/material';
 import React, { useMemo, useState } from 'react';
 import { Company } from '../pdf/types/InvoicePDFTypes';
@@ -79,7 +79,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       // Jiwa-specific logic - group by kode_gerai and calculate charges
       const geraiMap = new Map<string, { kode_gerai: string; nama_gerai: string; pickup_total: number; total_amount: number }>();
 
-
       invoices.forEach(invoice => {
         const { kode_gerai, nama_gerai, total_amount } = invoice;
         
@@ -119,19 +118,44 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         headers: ["Kode Gerai", "Nama Gerai", "Pickup Total", "Total Amount"],
         rows
       };
-    } else if (company.slug === 'darmi') {
-      // Darmi-specific logic - show individual invoices with more details
-      const rows = invoices.map(invoice => [
-        invoice.kode_gerai,
-        invoice.nama_gerai,
-        invoice.invoice_id,
-        invoice.va_number,
-        `Rp ${invoice.total_amount.toLocaleString()}`,
-        invoice.sales_date
-      ]);
+    } else if (company.slug === 'mbok_darmi') {
+      // Darmi-specific logic - count pickups per gerai
+      const geraiMap = new Map<string, { kode_gerai: string; nama_gerai: string; pickup_count: number }>();
+
+      invoices.forEach(invoice => {
+        const { kode_gerai, nama_gerai } = invoice;
+        
+        if (geraiMap.has(kode_gerai)) {
+          // Increment pickup count for existing gerai
+          const existing = geraiMap.get(kode_gerai)!;
+          existing.pickup_count += 1;
+        } else {
+          // Create new gerai entry with pickup count 1
+          geraiMap.set(kode_gerai, {
+            kode_gerai,
+            nama_gerai,
+            pickup_count: 1
+          });
+        }
+      });
+
+      // Calculate amounts for each gerai
+      const rows: string[][] = [];
+      const amountPerPickup = 40000; // Fixed amount per pickup for Darmi
+      
+      geraiMap.forEach(gerai => {
+        const totalAmount = gerai.pickup_count * amountPerPickup;
+        rows.push([
+          gerai.kode_gerai,
+          gerai.nama_gerai,
+          gerai.pickup_count.toString(),
+          `Rp ${amountPerPickup.toLocaleString()}`,
+          `Rp ${totalAmount.toLocaleString()}`
+        ]);
+      });
 
       return {
-        headers: ["Kode Gerai", "Nama Gerai", "Invoice ID", "VA Number", "Total Amount", "Sales Date"],
+        headers: ["Kode Gerai", "Nama Gerai", "Pick Up/Month", "Amount", "Total Amount"],
         rows
       };
     } else if (company.slug === 'hangry') {
@@ -200,6 +224,28 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       let total = 0;
       geraiMap.forEach(pickupTotal => {
         total += pickupTotal > 1000000000 ? 3000000 : 2500000;
+      });
+
+      return total;
+    } else if (company.slug === 'mbok_darmi') {
+      // For Darmi, calculate total based on pickup count * 40000
+      const geraiMap = new Map<string, number>();
+
+      invoices.forEach(invoice => {
+        const { kode_gerai } = invoice;
+        
+        if (geraiMap.has(kode_gerai)) {
+          geraiMap.set(kode_gerai, geraiMap.get(kode_gerai)! + 1);
+        } else {
+          geraiMap.set(kode_gerai, 1);
+        }
+      });
+
+      // Calculate total amount based on pickup count * 40000
+      let total = 0;
+      const amountPerPickup = 40000;
+      geraiMap.forEach(pickupCount => {
+        total += pickupCount * amountPerPickup;
       });
 
       return total;

@@ -22,8 +22,8 @@ export class InvoiceDatabaseService {
    */
   static async createInvoice(invoiceData: Omit<InvoiceRecord, 'id' | 'created_at' | 'updated_at'>): Promise<InvoiceRecord | null> {
     try {
-      console.log('=== Inserting Invoice to Database ===');
-      console.log('Invoice Data:', invoiceData);
+      // console.log('=== Inserting Invoice to Database ===');
+      // console.log('Invoice Data:', invoiceData);
       
       const { data, error } = await supabase
         .from('invoices')

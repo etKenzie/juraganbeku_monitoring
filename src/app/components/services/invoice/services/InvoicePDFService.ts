@@ -1,17 +1,15 @@
-import { PDFService } from '../pdf/PDFService';
+import { pdfService } from '../pdf/PDFService';
 import { Company } from '../pdf/types/InvoicePDFTypes';
 import { InvoiceRecord } from './InvoiceDatabaseService';
 
 export class InvoicePDFService {
-  private static pdfService = new PDFService();
 
   /**
    * Generate PDF from a saved invoice record
    */
   static async generatePDFFromRecord(invoice: InvoiceRecord): Promise<void> {
     try {
-      console.log('=== Generating PDF from Saved Invoice ===');
-      console.log('Invoice:', invoice);
+
 
       // Create company object from invoice data
       const company: Company = {
@@ -33,12 +31,8 @@ export class InvoicePDFService {
         table_data: invoice.table_data
       };
 
-      console.log('Company:', company);
-      console.log('Extended Data:', extendedData);
-      console.log('==========================================');
-
       // Generate PDF using the existing PDF service
-      await this.pdfService.generateInvoicePDF(extendedData, company);
+      await pdfService.generateInvoicePDF(extendedData, company);
 
     } catch (error) {
       console.error('Error generating PDF from record:', error);
