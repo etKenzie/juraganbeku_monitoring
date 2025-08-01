@@ -33,7 +33,8 @@ type MetricKey =
   | "totalOrders"
   | "averageInvoice"
   | "totalMonthProfit"
-  | "averageProfit";
+  | "averageProfit"
+  | "margin";
 
 const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
   const theme = useTheme();
@@ -187,6 +188,10 @@ const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
           return (
             b.totalMonthProfit / b.stores.length - a.totalMonthProfit / a.stores.length
           );
+        case "margin":
+          const marginA = a.totalMonthInvoice > 0 ? (a.totalMonthProfit / a.totalMonthInvoice) * 100 : 0;
+          const marginB = b.totalMonthInvoice > 0 ? (b.totalMonthProfit / b.totalMonthInvoice) * 100 : 0;
+          return marginB - marginA;
         default:
           return 0;
       }
@@ -209,6 +214,8 @@ const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
         return data.totalMonthProfit;
       case "averageProfit":
         return data.totalMonthProfit / data.stores.length;
+      case "margin":
+        return data.totalMonthInvoice > 0 ? (data.totalMonthProfit / data.totalMonthInvoice) * 100 : 0;
       default:
         return 0;
     }
@@ -230,6 +237,8 @@ const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
         return "Total Month Profit";
       case "averageProfit":
         return "Average Profit";
+      case "margin":
+        return "Margin %";
       default:
         return "";
     }
@@ -270,6 +279,9 @@ const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
         ) {
           return formatCurrency(val);
         }
+        if (selectedMetric === "margin") {
+          return val.toFixed(1) + '%';
+        }
         return val;
       },
       style: {
@@ -304,6 +316,9 @@ const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
           ) {
             return formatCurrency(val);
           }
+          if (selectedMetric === "margin") {
+            return val.toFixed(1) + '%';
+          }
           return val;
         },
         style: {
@@ -325,6 +340,9 @@ const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
             selectedMetric === "averageProfit"
           ) {
             return formatCurrency(val);
+          }
+          if (selectedMetric === "margin") {
+            return val.toFixed(1) + '%';
           }
           return val;
         },
@@ -399,6 +417,7 @@ const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
               <MenuItem value="averageInvoice">Average Invoice</MenuItem>
               <MenuItem value="totalMonthProfit">Total Month Profit</MenuItem>
               <MenuItem value="averageProfit">Average Profit</MenuItem>
+              <MenuItem value="margin">Margin %</MenuItem>
             </Select>
           </Box>
         }

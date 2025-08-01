@@ -9,14 +9,12 @@ import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
 import ActivationRateChart from "@/app/components/dashboards/invoice/ActivationRateChart";
 import AreaChart from "@/app/components/dashboards/invoice/AreaChart";
-import DueDateStatusChart from "@/app/components/dashboards/invoice/DueDateStatusChart";
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import NOOAreaChart from "@/app/components/dashboards/invoice/NOOAreaChart";
 import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import NOOSegmentChart from "@/app/components/dashboards/invoice/NOOSegmentChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import PaymentDetailsModal from "@/app/components/dashboards/invoice/PaymentDetailsModal";
-import PaymentDistributionChart from "@/app/components/dashboards/invoice/PaymentDistributionChart";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
 import SegmentPerformanceChart from "@/app/components/dashboards/invoice/SegmentPerformanceChart";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
@@ -617,7 +615,12 @@ export default function Dashboard() {
 
                 {/* NOO Chart */}
                 <Box mb={4}>
-                  <NOOChart data={nooData} storeSummaries={processedData?.storeSummaries} />
+                  <NOOChart 
+                  data={nooData} 
+                  storeSummaries={processedData?.storeSummaries}
+                  // overallTotalInvoice={processedData?.overallTotalInvoice}
+                  // overallProfit={processedData?.overallProfit}
+                />
                 </Box>
 
                 {/* NOO Segment Chart - Only show when no specific area is selected */}
@@ -694,11 +697,11 @@ export default function Dashboard() {
                 {/* Orders Table */}
                 {validOrders && (
                   <Box>
-                    {processedData && (
+                    {/* {processedData && (
                       <DueDateStatusChart
                         data={processedData.dueDateStatusCounts}
                       />
-                    )}
+                    )} */}
 
                     {/* Store Metrics */}
                     {processedData && (

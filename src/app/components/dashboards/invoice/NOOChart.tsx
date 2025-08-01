@@ -36,7 +36,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
   const [isClient, setIsClient] = React.useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<'nooCount' | 'totalInvoice' | 'totalProfit' | 'averageInvoice' | 'averageProfit' | 'totalMonthInvoice' | 'totalMonthProfit' | 'totalMonthOrders' | 'averageMonthInvoice' | 'averageMonthProfit'>('nooCount');
+  const [selectedMetric, setSelectedMetric] = useState<'nooCount' | 'totalInvoice' | 'totalProfit' | 'averageInvoice' | 'averageProfit' | 'totalMonthInvoice' | 'totalMonthProfit' | 'totalMonthOrders' | 'averageMonthInvoice' | 'averageMonthProfit' | 'margin'>('nooCount');
 
   React.useEffect(() => {
     setIsClient(true);
@@ -329,6 +329,57 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
       return storeCount > 0 ? totalMonthProfit / storeCount : 0;
     });
     chartLabel = 'Average Profit';
+  } else if (selectedMetric === 'margin') {
+    // Calculate margin by dividing total month profit by total month invoice for each month
+    chartData = months.map(month => {
+      let totalMonthInvoice = 0;
+      let totalMonthProfit = 0;
+      
+      // Use storeSummaries if available, otherwise fall back to monthlyData
+      if (storeSummaries) {
+        // Only include stores that first appeared in this month (like the modal)
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            // Get the store summary for this store
+            const storeSummary = storeSummaries[firstOrder.user_id];
+            if (storeSummary) {
+              const storeOrders = storeSummary.orders.filter((storeOrder: OrderData) => 
+                storeOrder.month.toLowerCase() === month.toLowerCase()
+              );
+              // Calculate the store's total month invoice and profit
+              const storeMonthInvoice = storeOrders.reduce((sum: number, storeOrder: OrderData) => 
+                sum + (storeOrder.total_invoice || 0), 0
+              );
+              const storeMonthProfit = storeOrders.reduce((sum: number, storeOrder: OrderData) => 
+                sum + (storeOrder.profit || 0), 0
+              );
+              totalMonthInvoice += storeMonthInvoice;
+              totalMonthProfit += storeMonthProfit;
+            }
+          }
+        });
+      } else {
+        // Fallback to original calculation
+        Object.values(monthlyData.storeFirstOrders).forEach(({ month: storeMonth, order: firstOrder }) => {
+          if (storeMonth === month) {
+            const storeOrders = data.filter(dataOrder => 
+              dataOrder.user_id === firstOrder.user_id && 
+              dataOrder.month.toLowerCase() === month.toLowerCase()
+            );
+            totalMonthInvoice += storeOrders.reduce((sum, storeOrder) => 
+              sum + (storeOrder.total_invoice || 0), 0
+            );
+            totalMonthProfit += storeOrders.reduce((sum, storeOrder) => 
+              sum + (storeOrder.profit || 0), 0
+            );
+          }
+        });
+      }
+      
+      // Calculate margin as percentage
+      return totalMonthInvoice > 0 ? (totalMonthProfit / totalMonthInvoice) * 100 : 0;
+    });
+    chartLabel = 'Margin %';
   }
 
   // Calculate average and find max count
@@ -336,7 +387,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
   const maxCount = chartData.length > 0 ? Math.max(...chartData) : 0;
   const mostRecentMonth = months[months.length - 1];
   let mostRecentValue = 0;
-  if (selectedMetric === 'averageInvoice' || selectedMetric === 'averageProfit' || selectedMetric === 'averageMonthInvoice' || selectedMetric === 'averageMonthProfit') {
+  if (selectedMetric === 'averageInvoice' || selectedMetric === 'averageProfit' || selectedMetric === 'averageMonthInvoice' || selectedMetric === 'averageMonthProfit' || selectedMetric === 'margin') {
     mostRecentValue = chartData[chartData.length - 1] || 0;
   } else if (selectedMetric === 'totalMonthInvoice' || selectedMetric === 'totalMonthProfit' || selectedMetric === 'totalMonthOrders') {
     mostRecentValue = chartData[chartData.length - 1] || 0;
@@ -361,7 +412,8 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
        selectedMetric === 'totalProfit' || selectedMetric === 'totalMonthProfit' ? 'profit' :
        selectedMetric === 'totalMonthOrders' ? 'orders' :
        selectedMetric === 'averageMonthInvoice' ? 'average invoice' :
-       selectedMetric === 'averageMonthProfit' ? 'average profit' : 'profit'} over{" "}
+       selectedMetric === 'averageMonthProfit' ? 'average profit' :
+       selectedMetric === 'margin' ? 'margin' : 'profit'} over{" "}
       <strong style={{ color: theme.palette.primary.main }}>
         {months.length}
       </strong>{" "}
@@ -403,7 +455,12 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
     },
     dataLabels: {
       enabled: true,
-      formatter: (val: number) => formatCurrency(val),
+      formatter: (val: number) => {
+        if (selectedMetric === 'margin') {
+          return val.toFixed(1) + '%';
+        }
+        return formatCurrency(val);
+      },
       style: {
         colors: ["#111"]
       },
@@ -427,7 +484,12 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
     yaxis: {
       labels: {
         show: true,
-        formatter: (val: number) => formatCurrency(val),
+        formatter: (val: number) => {
+          if (selectedMetric === 'margin') {
+            return val.toFixed(1) + '%';
+          }
+          return formatCurrency(val);
+        },
       },
     },
     tooltip: {
@@ -500,6 +562,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
               <MenuItem value="totalMonthOrders">Total Orders</MenuItem>
               <MenuItem value="averageMonthInvoice">Average Invoice</MenuItem>
               <MenuItem value="averageMonthProfit">Average Profit</MenuItem>
+              <MenuItem value="margin">Margin %</MenuItem>
               <MenuItem value="totalInvoice">Total First Invoice</MenuItem>
               <MenuItem value="totalProfit">Total First Profit</MenuItem>
               <MenuItem value="averageInvoice">Average First Invoice</MenuItem>
@@ -524,9 +587,15 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
           if (selectedMetric === 'totalMonthOrders') return 'Current Month Total Orders';
           if (selectedMetric === 'averageMonthInvoice') return 'Current Month Avg Invoice';
           if (selectedMetric === 'averageMonthProfit') return 'Current Month Avg Profit';
+          if (selectedMetric === 'margin') return 'Current Month Margin';
           return '';
         })()}
-        dataItem1={formatCurrency(mostRecentValue)}
+        dataItem1={(() => {
+          if (selectedMetric === 'margin') {
+            return mostRecentValue.toFixed(1) + '%';
+          }
+          return formatCurrency(mostRecentValue);
+        })()}
         dataLabel2="Total Months"
         dataItem2={months.length.toString()}
       >
