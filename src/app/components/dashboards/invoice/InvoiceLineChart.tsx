@@ -37,6 +37,7 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
     const theme = useTheme();
     const primary = theme.palette.primary.main;
     const secondary = theme.palette.secondary.main;
+    const success = theme.palette.success.main;
 
     // Group data by month or week
     const groupedData = React.useMemo(() => {
@@ -77,12 +78,16 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
     const categories = Object.keys(groupedData);
     const invoiceData = Object.values(groupedData).map(d => d.totalInvoice);
     const profitData = Object.values(groupedData).map(d => d.totalProfit);
+    const marginData = Object.values(groupedData).map(d => 
+      d.totalInvoice > 0 ? (d.totalProfit / d.totalInvoice) * 100 : 0
+    );
 
     // Reverse weekly data to show most recent on the right
     if (viewType === "weekly" && weeklyData) {
       categories.reverse();
       invoiceData.reverse();
       profitData.reverse();
+      marginData.reverse();
     }
 
     const handleDownload = () => {
@@ -90,7 +95,7 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
 
       ApexCharts.exec(chartId, "updateOptions", {
         title: {
-          text: ["Invoice and Profit Overview", timePeriod],
+          text: ["Invoice, Profit, and Margin Overview", timePeriod],
           align: "center",
           style: {
             fontSize: "16px",
@@ -107,7 +112,7 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
 
           const downloadLink = document.createElement("a");
           downloadLink.href = response.imgURI;
-          downloadLink.download = `Invoice_Profit_Overview_${timePeriod}.png`;
+          downloadLink.download = `Invoice_Profit_Margin_Overview_${timePeriod}.png`;
           document.body.appendChild(downloadLink);
           downloadLink.click();
           document.body.removeChild(downloadLink);
@@ -151,31 +156,42 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
       grid: {
         show: false,
       },
-      colors: [primary, secondary],
+      colors: [primary, secondary, success],
       dataLabels: {
         enabled: true,
-        formatter: (val: number) => formatCurrency(val),
+        formatter: function(val: number, opts: any) {
+          // Format margin as percentage, others as currency
+          if (opts.seriesIndex === 2) {
+            return val.toFixed(1) + '%';
+          }
+          return formatCurrency(val);
+        },
       },
       stroke: {
         curve: "straight",
         width: "2",
       },
       legend: {
-        position: "top",
-        horizontalAlign: "right",
-        floating: true,
-        offsetY: -25,
-        offsetX: -5,
+        show: false,
       },
       tooltip: {
         theme: "dark",
         y: {
-          formatter: (val: number) => formatCurrency(val),
+          formatter: function(val: number, opts: any) {
+            // Format margin as percentage, others as currency
+            if (opts.seriesIndex === 2) {
+              return val.toFixed(1) + '%';
+            }
+            return formatCurrency(val);
+          },
         },
       },
       yaxis: {
         labels: {
           formatter: (val: number) => formatCurrency(val),
+        },
+        title: {
+          text: "Amount",
         },
       },
     };
@@ -188,6 +204,12 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
       {
         name: "Total Profit",
         data: profitData,
+      },
+      {
+        name: "Margin %",
+        data: marginData,
+        yAxisIndex: 1,
+        showInLegend: false,
       },
     ];
 
@@ -224,7 +246,7 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
 
     return (
       <DashboardCard
-        title="Invoice and Profit Overview"
+        title="Invoice, Profit, and Margin Overview"
         subtitle={insightText}
         action={
           <Box display="flex" alignItems="center" gap={2}>

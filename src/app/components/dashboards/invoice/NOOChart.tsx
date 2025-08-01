@@ -117,16 +117,16 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
     chartLabel = 'New Ordering Outlets';
   } else if (selectedMetric === 'totalInvoice') {
     chartData = totalInvoices;
-    chartLabel = 'Total Invoice';
+    chartLabel = 'Total First Invoice';
   } else if (selectedMetric === 'totalProfit') {
     chartData = totalProfits;
-    chartLabel = 'Total Profit';
+    chartLabel = 'Total First Profit';
   } else if (selectedMetric === 'averageInvoice') {
     chartData = averageInvoices;
-    chartLabel = 'Average Invoice';
+    chartLabel = 'Average First Invoice';
   } else if (selectedMetric === 'averageProfit') {
     chartData = averageProfits;
-    chartLabel = 'Average Profit';
+    chartLabel = 'Average First Profit';
   } else if (selectedMetric === 'totalMonthInvoice') {
     // Calculate total month invoice by summing up all store totals for each month
     chartData = months.map(month => {
@@ -166,7 +166,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
       }
       return totalMonthInvoice;
     });
-    chartLabel = 'Total Month Invoice';
+    chartLabel = 'Total Invoice';
   } else if (selectedMetric === 'totalMonthProfit') {
     // Calculate total month profit by summing up all store totals for each month
     chartData = months.map(month => {
@@ -206,7 +206,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
       }
       return totalMonthProfit;
     });
-    chartLabel = 'Total Month Profit';
+    chartLabel = 'Total Profit';
   } else if (selectedMetric === 'totalMonthOrders') {
     // Calculate total month orders by summing up all store totals for each month
     chartData = months.map(month => {
@@ -242,7 +242,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
       }
       return totalMonthOrders;
     });
-    chartLabel = 'Total Month Orders';
+    chartLabel = 'Total Orders';
   } else if (selectedMetric === 'averageMonthInvoice') {
     // Calculate average month invoice by averaging the store totals for each month
     chartData = months.map(month => {
@@ -285,7 +285,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
       }
       return storeCount > 0 ? totalMonthInvoice / storeCount : 0;
     });
-    chartLabel = 'Average Month Invoice';
+    chartLabel = 'Average Invoice';
   } else if (selectedMetric === 'averageMonthProfit') {
     // Calculate average month profit by averaging the store totals for each month
     chartData = months.map(month => {
@@ -328,7 +328,7 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
       }
       return storeCount > 0 ? totalMonthProfit / storeCount : 0;
     });
-    chartLabel = 'Average Month Profit';
+    chartLabel = 'Average Profit';
   }
 
   // Calculate average and find max count
@@ -495,15 +495,16 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
               size="small"
             >
               <MenuItem value="nooCount">NOO Count</MenuItem>
-              <MenuItem value="totalInvoice">Total Invoice</MenuItem>
-              <MenuItem value="totalProfit">Total Profit</MenuItem>
-              <MenuItem value="averageInvoice">Average Invoice</MenuItem>
-              <MenuItem value="averageProfit">Average Profit</MenuItem>
-              <MenuItem value="totalMonthInvoice">Total Month Invoice</MenuItem>
-              <MenuItem value="totalMonthProfit">Total Month Profit</MenuItem>
-              <MenuItem value="totalMonthOrders">Total Month Orders</MenuItem>
-              <MenuItem value="averageMonthInvoice">Average Month Invoice</MenuItem>
-              <MenuItem value="averageMonthProfit">Average Month Profit</MenuItem>
+              <MenuItem value="totalMonthInvoice">Total Invoice</MenuItem>
+              <MenuItem value="totalMonthProfit">Total Profit</MenuItem>
+              <MenuItem value="totalMonthOrders">Total Orders</MenuItem>
+              <MenuItem value="averageMonthInvoice">Average Invoice</MenuItem>
+              <MenuItem value="averageMonthProfit">Average Profit</MenuItem>
+              <MenuItem value="totalInvoice">Total First Invoice</MenuItem>
+              <MenuItem value="totalProfit">Total First Profit</MenuItem>
+              <MenuItem value="averageInvoice">Average First Invoice</MenuItem>
+              <MenuItem value="averageProfit">Average First Profit</MenuItem>
+              
             </Select>
             <Tooltip title="Download Chart">
               <IconButton onClick={handleDownload} size="small">
@@ -514,10 +515,10 @@ const NOOChart = ({ data, storeSummaries }: NOOChartProps) => {
         }
         dataLabel1={(() => {
           if (selectedMetric === 'nooCount') return 'Current Month NOO';
-          if (selectedMetric === 'totalInvoice') return 'Current Month Invoice';
-          if (selectedMetric === 'totalProfit') return 'Current Month Profit';
-          if (selectedMetric === 'averageInvoice') return 'Current Month Avg Invoice';
-          if (selectedMetric === 'averageProfit') return 'Current Month Avg Profit';
+          if (selectedMetric === 'totalInvoice') return 'Current Month First Invoice';
+          if (selectedMetric === 'totalProfit') return 'Current Month First Profit';
+          if (selectedMetric === 'averageInvoice') return 'Current Month Avg First Invoice';
+          if (selectedMetric === 'averageProfit') return 'Current Month Avg First Profit';
           if (selectedMetric === 'totalMonthInvoice') return 'Current Month Total Invoice';
           if (selectedMetric === 'totalMonthProfit') return 'Current Month Total Profit';
           if (selectedMetric === 'totalMonthOrders') return 'Current Month Total Orders';

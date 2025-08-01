@@ -13,6 +13,7 @@ import DueDateStatusChart from "@/app/components/dashboards/invoice/DueDateStatu
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import NOOAreaChart from "@/app/components/dashboards/invoice/NOOAreaChart";
 import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
+import NOOSegmentChart from "@/app/components/dashboards/invoice/NOOSegmentChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import PaymentDetailsModal from "@/app/components/dashboards/invoice/PaymentDetailsModal";
 import PaymentDistributionChart from "@/app/components/dashboards/invoice/PaymentDistributionChart";
@@ -602,9 +603,16 @@ export default function Dashboard() {
                 {/* NOO Area Chart - Only show when no specific area is selected */}
                 {!area && (
                   <Box mb={4}>
-                    <NOOAreaChart data={nooData} />
+                    <NOOAreaChart data={nooData} storeSummaries={processedData?.storeSummaries}/>
                   </Box>
                 )}
+
+                {/* NOO Segment Chart - Only show when no specific area is selected */}
+               
+                <Box mb={4}>
+                  <NOOSegmentChart data={nooData} storeSummaries={processedData?.storeSummaries}/>
+                </Box>
+                
 
                 {/* Month Comparison - Only show when no specific area is selected */}
                 {processedData && (

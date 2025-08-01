@@ -24,16 +24,18 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 interface NOOAreaChartProps {
   data: OrderData[];
+  storeSummaries?: { [key: string]: any };
 }
 
 type MetricKey =
-  | "totalInvoice"
+  | "nooCount"
+  | "totalMonthInvoice"
   | "totalOrders"
   | "averageInvoice"
-  | "totalProfit"
+  | "totalMonthProfit"
   | "averageProfit";
 
-const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
+const NOOAreaChart = ({ data, storeSummaries }: NOOAreaChartProps) => {
   const theme = useTheme();
   const [selectedArea, setSelectedArea] = React.useState<{
     name: string;
@@ -42,7 +44,7 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [isClient, setIsClient] = React.useState(false);
   const [selectedMetric, setSelectedMetric] =
-    React.useState<MetricKey>("totalOrders");
+    React.useState<MetricKey>("nooCount");
 
   React.useEffect(() => {
     setIsClient(true);
@@ -91,9 +93,9 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
           string,
           {
             stores: OrderData[];
-            totalInvoice: number;
+            totalMonthInvoice: number;
             totalOrders: number;
-            totalProfit: number;
+            totalMonthProfit: number;
           }
         >,
         { order }
@@ -105,15 +107,47 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
         if (!acc[area]) {
           acc[area] = {
             stores: [],
-            totalInvoice: 0,
+            totalMonthInvoice: 0,
             totalOrders: 0,
-            totalProfit: 0,
+            totalMonthProfit: 0,
           };
         }
         acc[area].stores.push(order);
-        acc[area].totalInvoice += order.total_invoice;
-        acc[area].totalOrders += 1;
-        acc[area].totalProfit += order.profit || 0;
+        
+        // Calculate total month metrics using the same logic as NOOChart
+        if (storeSummaries) {
+          // Use storeSummaries if available
+          const storeSummary = storeSummaries[order.user_id];
+          if (storeSummary) {
+            const storeOrders = storeSummary.orders.filter((storeOrder: OrderData) => 
+              storeOrder.month.toLowerCase() === mostRecentMonth.toLowerCase()
+            );
+            // Calculate the store's total month invoice and profit
+            const storeMonthInvoice = storeOrders.reduce((sum: number, storeOrder: OrderData) => 
+              sum + (storeOrder.total_invoice || 0), 0
+            );
+            const storeMonthProfit = storeOrders.reduce((sum: number, storeOrder: OrderData) => 
+              sum + (storeOrder.profit || 0), 0
+            );
+            acc[area].totalMonthInvoice += storeMonthInvoice;
+            acc[area].totalMonthProfit += storeMonthProfit;
+            acc[area].totalOrders += storeOrders.length;
+          }
+        } else {
+          // Fallback to original calculation
+          const storeOrders = data.filter(dataOrder => 
+            dataOrder.user_id === order.user_id && 
+            dataOrder.month.toLowerCase() === mostRecentMonth.toLowerCase()
+          );
+          acc[area].totalMonthInvoice += storeOrders.reduce((sum, storeOrder) => 
+            sum + (storeOrder.total_invoice || 0), 0
+          );
+          acc[area].totalMonthProfit += storeOrders.reduce((sum, storeOrder) => 
+            sum + (storeOrder.profit || 0), 0
+          );
+          acc[area].totalOrders += storeOrders.length;
+        }
+        
         return acc;
       },
       {}
@@ -137,19 +171,21 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   const sortedAreas = Object.entries(areaData)
     .sort(([, a], [, b]) => {
       switch (selectedMetric) {
-        case "totalInvoice":
-          return b.totalInvoice - a.totalInvoice;
+        case "nooCount":
+          return b.stores.length - a.stores.length;
+        case "totalMonthInvoice":
+          return b.totalMonthInvoice - a.totalMonthInvoice;
         case "totalOrders":
           return b.totalOrders - a.totalOrders;
         case "averageInvoice":
           return (
-            b.totalInvoice / b.stores.length - a.totalInvoice / a.stores.length
+            b.totalMonthInvoice / b.stores.length - a.totalMonthInvoice / a.stores.length
           );
-        case "totalProfit":
-          return b.totalProfit - a.totalProfit;
+        case "totalMonthProfit":
+          return b.totalMonthProfit - a.totalMonthProfit;
         case "averageProfit":
           return (
-            b.totalProfit / b.stores.length - a.totalProfit / a.stores.length
+            b.totalMonthProfit / b.stores.length - a.totalMonthProfit / a.stores.length
           );
         default:
           return 0;
@@ -161,16 +197,18 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
   const values = areas.map((area) => {
     const data = areaData[area];
     switch (selectedMetric) {
-      case "totalInvoice":
-        return data.totalInvoice;
+      case "nooCount":
+        return data.stores.length;
+      case "totalMonthInvoice":
+        return data.totalMonthInvoice;
       case "totalOrders":
         return data.totalOrders;
       case "averageInvoice":
-        return data.totalInvoice / data.stores.length;
-      case "totalProfit":
-        return data.totalProfit;
+        return data.totalMonthInvoice / data.stores.length;
+      case "totalMonthProfit":
+        return data.totalMonthProfit;
       case "averageProfit":
-        return data.totalProfit / data.stores.length;
+        return data.totalMonthProfit / data.stores.length;
       default:
         return 0;
     }
@@ -180,14 +218,16 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
 
   const getMetricLabel = (metric: MetricKey) => {
     switch (metric) {
-      case "totalInvoice":
-        return "Total Invoice";
+      case "nooCount":
+        return "NOO Count";
+      case "totalMonthInvoice":
+        return "Total Month Invoice";
       case "totalOrders":
         return "Total Orders";
       case "averageInvoice":
         return "Average Invoice";
-      case "totalProfit":
-        return "Total Profit";
+      case "totalMonthProfit":
+        return "Total Month Profit";
       case "averageProfit":
         return "Average Profit";
       default:
@@ -223,9 +263,9 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
       enabled: true,
       formatter: (val: number) => {
         if (
-          selectedMetric === "totalInvoice" ||
+          selectedMetric === "totalMonthInvoice" ||
           selectedMetric === "averageInvoice" ||
-          selectedMetric === "totalProfit" ||
+          selectedMetric === "totalMonthProfit" ||
           selectedMetric === "averageProfit"
         ) {
           return formatCurrency(val);
@@ -257,9 +297,9 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
       labels: {
         formatter: (val: number) => {
           if (
-            selectedMetric === "totalInvoice" ||
+            selectedMetric === "totalMonthInvoice" ||
             selectedMetric === "averageInvoice" ||
-            selectedMetric === "totalProfit" ||
+            selectedMetric === "totalMonthProfit" ||
             selectedMetric === "averageProfit"
           ) {
             return formatCurrency(val);
@@ -279,9 +319,9 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
       y: {
         formatter: (val: number) => {
           if (
-            selectedMetric === "totalInvoice" ||
+            selectedMetric === "totalMonthInvoice" ||
             selectedMetric === "averageInvoice" ||
-            selectedMetric === "totalProfit" ||
+            selectedMetric === "totalMonthProfit" ||
             selectedMetric === "averageProfit"
           ) {
             return formatCurrency(val);
@@ -353,10 +393,11 @@ const NOOAreaChart = ({ data }: NOOAreaChartProps) => {
               onChange={(e) => setSelectedMetric(e.target.value as MetricKey)}
               size="small"
             >
-              <MenuItem value="totalInvoice">Total Invoice</MenuItem>
+              <MenuItem value="nooCount">NOO Count</MenuItem>
+              <MenuItem value="totalMonthInvoice">Total Month Invoice</MenuItem>
               <MenuItem value="totalOrders">Total Orders</MenuItem>
               <MenuItem value="averageInvoice">Average Invoice</MenuItem>
-              <MenuItem value="totalProfit">Total Profit</MenuItem>
+              <MenuItem value="totalMonthProfit">Total Month Profit</MenuItem>
               <MenuItem value="averageProfit">Average Profit</MenuItem>
             </Select>
           </Box>
