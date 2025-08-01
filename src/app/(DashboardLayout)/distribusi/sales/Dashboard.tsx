@@ -586,12 +586,32 @@ export default function Dashboard() {
                   </Grid>
                 </Box>
 
-                {/* Activation Rate Chart */}
-                {activationRateData.length > 0 && (
+
+                {/* Area Chart - Only show when no specific area is selected */}
+                {processedData && !area && (
                   <Box mb={4}>
-                    <ActivationRateChart data={activationRateData} />
+                    <AreaChart
+                      areaData={processedData.areaSummaries}
+                      selectedMonths={dateRange.month}
+                    />
                   </Box>
                 )}
+            
+
+                {/* Segment Performance Chart */}
+                {processedData &&
+                  Object.keys(processedData.segmentSummaries).length > 0 && (
+                    <Box mb={4}>
+                      <SegmentPerformanceChart
+                        subBusinessTypeData={
+                          processedData.subBusinessTypeSummaries
+                        }
+                        segmentData={processedData.segmentSummaries}
+                        selectedMonths={dateRange.month}
+                      />
+                    </Box>
+                  )}
+
 
                 
 
@@ -600,6 +620,12 @@ export default function Dashboard() {
                   <NOOChart data={nooData} storeSummaries={processedData?.storeSummaries} />
                 </Box>
 
+                {/* NOO Segment Chart - Only show when no specific area is selected */}
+                <Box mb={4}>
+                  <NOOSegmentChart data={nooData} storeSummaries={processedData?.storeSummaries}/>
+                </Box>
+                
+
                 {/* NOO Area Chart - Only show when no specific area is selected */}
                 {!area && (
                   <Box mb={4}>
@@ -607,11 +633,13 @@ export default function Dashboard() {
                   </Box>
                 )}
 
-                {/* NOO Segment Chart - Only show when no specific area is selected */}
-               
-                <Box mb={4}>
-                  <NOOSegmentChart data={nooData} storeSummaries={processedData?.storeSummaries}/>
-                </Box>
+                 {/* Activation Rate Chart */}
+                 {activationRateData.length > 0 && (
+                  <Box mb={4}>
+                    <ActivationRateChart data={activationRateData} />
+                  </Box>
+                )}
+
                 
 
                 {/* Month Comparison - Only show when no specific area is selected */}
@@ -640,33 +668,9 @@ export default function Dashboard() {
                   </Box>
                 )}
 
-                {/* Area Chart - Only show when no specific area is selected */}
-                {processedData && !area && (
-                  <Box mb={4}>
-                    <AreaChart
-                      areaData={processedData.areaSummaries}
-                      selectedMonths={dateRange.month}
-                    />
-                  </Box>
-                )}
-            
-
-                {/* Segment Performance Chart */}
-                {processedData &&
-                  Object.keys(processedData.segmentSummaries).length > 0 && (
-                    <Box mb={4}>
-                      <SegmentPerformanceChart
-                        subBusinessTypeData={
-                          processedData.subBusinessTypeSummaries
-                        }
-                        segmentData={processedData.segmentSummaries}
-                        selectedMonths={dateRange.month}
-                      />
-                    </Box>
-                  )}
-
+                
                 {/* Payment Distribution Chart */}
-                {processedData && processedData.paymentStatusMetrics && (
+                {/* {processedData && processedData.paymentStatusMetrics && (
                   <Box mb={4}>
                     <PaymentDistributionChart
                       data={Object.entries(
@@ -683,7 +687,7 @@ export default function Dashboard() {
                       selectedMonths={dateRange.month}
                     />
                   </Box>
-                )}
+                )} */}
 
                 
 
