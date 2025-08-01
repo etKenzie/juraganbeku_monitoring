@@ -8,12 +8,23 @@ export interface HubSummary {
   }
   
 export interface ProductSummary {
-name: string;
-totalInvoice: number;
-quantity: number;
-price: number;
-difPrice: number;
-profit: number;
+  name: string;
+  totalInvoice: number;
+  quantity: number;
+  price: number;
+  difPrice: number;
+  profit: number;
+  // Additional fields for detailed product information
+  totalQuantity: number;
+  totalProfit: number;
+  margin: number;
+  orders: OrderData[];
+  monthlyData: Array<{
+    date: string;
+    month: string;
+    totalInvoice: number;
+    totalProfit: number;
+  }>;
 }
 
 
@@ -100,6 +111,8 @@ export interface StoreSummary {
   userId: string;
   totalInvoice: number;
   totalProfit: number;
+  monthTotalInvoice: number;
+  monthTotalProfit: number;
   orderCount: number;
   activeMonths: Set<string>;
   averageOrderValue: number;

@@ -42,6 +42,8 @@ interface DisplayStoreSummary {
   orderCount: number;
   totalInvoice: number;
   totalProfit: number;
+  monthTotalInvoice: number;
+  monthTotalProfit: number;
   activeMonths: number;
   averageOrderValue: number;
   userId: string;
@@ -52,6 +54,8 @@ interface DisplayStoreSummary {
 const headCells: HeadCell[] = [
   { id: "storeName", label: "Store Name", numeric: false },
   { id: "storeStatus", label: "Status", numeric: false },
+  { id: "monthTotalInvoice", label: "Month Total Invoice", numeric: true },
+  { id: "monthTotalProfit", label: "Month Total Profit", numeric: true },
   { id: "lastOrderDate", label: "Last Order Date", numeric: false },
   { id: "orderCount", label: "Total Orders", numeric: true },
   { id: "totalInvoice", label: "Total Invoice", numeric: true },
@@ -193,6 +197,8 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
       orderCount: summary.orderCount,
       totalInvoice: summary.totalInvoice,
       totalProfit: summary.totalProfit,
+      monthTotalInvoice: summary.monthTotalInvoice,
+      monthTotalProfit: summary.monthTotalProfit,
       activeMonths: summary.activeMonths.size,
       averageOrderValue: summary.averageOrderValue,
       userId: summary.userId,
@@ -240,6 +246,7 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
       </Box>
     );
   }
+  console.log(storeSummaries)
 
   return (
     <Box>
@@ -362,20 +369,22 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
                   }}
                   sx={{ cursor: 'pointer' }}
                 >
-                  <TableCell>{store.storeName}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={store.storeStatus} 
-                      color={getStatusColor(store.storeStatus) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{store.lastOrderDate ? new Date(store.lastOrderDate).toLocaleDateString() : 'N/A'}</TableCell>
-                  <TableCell align="right">{store.orderCount}</TableCell>
-                  <TableCell align="right">{formatCurrency(store.totalInvoice)}</TableCell>
-                  <TableCell align="right">{formatCurrency(store.totalProfit)}</TableCell>
-                  <TableCell align="right">{store.activeMonths}</TableCell>
-                  <TableCell align="right">{formatCurrency(store.averageOrderValue)}</TableCell>
+                                     <TableCell>{store.storeName}</TableCell>
+                   <TableCell>
+                     <Chip 
+                       label={store.storeStatus} 
+                       color={getStatusColor(store.storeStatus) as any}
+                       size="small"
+                     />
+                   </TableCell>
+                   <TableCell align="right">{formatCurrency(store.monthTotalInvoice)}</TableCell>
+                   <TableCell align="right">{formatCurrency(store.monthTotalProfit)}</TableCell>
+                   <TableCell>{store.lastOrderDate ? new Date(store.lastOrderDate).toLocaleDateString() : 'N/A'}</TableCell>
+                   <TableCell align="right">{store.orderCount}</TableCell>
+                   <TableCell align="right">{formatCurrency(store.totalInvoice)}</TableCell>
+                   <TableCell align="right">{formatCurrency(store.totalProfit)}</TableCell>
+                   <TableCell align="right">{store.activeMonths}</TableCell>
+                   <TableCell align="right">{formatCurrency(store.averageOrderValue)}</TableCell>
                 </TableRow>
               ))}
           </TableBody>

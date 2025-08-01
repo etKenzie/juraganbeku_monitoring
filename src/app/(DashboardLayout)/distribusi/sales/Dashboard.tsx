@@ -618,8 +618,7 @@ export default function Dashboard() {
                   <NOOChart 
                   data={nooData} 
                   storeSummaries={processedData?.storeSummaries}
-                  // overallTotalInvoice={processedData?.overallTotalInvoice}
-                  // overallProfit={processedData?.overallProfit}
+                  
                 />
                 </Box>
 
@@ -652,6 +651,26 @@ export default function Dashboard() {
                     availableMonths={Object.keys(processedData.monthlyStoreCounts || {})}
                   />
                 )}
+
+                {/* Total Summaries */}
+                  {processedData && (
+                      <Box mb={4} mt={4}>
+                        <TotalSummaries
+                          monthlyMetrics={{
+                            totalInvoice: processedData.overallTotalInvoice,
+                            totalProfit: processedData.overallProfit,
+                            totalOrders: processedData.totalOrderCount,
+                            totalStores: Object.keys(processedData.storeSummaries)
+                              .length,
+                            totalLunas: processedData.overallLunas,
+                            totalBelumLunas: processedData.overallBelumLunas,
+                            totalCOD: processedData.overallCOD,
+                            totalTOP: processedData.overallTOP,
+                          }}
+                          period={period}
+                        />
+                      </Box>
+                    )}
 
                 {/* Store Summary Table */}
                 {processedData && (
@@ -704,24 +723,7 @@ export default function Dashboard() {
                     )} */}
 
                     {/* Store Metrics */}
-                    {processedData && (
-                      <Box mb={4} mt={4}>
-                        <TotalSummaries
-                          monthlyMetrics={{
-                            totalInvoice: processedData.overallTotalInvoice,
-                            totalProfit: processedData.overallProfit,
-                            totalOrders: processedData.totalOrderCount,
-                            totalStores: Object.keys(processedData.storeSummaries)
-                              .length,
-                            totalLunas: processedData.overallLunas,
-                            totalBelumLunas: processedData.overallBelumLunas,
-                            totalCOD: processedData.overallCOD,
-                            totalTOP: processedData.overallTOP,
-                          }}
-                          period={period}
-                        />
-                      </Box>
-                    )}
+                    
                     <OrdersTable orders={filteredOrders} exportOrderDetails={true}/>
                   </Box>
                 )}

@@ -323,6 +323,8 @@ export const useInvoiceData = () => {
     });
     result.weeklyData = weeklyData;
 
+
+
     // Find the most recent month in the data
     const allMonths = uniqueOrders.map((order) => {
       const [month, year] = order.month.split(" ");
@@ -414,6 +416,11 @@ export const useInvoiceData = () => {
               price: Number(item.price) || 0,
               difPrice: 1,
               profit: 0,
+              totalQuantity: 0,
+              totalProfit: 0,
+              margin: 0,
+              orders: [],
+              monthlyData: [],
             };
           }
 
@@ -432,7 +439,7 @@ export const useInvoiceData = () => {
           result.productSummaries[item.product_id].totalInvoice +=
             Number(item.total_invoice) || 0;
           result.productSummaries[item.product_id].quantity +=
-            Number(item.quantity) || 1;
+            Number(item.order_quantity) || 1;
         });
 
         // Process area data for most recent month
@@ -613,6 +620,8 @@ export const useInvoiceData = () => {
           userId: userId,
           totalInvoice: 0,
           totalProfit: 0,
+          monthTotalInvoice: 0,
+          monthTotalProfit: 0,
           orderCount: 0,
           activeMonths: new Set(),
           averageOrderValue: 0,
@@ -624,6 +633,14 @@ export const useInvoiceData = () => {
       result.storeSummaries[userId].totalInvoice += order.total_invoice || 0;
       if (order.profit > 0) {
         result.storeSummaries[userId].totalProfit += order.profit;
+      }
+
+      // Calculate month-specific totals
+      if (processedMonthKey === mostRecentMonth) {
+        result.storeSummaries[userId].monthTotalInvoice += order.total_invoice || 0;
+        if (order.profit > 0) {
+          result.storeSummaries[userId].monthTotalProfit += order.profit;
+        }
       }
 
       result.storeSummaries[userId].orderCount++;
@@ -651,6 +668,93 @@ export const useInvoiceData = () => {
 
       result.hubSummaries[hub].totalPembayaran += order.total_pembayaran || 0;
       result.hubSummaries[hub].orderCount++;
+    });
+
+    // Calculate comprehensive product data across all orders
+    const productOrdersMap: { [productId: string]: OrderData[] } = {};
+    const productMonthlyData: { [productId: string]: { [month: string]: { totalInvoice: number; totalProfit: number; } } } = {};
+
+    // Collect all orders for each product
+    uniqueOrders.forEach((order) => {
+      order.detail_order?.forEach((item) => {
+        if (!item) return;
+        
+        const productId = item.product_id;
+        if (!productOrdersMap[productId]) {
+          productOrdersMap[productId] = [];
+          productMonthlyData[productId] = {};
+        }
+        
+        productOrdersMap[productId].push(order);
+        
+        // Initialize monthly data for this product if not exists
+        if (!productMonthlyData[productId][order.month]) {
+          productMonthlyData[productId][order.month] = { totalInvoice: 0, totalProfit: 0 };
+        }
+        
+        // Calculate product's contribution to this order
+        const itemInvoice = Number(item.total_invoice) || 0;
+        const orderProfit = order.profit || 0;
+        const orderInvoice = order.total_invoice || 0;
+        const profitProportion = orderInvoice > 0 ? itemInvoice / orderInvoice : 0;
+        const profitContribution = orderProfit * profitProportion;
+        
+        productMonthlyData[productId][order.month].totalInvoice += itemInvoice;
+        productMonthlyData[productId][order.month].totalProfit += profitContribution;
+      });
+    });
+
+    // Update product summaries with comprehensive data
+    Object.keys(result.productSummaries).forEach((productId) => {
+      const product = result.productSummaries[productId];
+      const productOrders = productOrdersMap[productId] || [];
+      
+      // Calculate total quantity across all orders
+      const totalQuantity = productOrders.reduce((sum, order) => {
+        const productItems = order.detail_order?.filter(item => item?.product_id === productId) || [];
+        return sum + productItems.reduce((itemSum, item) => 
+          itemSum + (Number(item?.order_quantity) || 0), 0
+        );
+      }, 0);
+      
+      // Calculate total profit across all orders
+      const totalProfit = productOrders.reduce((sum, order) => {
+        const productItems = order.detail_order?.filter(item => item?.product_id === productId) || [];
+        const productInvoice = productItems.reduce((itemSum, item) => 
+          itemSum + (Number(item?.total_invoice) || 0), 0
+        );
+        const orderProfit = order.profit || 0;
+        const orderInvoice = order.total_invoice || 0;
+        const profitProportion = orderInvoice > 0 ? productInvoice / orderInvoice : 0;
+        return sum + (orderProfit * profitProportion);
+      }, 0);
+      
+      // Calculate margin
+      const margin = product.totalInvoice > 0 ? (totalProfit / product.totalInvoice) * 100 : 0;
+      
+      // Convert monthly data to array format
+      const monthlyData = Object.entries(productMonthlyData[productId] || {}).map(([month, data]) => {
+        const [monthName, year] = month.split(" ");
+        const monthIndex = new Date(`${monthName} 1, ${year}`).getMonth() + 1;
+        const date = `${year}-${monthIndex.toString().padStart(2, "0")}`;
+        
+        return {
+          date,
+          month,
+          totalInvoice: data.totalInvoice,
+          totalProfit: data.totalProfit,
+        };
+      }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      // Update product summary with additional fields
+      result.productSummaries[productId] = {
+        ...product,
+        totalQuantity,
+        totalProfit,
+        margin,
+        orders: productOrders,
+        monthlyData,
+      };
     });
 
     // Calculate store status for each store after all orders are processed
