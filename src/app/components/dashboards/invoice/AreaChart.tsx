@@ -28,7 +28,7 @@ interface AreaChartProps {
   selectedMonths: string;
 }
 
-type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP" | "averageInvoice" | "averageProfit";
+type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP" | "averageInvoice" | "averageProfit" | "margin";
 
 const AreaChart = ({
   isLoading,
@@ -75,6 +75,8 @@ const AreaChart = ({
           return (b.totalInvoice / b.totalOrders) - (a.totalInvoice / a.totalOrders);
         case "averageProfit":
           return (b.totalProfit / b.totalOrders) - (a.totalProfit / a.totalOrders);
+        case "margin":
+          return (b.totalProfit / b.totalInvoice) - (a.totalProfit / a.totalInvoice);
         default:
           return 0;
       }
@@ -99,6 +101,8 @@ const AreaChart = ({
         return data.totalInvoice / data.totalOrders;
       case "averageProfit":
         return data.totalProfit / data.totalOrders;
+      case "margin":
+        return data.totalInvoice > 0 ? (data.totalProfit / data.totalInvoice) * 100 : 0;
       default:
         return 0;
     }
@@ -122,6 +126,8 @@ const AreaChart = ({
         return "Average Invoice";
       case "averageProfit":
         return "Average Profit";
+      case "margin":
+        return "Margin %";
       default:
         return "";
     }
@@ -153,6 +159,9 @@ const AreaChart = ({
     colors: [theme.palette.primary.main],
     dataLabels: {
       formatter: (val: number) => {
+        if (sortKey === "margin") {
+          return val.toFixed(1) + '%';
+        }
         if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
             sortKey === "totalCOD" || sortKey === "totalTOP" ||
             sortKey === "averageInvoice" || sortKey === "averageProfit") {
@@ -184,6 +193,9 @@ const AreaChart = ({
     yaxis: {
       labels: {
         formatter: (val: number) => {
+          if (sortKey === "margin") {
+            return val.toFixed(1) + '%';
+          }
           if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
               sortKey === "totalCOD" || sortKey === "totalTOP" ||
               sortKey === "averageInvoice" || sortKey === "averageProfit") {
@@ -203,6 +215,9 @@ const AreaChart = ({
       },
       y: {
         formatter: (val: number) => {
+          if (sortKey === "margin") {
+            return val.toFixed(1) + '%';
+          }
           if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
               sortKey === "totalCOD" || sortKey === "totalTOP" ||
               sortKey === "averageInvoice" || sortKey === "averageProfit") {
@@ -279,6 +294,7 @@ const AreaChart = ({
               <MenuItem value="totalTOP">Total TOP</MenuItem>
               <MenuItem value="averageInvoice">Average Invoice</MenuItem>
               <MenuItem value="averageProfit">Average Profit</MenuItem>
+              <MenuItem value="margin">Margin %</MenuItem>
             </Select>
           </Box>
         }

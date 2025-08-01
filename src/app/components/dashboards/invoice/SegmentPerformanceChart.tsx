@@ -29,7 +29,7 @@ interface SegmentPerformanceChartProps {
   subBusinessTypeData: Record<string, AreaData>;
 }
 
-type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP" | "averageInvoice" | "averageProfit";
+type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP" | "averageInvoice" | "averageProfit" | "margin";
 type SegmentType = "business_type" | "sub_business_type";
 
 const SegmentPerformanceChart = ({
@@ -84,6 +84,8 @@ const SegmentPerformanceChart = ({
           return (b.totalInvoice / b.totalOrders) - (a.totalInvoice / a.totalOrders);
         case "averageProfit":
           return (b.totalProfit / b.totalOrders) - (a.totalProfit / a.totalOrders);
+        case "margin":
+          return (b.totalProfit / b.totalInvoice) - (a.totalProfit / a.totalInvoice);
         default:
           return 0;
       }
@@ -110,6 +112,8 @@ const SegmentPerformanceChart = ({
         return data.totalOrders ? (data.totalInvoice || 0) / data.totalOrders : 0;
       case "averageProfit":
         return data.totalOrders ? (data.totalProfit || 0) / data.totalOrders : 0;
+      case "margin":
+        return data.totalInvoice && data.totalInvoice > 0 ? ((data.totalProfit || 0) / data.totalInvoice) * 100 : 0;
       default:
         return 0;
     }
@@ -133,6 +137,8 @@ const SegmentPerformanceChart = ({
         return "Average Invoice";
       case "averageProfit":
         return "Average Profit";
+      case "margin":
+        return "Margin %";
       default:
         return "";
     }
@@ -164,6 +170,9 @@ const SegmentPerformanceChart = ({
     colors: [theme.palette.secondary.main],
     dataLabels: {
       formatter: (val: number) => {
+        if (sortKey === "margin") {
+          return val.toFixed(1) + '%';
+        }
         if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
             sortKey === "totalCOD" || sortKey === "totalTOP" ||
             sortKey === "averageInvoice" || sortKey === "averageProfit") {
@@ -195,6 +204,9 @@ const SegmentPerformanceChart = ({
     yaxis: {
       labels: {
         formatter: (val: number) => {
+          if (sortKey === "margin") {
+            return val.toFixed(1) + '%';
+          }
           if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
               sortKey === "totalCOD" || sortKey === "totalTOP" ||
               sortKey === "averageInvoice" || sortKey === "averageProfit") {
@@ -214,6 +226,9 @@ const SegmentPerformanceChart = ({
       },
       y: {
         formatter: (val: number) => {
+          if (sortKey === "margin") {
+            return val.toFixed(1) + '%';
+          }
           if (sortKey === "totalInvoice" || sortKey === "totalProfit" || 
               sortKey === "totalCOD" || sortKey === "totalTOP" ||
               sortKey === "averageInvoice" || sortKey === "averageProfit") {
@@ -299,6 +314,7 @@ const SegmentPerformanceChart = ({
               <MenuItem value="totalTOP">Total TOP</MenuItem>
               <MenuItem value="averageInvoice">Average Invoice</MenuItem>
               <MenuItem value="averageProfit">Average Profit</MenuItem>
+              <MenuItem value="margin">Margin %</MenuItem>
             </Select>
           </Box>
         }
