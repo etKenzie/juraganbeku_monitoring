@@ -21,7 +21,29 @@ export async function middleware(req: NextRequest) {
       path.startsWith('/auth/') || 
       path.startsWith('/_next/') || 
       path.startsWith('/public/') ||
+      path.includes('reset-password') ||
+      path.includes('recovery') ||
       path === '/favicon.ico';
+
+    // If we're on signin page and have a recovery token, redirect to reset password immediately
+    if (path === '/auth/signin' && req.url.includes('access_token')) {
+      const resetPasswordUrl = new URL('/auth/reset-password', req.url);
+      // Preserve the hash fragment
+      const hashPart = req.url.split('#')[1];
+      if (hashPart) {
+        resetPasswordUrl.hash = hashPart;
+      }
+      return NextResponse.redirect(resetPasswordUrl);
+    }
+
+    // Check if this is a reset password flow
+    const hasRecoveryToken = req.url.includes('access_token') || req.nextUrl.searchParams.has('access_token');
+    const isResetPasswordFlow = hasRecoveryToken || path.includes('reset-password') || path.includes('recovery');
+
+    // If this is a reset password flow, allow access without session check
+    if (isResetPasswordFlow) {
+      return res;
+    }
 
     // Handle sign-out explicitly
     if (path === '/auth/signout') {
@@ -131,5 +153,6 @@ export const config = {
      * - favicon.ico (favicon file)
      */
     '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/auth/:path*',
   ],
 }; 

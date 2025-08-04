@@ -1,9 +1,10 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/types/supabase';
+import { useRouter } from 'next/navigation';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -12,12 +13,23 @@ import Alert from '@mui/material/Alert';
 
 export default function SignInForm() {
   const { signIn } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  useEffect(() => {
+    // Check if we have a recovery token in the URL hash
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      console.log('SignInForm: Detected recovery token, redirecting to reset password');
+      const resetPasswordUrl = `/auth/reset-password${hash}`;
+      router.push(resetPasswordUrl);
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

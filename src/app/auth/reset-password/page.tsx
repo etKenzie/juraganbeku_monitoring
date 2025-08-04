@@ -36,8 +36,8 @@ export default function ResetPassword() {
       }
     }
 
-    // If we're not in recovery mode, redirect to sign in
-    if (!type && !hash) {
+    // If we're not in recovery mode and no hash with access_token, redirect to sign in
+    if (!type && !hash && !window.location.hash.includes('access_token')) {
       router.push('/auth/signin');
     }
   }, [searchParams, router]);
