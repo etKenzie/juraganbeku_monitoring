@@ -44,8 +44,11 @@ interface DisplayStoreSummary {
   totalProfit: number;
   monthTotalInvoice: number;
   monthTotalProfit: number;
+  monthMargin: number;
+  totalMargin: number;
   activeMonths: number;
   averageOrderValue: number;
+  totalHutang: number;
   userId: string;
   storeStatus: "Active" | "D1" | "D2" | "Inactive";
   lastOrderDate?: string;
@@ -56,12 +59,15 @@ const headCells: HeadCell[] = [
   { id: "storeStatus", label: "Status", numeric: false },
   { id: "monthTotalInvoice", label: "Month Total Invoice", numeric: true },
   { id: "monthTotalProfit", label: "Month Total Profit", numeric: true },
+  { id: "monthMargin", label: "Month Margin", numeric: true },
   { id: "lastOrderDate", label: "Last Order Date", numeric: false },
   { id: "orderCount", label: "Total Orders", numeric: true },
   { id: "totalInvoice", label: "Total Invoice", numeric: true },
   { id: "totalProfit", label: "Total Profit", numeric: true },
+  { id: "totalMargin", label: "Total Margin", numeric: true },
   { id: "activeMonths", label: "Active Months", numeric: true },
   { id: "averageOrderValue", label: "Average Order Value", numeric: true },
+  { id: "totalHutang", label: "Total Hutang", numeric: true },
 ];
 
 const getStatusColor = (status: string) => {
@@ -199,8 +205,17 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
       totalProfit: summary.totalProfit,
       monthTotalInvoice: summary.monthTotalInvoice,
       monthTotalProfit: summary.monthTotalProfit,
+      monthMargin: summary.monthTotalInvoice > 0 ? (summary.monthTotalProfit / summary.monthTotalInvoice) * 100 : 0,
+      totalMargin: summary.totalInvoice > 0 ? (summary.totalProfit / summary.totalInvoice) * 100 : 0,
       activeMonths: summary.activeMonths.size,
       averageOrderValue: summary.averageOrderValue,
+      totalHutang: summary.orders?.reduce(
+        (total, order) =>
+          order.status_payment !== "LUNAS"
+            ? total + (order.total_invoice || 0)
+            : total,
+        0
+      ) || 0,
       userId: summary.userId,
       storeStatus: summary.storeStatus,
       lastOrderDate: summary.lastOrderDate,
@@ -379,12 +394,15 @@ export default function StoreSummaryTable({ storeSummaries }: StoreSummaryTableP
                    </TableCell>
                    <TableCell align="right">{formatCurrency(store.monthTotalInvoice)}</TableCell>
                    <TableCell align="right">{formatCurrency(store.monthTotalProfit)}</TableCell>
+                   <TableCell align="right">{store.monthMargin.toFixed(2)}%</TableCell>
                    <TableCell>{store.lastOrderDate ? new Date(store.lastOrderDate).toLocaleDateString() : 'N/A'}</TableCell>
                    <TableCell align="right">{store.orderCount}</TableCell>
                    <TableCell align="right">{formatCurrency(store.totalInvoice)}</TableCell>
                    <TableCell align="right">{formatCurrency(store.totalProfit)}</TableCell>
+                   <TableCell align="right">{store.totalMargin.toFixed(2)}%</TableCell>
                    <TableCell align="right">{store.activeMonths}</TableCell>
                    <TableCell align="right">{formatCurrency(store.averageOrderValue)}</TableCell>
+                   <TableCell align="right">{formatCurrency(store.totalHutang)}</TableCell>
                 </TableRow>
               ))}
           </TableBody>

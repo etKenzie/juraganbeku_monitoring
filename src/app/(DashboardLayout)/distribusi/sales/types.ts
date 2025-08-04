@@ -119,4 +119,5 @@ export interface StoreSummary {
   orders: OrderData[];
   storeStatus: "Active" | "D1" | "D2" | "D3" | "Inactive";
   lastOrderDate?: string;
+  totalHutang?: number;
 }

@@ -152,6 +152,18 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
                     Total Profit: {formatCurrency(store.totalProfit)}
                   </Typography>
                   <Typography>
+                    Total Margin: {store.totalInvoice > 0 ? ((store.totalProfit / store.totalInvoice) * 100).toFixed(2) : 0}%
+                  </Typography>
+                  <Typography>
+                    Month Total Invoice: {formatCurrency(store.monthTotalInvoice)}
+                  </Typography>
+                  <Typography>
+                    Month Total Profit: {formatCurrency(store.monthTotalProfit)}
+                  </Typography>
+                  <Typography>
+                    Month Margin: {store.monthTotalInvoice > 0 ? ((store.monthTotalProfit / store.monthTotalInvoice) * 100).toFixed(2) : 0}%
+                  </Typography>
+                  <Typography>
                     Average Order Value:{" "}
                     {formatCurrency(store.averageOrderValue)}
                   </Typography>
@@ -166,6 +178,9 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
                       size="small"
                     />
                   </Typography>
+                  {/* <Typography>
+                    Store ID: {store.userId}
+                  </Typography> */}
                   {store.lastOrderDate && (
                     <Typography>
                       Last Order Date: {new Date(store.lastOrderDate).toLocaleDateString()}
@@ -174,13 +189,15 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
                   <Typography color="error">
                     Total Hutang:{" "}
                     {formatCurrency(
-                      store.orders?.reduce(
-                        (total, order) =>
-                          order.status_payment !== "LUNAS"
-                            ? total + (order.total_invoice || 0)
-                            : total,
-                        0
-                      ) || 0
+                      store.totalHutang !== undefined 
+                        ? store.totalHutang
+                        : store.orders?.reduce(
+                            (total, order) =>
+                              order.status_payment !== "LUNAS"
+                                ? total + (order.total_invoice || 0)
+                                : total,
+                            0
+                          ) || 0
                     )}
                   </Typography>
                 </Paper>
@@ -204,7 +221,6 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
                   <TableCell>Payment Type</TableCell>
                   <TableCell>Status Payment</TableCell>
                   <TableCell>Total Invoice</TableCell>
-                  <TableCell>Total Payment</TableCell>
                   <TableCell>Profit</TableCell>
                 </TableRow>
               </TableHead>
@@ -228,9 +244,6 @@ const StoreDetailsModal: React.FC<StoreDetailsModalProps> = ({
                       </Typography>
                     </TableCell>
                     <TableCell>{formatCurrency(order.total_invoice || 0)}</TableCell>
-                    <TableCell>
-                      {formatCurrency(order.total_pembayaran || 0)}
-                    </TableCell>
                     <TableCell>{formatCurrency(order.profit || 0)}</TableCell>
                   </TableRow>
                 ))}
