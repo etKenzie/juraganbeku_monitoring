@@ -158,6 +158,53 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         headers: ["Kode Gerai", "Nama Gerai", "Pick Up/Month", "Amount", "Total Amount"],
         rows
       };
+      
+    }else if (company.slug === 'roscik') {
+      // Darmi-specific logic - count pickups per gerai
+      const geraiMap = new Map<string, { kode_gerai: string; nama_gerai: string; pickup_count: number }>();
+
+      invoices.forEach(invoice => {
+        const { kode_gerai, nama_gerai } = invoice;
+        
+        if (geraiMap.has(kode_gerai)) {
+          // Increment pickup count for existing gerai
+          const existing = geraiMap.get(kode_gerai)!;
+          existing.pickup_count += 1;
+        } else {
+          // Create new gerai entry with pickup count 1
+          geraiMap.set(kode_gerai, {
+            kode_gerai,
+            nama_gerai,
+            pickup_count: 1
+          });
+        }
+      });
+
+      // Calculate amounts for each gerai
+      const rows: string[][] = [];
+      let amountPerPickup = 40000; // Fixed amount per pickup for Darmi
+      
+      geraiMap.forEach(gerai => {
+        if (gerai.pickup_count > 20) {
+          amountPerPickup = 30000
+        } else if (gerai.pickup_count > 10) {
+          amountPerPickup = 35000
+        }
+        const totalAmount = gerai.pickup_count * amountPerPickup;
+        rows.push([
+          gerai.kode_gerai,
+          gerai.nama_gerai,
+          gerai.pickup_count.toString(),
+          `Rp ${amountPerPickup.toLocaleString()}`,
+          `Rp ${totalAmount.toLocaleString()}`
+        ]);
+      });
+
+      return {
+        headers: ["Kode Gerai", "Nama Gerai", "Pick Up/Month", "Amount", "Total Amount"],
+        rows
+      };
+      
     } else if (company.slug === 'hangry') {
       // Hangry-specific logic - show invoices with pickup dates
       const rows = invoices.map(invoice => [
