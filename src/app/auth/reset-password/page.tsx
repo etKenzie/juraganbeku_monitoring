@@ -36,9 +36,16 @@ export default function ResetPassword() {
       }
     }
 
-    // If we're not in recovery mode and no hash with access_token, redirect to sign in
+    // If we're not in recovery mode and no hash with access_token, and user is not authenticated, redirect to sign in
     if (!type && !hash && !window.location.hash.includes('access_token')) {
-      router.push('/auth/signin');
+      // Check if user is already authenticated
+      const checkAuth = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/auth/signin');
+        }
+      };
+      checkAuth();
     }
   }, [searchParams, router]);
 

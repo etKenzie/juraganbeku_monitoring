@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 
 interface StoreMetricsProps {
-  monthlyMetrics: {
+  yearlyMetrics: {
     totalInvoice: number;
     totalProfit: number;
     totalOrders: number;
@@ -16,11 +16,18 @@ interface StoreMetricsProps {
     totalBelumLunas: number;
     totalCOD: number;
     totalTOP: number;
+    margin: number;
   };
   period: string;
 }
 
-const StoreMetrics = ({ monthlyMetrics, period }: StoreMetricsProps) => {
+const StoreMetrics = ({ yearlyMetrics, period }: StoreMetricsProps) => {
+  // Calculate margin percentage
+  const marginPercentage = yearlyMetrics.totalInvoice > 0 
+    ? (yearlyMetrics.totalProfit / yearlyMetrics.totalInvoice) * 100 
+    : 0;
+const md = 4;
+
   return (
     <Box>
       <Grid container spacing={3}>
@@ -30,68 +37,76 @@ const StoreMetrics = ({ monthlyMetrics, period }: StoreMetricsProps) => {
               Total Summaries
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Invoice
                 </Typography>
                 <Typography variant="h4">
-                  {formatCurrency(monthlyMetrics.totalInvoice)}
+                  {formatCurrency(yearlyMetrics.totalInvoice)}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Profit
                 </Typography>
                 <Typography variant="h4">
-                  {formatCurrency(monthlyMetrics.totalProfit)}
+                  {formatCurrency(yearlyMetrics.totalProfit)}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Margin
+                </Typography>
+                <Typography variant="h4">
+                  {marginPercentage.toFixed(2)}%
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Orders
                 </Typography>
                 <Typography variant="h4">
-                  {monthlyMetrics.totalOrders}
+                  {yearlyMetrics.totalOrders}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Stores
                 </Typography>
                 <Typography variant="h4">
-                  {monthlyMetrics.totalStores}
+                  {yearlyMetrics.totalStores}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Lunas
                 </Typography>
                 <Typography variant="h4">
-                  {formatCurrency(monthlyMetrics.totalLunas)}
+                  {formatCurrency(yearlyMetrics.totalLunas)}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total Belum Lunas
                 </Typography>
                 <Typography variant="h4">
-                  {formatCurrency(monthlyMetrics.totalBelumLunas)}
+                  {formatCurrency(yearlyMetrics.totalBelumLunas)}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total COD
                 </Typography>
                 <Typography variant="h4">
-                  {formatCurrency(monthlyMetrics.totalCOD)}
+                  {formatCurrency(yearlyMetrics.totalCOD)}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={md}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Total TOP
                 </Typography>
                 <Typography variant="h4">
-                  {formatCurrency(monthlyMetrics.totalTOP)}
+                  {formatCurrency(yearlyMetrics.totalTOP)}
                 </Typography>
               </Grid>
             </Grid>

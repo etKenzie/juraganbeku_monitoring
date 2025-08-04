@@ -656,7 +656,7 @@ export default function Dashboard() {
                   {processedData && (
                       <Box mb={4} mt={4}>
                         <TotalSummaries
-                          monthlyMetrics={{
+                          yearlyMetrics={{
                             totalInvoice: processedData.overallTotalInvoice,
                             totalProfit: processedData.overallProfit,
                             totalOrders: processedData.totalOrderCount,
@@ -666,6 +666,7 @@ export default function Dashboard() {
                             totalBelumLunas: processedData.overallBelumLunas,
                             totalCOD: processedData.overallCOD,
                             totalTOP: processedData.overallTOP,
+                            margin: processedData.overallProfit/processedData.overallTotalInvoice,
                           }}
                           period={period}
                         />

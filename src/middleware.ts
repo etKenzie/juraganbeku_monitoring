@@ -92,7 +92,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // If we're on a public route and have a session, redirect to home
-    if (session && path.startsWith('/auth/')) {
+    if (session && path.startsWith('/auth/') && !path.includes('reset-password')) {
       const redirectUrl = new URL('/', req.url);
       return NextResponse.redirect(redirectUrl);
     }

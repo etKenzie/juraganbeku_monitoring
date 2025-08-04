@@ -10,6 +10,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
+import Typography from '@mui/material/Typography';
 
 export default function SignInForm() {
   const { signIn } = useAuth();
@@ -20,16 +21,47 @@ export default function SignInForm() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [hasRecoveryToken, setHasRecoveryToken] = useState(false);
 
   useEffect(() => {
-    // Check if we have a recovery token in the URL hash
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
-      console.log('SignInForm: Detected recovery token, redirecting to reset password');
-      const resetPasswordUrl = `/auth/reset-password${hash}`;
-      router.push(resetPasswordUrl);
+    // Check for recovery token first
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        console.log('SignInForm: Detected recovery token, redirecting to reset password');
+        setHasRecoveryToken(true);
+        const resetPasswordUrl = `/auth/reset-password${hash}`;
+        router.replace(resetPasswordUrl);
+        return;
+      }
     }
+
+    // If no recovery token, check authentication
+    const checkAuth = async () => {
+      const supabase = createClientComponentClient<Database>();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && !window.location.hash.includes('access_token')) {
+        setShouldRedirect(true);
+        router.replace('/');
+      }
+      setIsCheckingAuth(false);
+    };
+    checkAuth();
   }, [router]);
+
+  // Show loading state while checking authentication or if redirecting
+  if (isCheckingAuth || shouldRedirect || hasRecoveryToken) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography>
+          {hasRecoveryToken ? 'Redirecting to reset password...' : 
+           shouldRedirect ? 'Redirecting...' : 'Loading...'}
+        </Typography>
+      </Box>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
