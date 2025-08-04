@@ -213,6 +213,13 @@ const InvoiceAPIPage: React.FC = () => {
     [filteredInvoices]
   );
   const totalInvoices = filteredInvoices.length;
+  const totalGerai = useMemo(
+    () => {
+      const uniqueGerai = new Set(filteredInvoices.map((inv) => inv.kode_gerai));
+      return uniqueGerai.size;
+    },
+    [filteredInvoices]
+  );
 
   // Pagination
   const paginatedInvoices = useMemo(
@@ -342,6 +349,14 @@ const InvoiceAPIPage: React.FC = () => {
                   Total Invoices
                 </Typography>
                 <Typography variant="h5">{totalInvoices}</Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Total Gerai
+                </Typography>
+                <Typography variant="h5">{totalGerai}</Typography>
               </Paper>
             </Grid>
           </Grid>

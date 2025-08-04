@@ -29,6 +29,7 @@ interface InvoiceLineChartProps {
 const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
   ({ data, timePeriod, weeklyData }, ref) => {
     const [viewType, setViewType] = React.useState<"monthly" | "weekly">("monthly");
+    const [metricType, setMetricType] = React.useState<"invoiceProfit" | "margin">("invoiceProfit");
     const chartId = React.useMemo(
       () => `invoice-chart-${Math.random().toString(36).substr(2, 9)}`,
       []
@@ -161,7 +162,7 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
         enabled: true,
         formatter: function(val: number, opts: any) {
           // Format margin as percentage, others as currency
-          if (opts.seriesIndex === 2) {
+          if (metricType === "margin") {
             return val.toFixed(1) + '%';
           }
           return formatCurrency(val);
@@ -179,7 +180,7 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
         y: {
           formatter: function(val: number, opts: any) {
             // Format margin as percentage, others as currency
-            if (opts.seriesIndex === 2) {
+            if (metricType === "margin") {
               return val.toFixed(1) + '%';
             }
             return formatCurrency(val);
@@ -188,29 +189,35 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
       },
       yaxis: {
         labels: {
-          formatter: (val: number) => formatCurrency(val),
+          formatter: (val: number) => {
+            if (metricType === "margin") {
+              return val.toFixed(1) + '%';
+            }
+            return formatCurrency(val);
+          },
         },
         title: {
-          text: "Amount",
+          text: metricType === "margin" ? "Margin %" : "Amount",
         },
       },
     };
 
     const serieslinechart = [
-      {
-        name: "Total Invoice",
-        data: invoiceData,
-      },
-      {
-        name: "Total Profit",
-        data: profitData,
-      },
-      {
-        name: "Margin %",
-        data: marginData,
-        yAxisIndex: 1,
-        showInLegend: false,
-      },
+      ...(metricType === "invoiceProfit" ? [
+        {
+          name: "Total Invoice",
+          data: invoiceData,
+        },
+        {
+          name: "Total Profit",
+          data: profitData,
+        },
+      ] : [
+        {
+          name: "Margin %",
+          data: marginData,
+        },
+      ]),
     ];
 
     const handleViewChange = (
@@ -255,6 +262,19 @@ const InvoiceLineChart = React.forwardRef<any, InvoiceLineChartProps>(
                 <IconDownload size={20} />
               </IconButton>
             </Tooltip>
+            <ToggleButtonGroup
+              value={metricType}
+              exclusive
+              onChange={(event, newValue) => {
+                if (newValue !== null) {
+                  setMetricType(newValue);
+                }
+              }}
+              size="small"
+            >
+              <ToggleButton value="invoiceProfit">Default</ToggleButton>
+              <ToggleButton value="margin">Margin</ToggleButton>
+            </ToggleButtonGroup>
             <ToggleButtonGroup
               value={viewType}
               exclusive
