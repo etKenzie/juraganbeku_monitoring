@@ -25,7 +25,6 @@ const LeadsPage = () => {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      console.log('Fetching leads from Supabase...');
       
       const { data, error } = await supabase
         .from('leads')

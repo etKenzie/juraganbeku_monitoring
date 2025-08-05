@@ -125,6 +125,8 @@ export const useInvoiceData = () => {
         hubSummaries: {},
         productSummaries: {},
         categorySummaries: {},
+        monthlyProductSummaries: {},
+        monthlyCategorySummaries: {},
         storeSummaries: {},
         areaSummaries: {},
         segmentSummaries: {},
@@ -176,6 +178,8 @@ export const useInvoiceData = () => {
       hubSummaries: {},
       productSummaries: {},
       categorySummaries: {},
+      monthlyProductSummaries: {},
+      monthlyCategorySummaries: {},
       storeSummaries: {},
       areaSummaries: {},
       segmentSummaries: {},
@@ -379,6 +383,7 @@ export const useInvoiceData = () => {
 
       // Calculate most recent month's metrics
       if (processedMonthKey === mostRecentMonth) {
+      
         mostRecentMonthStores.add(order.user_id);
         result.thisMonthMetrics.totalOrders++;
         result.thisMonthMetrics.totalInvoice += order.total_invoice;
@@ -440,6 +445,37 @@ export const useInvoiceData = () => {
             Number(item.total_invoice) || 0;
           result.productSummaries[item.product_id].quantity +=
             Number(item.order_quantity) || 1;
+        });
+
+        // Process category data for most recent month
+        order.detail_order?.forEach((item) => {
+          if (!item) return;
+
+          const category = item.type_category || "UNCATEGORIZED";
+          
+          if (!result.categorySummaries[category]) {
+            result.categorySummaries[category] = {
+              totalInvoice: 0,
+              quantity: 0,
+              totalPrice: 0,
+              itemCount: 0,
+              gross_profit: 0,
+            };
+          }
+
+          const categorySummary = result.categorySummaries[category];
+          categorySummary.totalInvoice += Number(item.total_invoice) || 0;
+          categorySummary.quantity += Number(item.order_quantity) || 1;
+          categorySummary.totalPrice += Number(item.price) || 0;
+          categorySummary.itemCount += 1;
+          
+          // Calculate profit contribution for this item
+          if (order.profit > 0) {
+            const itemInvoice = Number(item.total_invoice) || 0;
+            const orderInvoice = order.total_invoice || 0;
+            const profitProportion = orderInvoice > 0 ? itemInvoice / orderInvoice : 0;
+            categorySummary.gross_profit += order.profit * profitProportion;
+          }
         });
 
         // Process area data for most recent month

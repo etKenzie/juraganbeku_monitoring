@@ -369,7 +369,8 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
             Tags: idx === 0 ? getOrderTagsString(order) : '',
             // Order item details
             order_item_id: item.order_item_id,
-            category: item.category,
+            category: item.type_category,
+            sub_category: item.sub_category,
             product_name: item.product_name,
             quantity: item.order_quantity,
             buy_price: item.buy_price,
@@ -762,7 +763,7 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
                           )}
                         </TableCell>
                         <TableCell>{item.brands}</TableCell>
-                        <TableCell>{item.category}</TableCell>
+                        <TableCell>{item.type_category}</TableCell>
                         <TableCell>
                           {item.buy_price === 0 && (
                             <Typography

@@ -50,7 +50,8 @@ interface OrderDetail {
   alamat: string;
   product_name: string;
   brands: string;
-  category: string;
+  type_category: string;
+  sub_category: string;
   dt_code: string;
   hub: string;
   principle_id: string;
@@ -321,7 +322,6 @@ export const fetchStoreData = (params?: { area?: string, month?: string }) => as
       }
 
     const request = `${ACTIVE_USERS_URL}?${searchParams.toString()}`;
-    console.log(request);
 
     const response = await axios.get(request, {
       // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },

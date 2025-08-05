@@ -56,6 +56,8 @@ export interface ProcessedData {
   hubSummaries: { [key: string]: HubSummary };
   productSummaries: { [key: string]: ProductSummary };
   categorySummaries: { [key: string]: CategorySummary };
+  monthlyProductSummaries: { [month: string]: { [productId: string]: ProductSummary } };
+  monthlyCategorySummaries: { [month: string]: { [category: string]: CategorySummary } };
   storeSummaries: { [key: string]: StoreSummary };
   areaSummaries: { [key: string]: AreaData };
   segmentSummaries: { [key: string]: AreaData & { activeMonths: Set<string> } };

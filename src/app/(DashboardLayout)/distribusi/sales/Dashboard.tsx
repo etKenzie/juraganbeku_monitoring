@@ -15,6 +15,7 @@ import NOOChart from "@/app/components/dashboards/invoice/NOOChart";
 import NOOSegmentChart from "@/app/components/dashboards/invoice/NOOSegmentChart";
 import OrdersTable from "@/app/components/dashboards/invoice/OrdersTable";
 import PaymentDetailsModal from "@/app/components/dashboards/invoice/PaymentDetailsModal";
+import ProductCategoryChart from "@/app/components/dashboards/invoice/ProductCategoryChart";
 import ProductSummaryTable from "@/app/components/dashboards/invoice/ProductSummaryTable";
 import SegmentPerformanceChart from "@/app/components/dashboards/invoice/SegmentPerformanceChart";
 import StoreSummaryTable from "@/app/components/dashboards/invoice/StoreSummaryTable";
@@ -268,23 +269,31 @@ export default function Dashboard() {
 
   // Calculate monthlyTotalStoreCount and activation rate from storeData
   useEffect(() => {
+    console.log("storeData received:", storeData);
     if (storeData && storeData.length > 0) {
       const monthlyCounts: Record<string, number> = {};
       
-      // Get all unique months from store data
-      const allMonths = storeData.map(store => store.first_order_month);
+      // Get all unique months from store data (excluding inactive stores)
+      const allMonths = storeData
+        .filter(store => store.period_month && store.period_month !== "Inactive")
+        .map(store => store.period_month);
       const uniqueMonths = Array.from(new Set(allMonths)).sort();
+      
+      console.log("Unique months from storeData:", uniqueMonths);
       
       // For each month, count all stores that have period_month <= that month
       uniqueMonths.forEach(month => {
         const monthDate = new Date(month);
         const count = storeData.filter(store => {
-          const storeMonthDate = new Date(store.first_order_month);
+          // Skip inactive stores or stores without period_month
+          if (!store.period_month || store.period_month === "Inactive") return false;
+          const storeMonthDate = new Date(store.period_month);
           return storeMonthDate <= monthDate;
         }).length;
         monthlyCounts[month] = count;
       });
       
+      console.log("monthlyTotalStoreCount calculated:", monthlyCounts);
       setMonthlyTotalStoreCount(monthlyCounts);
     }
   }, [storeData]);
@@ -299,7 +308,8 @@ export default function Dashboard() {
         activeStores: number; 
         monthlyOrders: number; 
       }> = [];
-      
+
+      console.log(processedData.monthlyStoreCounts)
       // Get months from processedData that have store counts
       const monthsWithStores = Object.keys(processedData.monthlyStoreCounts);
       
@@ -610,6 +620,16 @@ export default function Dashboard() {
                     </Box>
                   )}
 
+                {/* Product Category Chart */}
+                {processedData &&
+                  Object.keys(processedData.categorySummaries).length > 0 && (
+                    <Box mb={4}>
+                      <ProductCategoryChart
+                        categoryData={processedData.categorySummaries}
+                        selectedMonths={dateRange.month}
+                      />
+                    </Box>
+                  )}
 
                 
 
