@@ -36,8 +36,10 @@ interface DisplayProductSummary {
   quantity: number;
   averagePrice: number;
   totalProfit: number;
+  monthMargin: number;
   overallTotalInvoice: number;
   overallTotalProfit: number;
+  overallMargin: number;
 }
 
 const headCells: HeadCell[] = [
@@ -46,8 +48,10 @@ const headCells: HeadCell[] = [
   { id: "averagePrice", label: "Average Price", numeric: true },
   { id: "totalInvoice", label: "Month Total Invoice", numeric: true },
   { id: "totalProfit", label: "Month Total Profit", numeric: true },
+  { id: "monthMargin", label: "Month Margin", numeric: true },
   { id: "overallTotalInvoice", label: "Overall Total Invoice", numeric: true },
   { id: "overallTotalProfit", label: "Overall Total Profit", numeric: true },
+  { id: "overallMargin", label: "Overall Margin", numeric: true },
 ];
 
 interface ProductSummaryTableProps {
@@ -99,6 +103,9 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
       return true;
     })
     .map(([id, summary]) => {
+      const monthMargin = summary.totalInvoice > 0 ? (summary.profit / summary.totalInvoice) * 100 : 0;
+      const overallMargin = summary.totalInvoice > 0 ? (summary.totalProfit / summary.totalInvoice) * 100 : 0;
+      
       return {
         id,
         name: summary.name,
@@ -106,8 +113,10 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
         quantity: summary.quantity,
         averagePrice: summary.price / summary.difPrice,
         totalProfit: summary.profit, // Month total from processedData
+        monthMargin: monthMargin,
         overallTotalInvoice: summary.totalQuantity > 0 ? summary.totalInvoice : 0, // Use totalInvoice for overall if available
         overallTotalProfit: summary.totalProfit || 0, // Use pre-calculated totalProfit
+        overallMargin: overallMargin,
       };
     })
     .sort((a, b) => {
@@ -195,8 +204,10 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
                   <TableCell align="right">{formatCurrency(product.averagePrice)}</TableCell>
                   <TableCell align="right">{formatCurrency(product.totalInvoice)}</TableCell>
                   <TableCell align="right">{formatCurrency(product.totalProfit)}</TableCell>
+                  <TableCell align="right">{product.monthMargin.toFixed(2)}%</TableCell>
                   <TableCell align="right">{formatCurrency(product.overallTotalInvoice)}</TableCell>
                   <TableCell align="right">{formatCurrency(product.overallTotalProfit)}</TableCell>
+                  <TableCell align="right">{product.overallMargin.toFixed(2)}%</TableCell>
                 </TableRow>
               ))}
           </TableBody>
