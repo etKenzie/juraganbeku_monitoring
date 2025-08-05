@@ -55,17 +55,15 @@ const SegmentPerformanceChart = ({
   }, []);
 
   // Get available months for selection
-  const availableMonths = React.useMemo(() => {
-    if (monthlySegmentData) {
-      return Object.keys(monthlySegmentData).sort((a, b) => {
-        const [monthA, yearA] = a.split(" ");
-        const [monthB, yearB] = b.split(" ");
-        const dateA = new Date(`${monthA} 1, ${yearA}`);
-        const dateB = new Date(`${monthB} 1, ${yearB}`);
-        return dateB.getTime() - dateA.getTime(); // Sort descending (most recent first)
-      });
-    }
-    return [];
+   const availableMonths = React.useMemo(() => {
+    if (!monthlySegmentData) return [];
+    return Object.keys(monthlySegmentData).sort((a, b) => {
+      const [monthA, yearA] = a.split(' ');
+      const [monthB, yearB] = b.split(' ');
+      const dateA = new Date(`${monthA} 1, ${yearA}`);
+      const dateB = new Date(`${monthB} 1, ${yearB}`);
+      return dateB.getTime() - dateA.getTime();
+    });
   }, [monthlySegmentData]);
 
   // Set default selected month to most recent
@@ -75,19 +73,19 @@ const SegmentPerformanceChart = ({
     }
   }, [availableMonths, selectedMonth]);
 
-  // Get current data based on selected month or overall data
+  // Get current data based on selected month
   const getCurrentSegmentData = () => {
-    if (selectedMonth && selectedMonth !== "" && monthlySegmentData && monthlySegmentData[selectedMonth]) {
+    if (selectedMonth && monthlySegmentData && monthlySegmentData[selectedMonth]) {
       return monthlySegmentData[selectedMonth];
     }
-    return segmentData;
+    return {};
   };
 
   const getCurrentSubBusinessTypeData = () => {
-    if (selectedMonth && selectedMonth !== "" && monthlySubBusinessTypeData && monthlySubBusinessTypeData[selectedMonth]) {
+    if (selectedMonth && monthlySubBusinessTypeData && monthlySubBusinessTypeData[selectedMonth]) {
       return monthlySubBusinessTypeData[selectedMonth];
     }
-    return subBusinessTypeData;
+    return {};
   };
 
   const handleBarClick = (event: any, chartContext: any, config: any) => {
@@ -201,7 +199,7 @@ const SegmentPerformanceChart = ({
       },
     },
     title: {
-      // text: selectedMonth ? `Segment Performance - ${selectedMonth}` : "Segment Performance - All Months",
+      // text: selectedMonth ? `Segment Performance - ${selectedMonth}` : "Segment Performance",
       align: "center",
       style: {
         fontSize: "16px",
@@ -352,7 +350,6 @@ const SegmentPerformanceChart = ({
                 size="small"
                 sx={{ minWidth: '120px' }}
               >
-                <MenuItem value="">All Months</MenuItem>
                 {availableMonths.map((month) => (
                   <MenuItem key={month} value={month}>
                     {month}

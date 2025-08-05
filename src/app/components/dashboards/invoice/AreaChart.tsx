@@ -44,23 +44,21 @@ const AreaChart = ({
   const [selectedMonth, setSelectedMonth] = React.useState<string>("");
   const [isClient, setIsClient] = React.useState(false);
 
-  // Get available months for dropdown
+  // Get available months for dropdown (sorted in descending order)
   const availableMonths = React.useMemo(() => {
     if (!monthlyAreaData) return [];
     return Object.keys(monthlyAreaData).sort((a, b) => {
-      const [monthA, yearA] = a.split(' ');
-      const [monthB, yearB] = b.split(' ');
-      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                     'July', 'August', 'September', 'October', 'November', 'December'];
-      const yearDiff = parseInt(yearA) - parseInt(yearB);
-      if (yearDiff !== 0) return yearDiff;
-      return months.indexOf(monthA) - months.indexOf(monthB);
+      const [monthA, yearA] = a.split(" ");
+      const [monthB, yearB] = b.split(" ");
+      const dateA = new Date(`${monthA} 1, ${yearA}`);
+      const dateB = new Date(`${monthB} 1, ${yearB}`);
+      return dateB.getTime() - dateA.getTime(); // Sort descending (most recent first)
     });
   }, [monthlyAreaData]);
 
   React.useEffect(() => {
-    if (availableMonths.length > 0 && selectedMonth === "") {
-      setSelectedMonth(availableMonths[availableMonths.length - 1]); // Set to most recent month
+    if (availableMonths.length > 0 && !selectedMonth) {
+      setSelectedMonth(availableMonths[0]); // Set to most recent month
     }
   }, [availableMonths, selectedMonth]);
 
@@ -69,10 +67,10 @@ const AreaChart = ({
   }, []);
 
   const getCurrentAreaData = () => {
-    if (selectedMonth && selectedMonth !== "" && monthlyAreaData && monthlyAreaData[selectedMonth]) {
+    if (selectedMonth && monthlyAreaData && monthlyAreaData[selectedMonth]) {
       return monthlyAreaData[selectedMonth];
     }
-    return areaData;
+    return {};
   };
 
   const handleBarClick = (event: any, chartContext: any, config: any) => {
@@ -181,7 +179,6 @@ const AreaChart = ({
       },
     },
     title: {
-      // text: selectedMonth ? `Area Performance - ${selectedMonth}` : "Area Performance - All Months",
       align: "center",
       style: {
         fontSize: "16px",
@@ -332,7 +329,6 @@ const AreaChart = ({
                 size="small"
                 sx={{ minWidth: '120px' }}
               >
-                <MenuItem value="">All Months</MenuItem>
                 {availableMonths.map((month) => (
                   <MenuItem key={month} value={month}>
                     {month}

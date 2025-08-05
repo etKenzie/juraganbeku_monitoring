@@ -72,10 +72,10 @@ const ProductCategoryChart = ({
 
   // Get current category data based on selected month
   const getCurrentCategoryData = () => {
-    if (selectedMonth && selectedMonth !== "" && monthlyCategoryData && monthlyCategoryData[selectedMonth]) {
+    if (selectedMonth && monthlyCategoryData && monthlyCategoryData[selectedMonth]) {
       return monthlyCategoryData[selectedMonth];
     }
-    return categoryData;
+    return {};
   };
 
   React.useEffect(() => {
@@ -176,7 +176,6 @@ const ProductCategoryChart = ({
       },
     },
     title: {
-      // text: selectedMonth ? `Product Category Performance - ${selectedMonth}` : "Product Category Performance - All Months",
       align: "center",
       style: {
         fontSize: "16px",
@@ -321,7 +320,6 @@ const ProductCategoryChart = ({
                 size="small"
                 sx={{ minWidth: '120px' }}
               >
-                <MenuItem value="">All Months</MenuItem>
                 {availableMonths.map((month) => (
                   <MenuItem key={month} value={month}>
                     {month}
