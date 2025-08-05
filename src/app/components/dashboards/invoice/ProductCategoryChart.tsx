@@ -32,6 +32,7 @@ interface CategorySummary {
 interface ProductCategoryChartProps {
   isLoading?: boolean;
   categoryData: Record<string, CategorySummary>;
+  monthlyCategoryData?: { [month: string]: Record<string, CategorySummary> };
   selectedMonths: string;
 }
 
@@ -40,13 +41,42 @@ type SortKey = "totalInvoice" | "gross_profit" | "quantity" | "itemCount" | "mar
 const ProductCategoryChart = ({
   isLoading,
   categoryData,
+  monthlyCategoryData,
   selectedMonths,
 }: ProductCategoryChartProps) => {
   const theme = useTheme();
   const [selectedCategory, setSelectedCategory] = React.useState<CategorySummary | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [sortKey, setSortKey] = React.useState<SortKey>("totalInvoice");
+  const [selectedMonth, setSelectedMonth] = React.useState<string>("");
   const [isClient, setIsClient] = React.useState(false);
+
+  // Get available months from monthly category data
+  const availableMonths = React.useMemo(() => {
+    if (!monthlyCategoryData) return [];
+    return Object.keys(monthlyCategoryData).sort((a, b) => {
+      const [monthA, yearA] = a.split(' ');
+      const [monthB, yearB] = b.split(' ');
+      const dateA = new Date(`${monthA} 1, ${yearA}`);
+      const dateB = new Date(`${monthB} 1, ${yearB}`);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [monthlyCategoryData]);
+
+  // Set default selected month to most recent
+  React.useEffect(() => {
+    if (availableMonths.length > 0 && !selectedMonth) {
+      setSelectedMonth(availableMonths[0]);
+    }
+  }, [availableMonths, selectedMonth]);
+
+  // Get current category data based on selected month
+  const getCurrentCategoryData = () => {
+    if (selectedMonth && selectedMonth !== "" && monthlyCategoryData && monthlyCategoryData[selectedMonth]) {
+      return monthlyCategoryData[selectedMonth];
+    }
+    return categoryData;
+  };
 
   React.useEffect(() => {
     setIsClient(true);
@@ -54,7 +84,7 @@ const ProductCategoryChart = ({
 
   const handleBarClick = (event: any, chartContext: any, config: any) => {
     const categoryName = categories[config.dataPointIndex];
-    const categoryDetails = categoryData[categoryName];
+    const categoryDetails = currentCategoryData[categoryName];
     setSelectedCategory(categoryDetails);
     setModalOpen(true);
   };
@@ -64,8 +94,11 @@ const ProductCategoryChart = ({
     setSelectedCategory(null);
   };
 
+  // Get current category data
+  const currentCategoryData = getCurrentCategoryData();
+
   // Sort categories based on selected key
-  const sortedCategories = Object.entries(categoryData || {})
+  const sortedCategories = Object.entries(currentCategoryData || {})
     .sort(([, a], [, b]) => {
       if (!a || !b) return 0;
       
@@ -90,7 +123,7 @@ const ProductCategoryChart = ({
 
   const categories = sortedCategories;
   const values = categories.map((category) => {
-    const data = categoryData?.[category];
+    const data = currentCategoryData?.[category];
     if (!data) return 0;
 
     switch (sortKey) {
@@ -140,6 +173,16 @@ const ProductCategoryChart = ({
       height: 280,
       events: {
         dataPointSelection: handleBarClick,
+      },
+    },
+    title: {
+      // text: selectedMonth ? `Product Category Performance - ${selectedMonth}` : "Product Category Performance - All Months",
+      align: "center",
+      style: {
+        fontSize: "16px",
+        fontWeight: 600,
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        color: theme.palette.mode === "dark" ? "#fff" : "#111",
       },
     },
     plotOptions: {
@@ -271,6 +314,21 @@ const ProductCategoryChart = ({
                 <IconDownload size={20} />
               </IconButton>
             </Tooltip>
+            {availableMonths.length > 0 && (
+              <Select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                size="small"
+                sx={{ minWidth: '120px' }}
+              >
+                <MenuItem value="">All Months</MenuItem>
+                {availableMonths.map((month) => (
+                  <MenuItem key={month} value={month}>
+                    {month}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
             <Select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value as SortKey)}

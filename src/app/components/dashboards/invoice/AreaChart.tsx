@@ -25,6 +25,7 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 interface AreaChartProps {
   isLoading?: boolean;
   areaData: Record<string, AreaData>;
+  monthlyAreaData?: { [month: string]: Record<string, AreaData> };
   selectedMonths: string;
 }
 
@@ -33,21 +34,51 @@ type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "to
 const AreaChart = ({
   isLoading,
   areaData,
+  monthlyAreaData,
   selectedMonths,
 }: AreaChartProps) => {
   const theme = useTheme();
   const [selectedArea, setSelectedArea] = React.useState<AreaData | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [sortKey, setSortKey] = React.useState<SortKey>("totalInvoice");
+  const [selectedMonth, setSelectedMonth] = React.useState<string>("");
   const [isClient, setIsClient] = React.useState(false);
+
+  // Get available months for dropdown
+  const availableMonths = React.useMemo(() => {
+    if (!monthlyAreaData) return [];
+    return Object.keys(monthlyAreaData).sort((a, b) => {
+      const [monthA, yearA] = a.split(' ');
+      const [monthB, yearB] = b.split(' ');
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+      const yearDiff = parseInt(yearA) - parseInt(yearB);
+      if (yearDiff !== 0) return yearDiff;
+      return months.indexOf(monthA) - months.indexOf(monthB);
+    });
+  }, [monthlyAreaData]);
+
+  React.useEffect(() => {
+    if (availableMonths.length > 0 && selectedMonth === "") {
+      setSelectedMonth(availableMonths[availableMonths.length - 1]); // Set to most recent month
+    }
+  }, [availableMonths, selectedMonth]);
 
   React.useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const getCurrentAreaData = () => {
+    if (selectedMonth && selectedMonth !== "" && monthlyAreaData && monthlyAreaData[selectedMonth]) {
+      return monthlyAreaData[selectedMonth];
+    }
+    return areaData;
+  };
+
   const handleBarClick = (event: any, chartContext: any, config: any) => {
     const areaName = areas[config.dataPointIndex];
-    const areaDetails = areaData[areaName];
+    const currentAreaData = getCurrentAreaData();
+    const areaDetails = currentAreaData[areaName];
     setSelectedArea(areaDetails);
     setModalOpen(true);
   };
@@ -57,8 +88,10 @@ const AreaChart = ({
     setSelectedArea(null);
   };
 
+  const currentAreaData = getCurrentAreaData();
+
   // Sort areas based on selected key
-  const sortedAreas = Object.entries(areaData)
+  const sortedAreas = Object.entries(currentAreaData)
     .sort(([, a], [, b]) => {
       switch (sortKey) {
         case "totalInvoice":
@@ -85,7 +118,7 @@ const AreaChart = ({
 
   const areas = sortedAreas;
   const values = areas.map((area) => {
-    const data = areaData[area];
+    const data = currentAreaData[area];
     switch (sortKey) {
       case "totalInvoice":
         return data.totalInvoice;
@@ -145,6 +178,16 @@ const AreaChart = ({
       height: 280,
       events: {
         dataPointSelection: handleBarClick,
+      },
+    },
+    title: {
+      // text: selectedMonth ? `Area Performance - ${selectedMonth}` : "Area Performance - All Months",
+      align: "center",
+      style: {
+        fontSize: "16px",
+        fontWeight: 600,
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        color: theme.palette.mode === "dark" ? "#fff" : "#111",
       },
     },
     plotOptions: {
@@ -282,6 +325,21 @@ const AreaChart = ({
                 <IconDownload size={20} />
               </IconButton>
             </Tooltip>
+            {availableMonths.length > 0 && (
+              <Select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                size="small"
+                sx={{ minWidth: '120px' }}
+              >
+                <MenuItem value="">All Months</MenuItem>
+                {availableMonths.map((month) => (
+                  <MenuItem key={month} value={month}>
+                    {month}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
             <Select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value as SortKey)}

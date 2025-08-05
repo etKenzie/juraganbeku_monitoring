@@ -600,6 +600,7 @@ export default function Dashboard() {
                   <Box mb={4}>
                     <AreaChart
                       areaData={processedData.areaSummaries}
+                      monthlyAreaData={processedData.monthlyAreaSummaries}
                       selectedMonths={dateRange.month}
                     />
                   </Box>
@@ -616,6 +617,8 @@ export default function Dashboard() {
                         }
                         segmentData={processedData.segmentSummaries}
                         selectedMonths={dateRange.month}
+                        monthlySegmentData={processedData.monthlySegmentSummaries}
+                        monthlySubBusinessTypeData={processedData.monthlySubBusinessTypeSummaries}
                       />
                     </Box>
                   )}
@@ -626,6 +629,7 @@ export default function Dashboard() {
                     <Box mb={4}>
                       <ProductCategoryChart
                         categoryData={processedData.categorySummaries}
+                        monthlyCategoryData={processedData.monthlyCategorySummaries}
                         selectedMonths={dateRange.month}
                       />
                     </Box>

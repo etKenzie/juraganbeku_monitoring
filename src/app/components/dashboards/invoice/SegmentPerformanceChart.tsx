@@ -27,6 +27,8 @@ interface SegmentPerformanceChartProps {
   segmentData: Record<string, AreaData>;
   selectedMonths: string;
   subBusinessTypeData: Record<string, AreaData>;
+  monthlySegmentData?: { [month: string]: Record<string, AreaData> };
+  monthlySubBusinessTypeData?: { [month: string]: Record<string, AreaData> };
 }
 
 type SortKey = "totalInvoice" | "totalProfit" | "totalOrders" | "totalCOD" | "totalTOP" | "averageInvoice" | "averageProfit" | "margin";
@@ -37,21 +39,61 @@ const SegmentPerformanceChart = ({
   segmentData,
   selectedMonths,
   subBusinessTypeData,
+  monthlySegmentData,
+  monthlySubBusinessTypeData,
 }: SegmentPerformanceChartProps) => {
   const theme = useTheme();
   const [selectedSegment, setSelectedSegment] = React.useState<AreaData | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [sortKey, setSortKey] = React.useState<SortKey>("totalInvoice");
   const [segmentType, setSegmentType] = React.useState<SegmentType>("business_type");
+  const [selectedMonth, setSelectedMonth] = React.useState<string>("");
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
     setIsClient(true);
   }, []);
 
+  // Get available months for selection
+  const availableMonths = React.useMemo(() => {
+    if (monthlySegmentData) {
+      return Object.keys(monthlySegmentData).sort((a, b) => {
+        const [monthA, yearA] = a.split(" ");
+        const [monthB, yearB] = b.split(" ");
+        const dateA = new Date(`${monthA} 1, ${yearA}`);
+        const dateB = new Date(`${monthB} 1, ${yearB}`);
+        return dateB.getTime() - dateA.getTime(); // Sort descending (most recent first)
+      });
+    }
+    return [];
+  }, [monthlySegmentData]);
+
+  // Set default selected month to most recent
+  React.useEffect(() => {
+    if (availableMonths.length > 0 && !selectedMonth) {
+      setSelectedMonth(availableMonths[0]);
+    }
+  }, [availableMonths, selectedMonth]);
+
+  // Get current data based on selected month or overall data
+  const getCurrentSegmentData = () => {
+    if (selectedMonth && selectedMonth !== "" && monthlySegmentData && monthlySegmentData[selectedMonth]) {
+      return monthlySegmentData[selectedMonth];
+    }
+    return segmentData;
+  };
+
+  const getCurrentSubBusinessTypeData = () => {
+    if (selectedMonth && selectedMonth !== "" && monthlySubBusinessTypeData && monthlySubBusinessTypeData[selectedMonth]) {
+      return monthlySubBusinessTypeData[selectedMonth];
+    }
+    return subBusinessTypeData;
+  };
+
   const handleBarClick = (event: any, chartContext: any, config: any) => {
     const segmentName = segments[config.dataPointIndex];
-    const segmentDetails = segmentData[segmentName];
+    const currentData = getCurrentSegmentData();
+    const segmentDetails = currentData[segmentName];
     setSelectedSegment(segmentDetails);
     setModalOpen(true);
   };
@@ -62,7 +104,7 @@ const SegmentPerformanceChart = ({
   };
 
   // Get the appropriate data based on segment type
-  const currentSegmentData = segmentType === "business_type" ? segmentData : subBusinessTypeData;
+  const currentSegmentData = segmentType === "business_type" ? getCurrentSegmentData() : getCurrentSubBusinessTypeData();
 
   // Sort segments based on selected key
   const sortedSegments = Object.entries(currentSegmentData || {})
@@ -156,6 +198,16 @@ const SegmentPerformanceChart = ({
       height: 280,
       events: {
         dataPointSelection: handleBarClick,
+      },
+    },
+    title: {
+      // text: selectedMonth ? `Segment Performance - ${selectedMonth}` : "Segment Performance - All Months",
+      align: "center",
+      style: {
+        fontSize: "16px",
+        fontWeight: 600,
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        color: theme.palette.mode === "dark" ? "#fff" : "#111",
       },
     },
     plotOptions: {
@@ -293,6 +345,21 @@ const SegmentPerformanceChart = ({
                 <IconDownload size={20} />
               </IconButton>
             </Tooltip>
+            {availableMonths.length > 0 && (
+              <Select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                size="small"
+                sx={{ minWidth: '120px' }}
+              >
+                <MenuItem value="">All Months</MenuItem>
+                {availableMonths.map((month) => (
+                  <MenuItem key={month} value={month}>
+                    {month}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
             <Select
               value={segmentType}
               onChange={(e) => setSegmentType(e.target.value as SegmentType)}

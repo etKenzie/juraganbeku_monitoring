@@ -58,6 +58,9 @@ export interface ProcessedData {
   categorySummaries: { [key: string]: CategorySummary };
   monthlyProductSummaries: { [month: string]: { [productId: string]: ProductSummary } };
   monthlyCategorySummaries: { [month: string]: { [category: string]: CategorySummary } };
+  monthlyAreaSummaries: { [month: string]: { [key: string]: AreaData } };
+  monthlySegmentSummaries: { [month: string]: { [key: string]: AreaData & { activeMonths: Set<string> } } };
+  monthlySubBusinessTypeSummaries: { [month: string]: { [key: string]: AreaData & { activeMonths: Set<string> } } };
   storeSummaries: { [key: string]: StoreSummary };
   areaSummaries: { [key: string]: AreaData };
   segmentSummaries: { [key: string]: AreaData & { activeMonths: Set<string> } };
