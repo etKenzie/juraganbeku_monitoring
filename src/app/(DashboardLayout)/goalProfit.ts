@@ -14,6 +14,7 @@ export const goalProfit: AreaGoalProfit = {
     'may 2025': 160000000,
     'june 2025': 175000000,
     'july 2025': 166000000,
+    'august 2025': 200000000,
   },
   JAKARTA: {
     'january 2025': 51000000,
@@ -23,6 +24,7 @@ export const goalProfit: AreaGoalProfit = {
     'may 2025': 70000000,
     'june 2025': 75000000,
     'july 2025': 75000000,
+    'august 2025': 81500000,
   },
   TANGERANG: {
     'january 2025': 42000000,
@@ -32,6 +34,7 @@ export const goalProfit: AreaGoalProfit = {
     'may 2025': 65000000,
     'june 2025': 75000000,
     'july 2025': 75000000,
+    'august 2025': 81500000,
   },
   SURABAYA: {
     'january 2025': 20000000,
@@ -41,6 +44,7 @@ export const goalProfit: AreaGoalProfit = {
     'may 2025': 20000000,
     'june 2025': 17000000,
     'july 2025': 8000000,
+    'august 2025': 8000000,
   },
   CENTRAL: {
     'january 2025': 13000000,
@@ -50,5 +54,7 @@ export const goalProfit: AreaGoalProfit = {
     'may 2025': 8000000,
     'june 2025': 8000000,
     'july 2025': 8000000,
+    'august 2025': 9000000
+    ,
   },
 };
