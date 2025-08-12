@@ -143,6 +143,7 @@ export default function Dashboard() {
     activeStores: number; 
     monthlyOrders: number; 
   }>>([]);
+  const [selectedProductMonth, setSelectedProductMonth] = useState<string>("");
 
 
   const getDateRange = (period: string) => {
@@ -230,7 +231,7 @@ export default function Dashboard() {
             segment: segment,
           })
         ),
-        dispatch(fetchStoreData({ area: AREA }) as any),
+        dispatch(fetchStoreData({ area: AREA, status: "active" })),
       ]);
       setProcessedArea(AREA);
       setAppliedMonth(customMonth);
@@ -267,27 +268,27 @@ export default function Dashboard() {
     }
   }, [validOrders]);
 
-  // Calculate monthlyTotalStoreCount and activation rate from storeData
+  // Calculate monthlyTotalStoreCount from storeData (all stores are active)
   useEffect(() => {
     console.log("storeData received:", storeData);
     if (storeData && storeData.length > 0) {
       const monthlyCounts: Record<string, number> = {};
       
-      // Get all unique months from store data (excluding inactive stores)
+      // Get all unique months from store data using first_order_month
       const allMonths = storeData
-        .filter(store => store.period_month && store.period_month !== "Inactive")
-        .map(store => store.period_month);
+        .filter(store => store.first_order_month)
+        .map(store => store.first_order_month);
       const uniqueMonths = Array.from(new Set(allMonths)).sort();
       
       console.log("Unique months from storeData:", uniqueMonths);
       
-      // For each month, count all stores that have period_month <= that month
+      // For each month, count all stores that have first_order_month <= that month
       uniqueMonths.forEach(month => {
         const monthDate = new Date(month);
         const count = storeData.filter(store => {
-          // Skip inactive stores or stores without period_month
-          if (!store.period_month || store.period_month === "Inactive") return false;
-          const storeMonthDate = new Date(store.period_month);
+          // All stores in storeData are active (filtered by API)
+          if (!store.first_order_month) return false;
+          const storeMonthDate = new Date(store.first_order_month);
           return storeMonthDate <= monthDate;
         }).length;
         monthlyCounts[month] = count;
@@ -598,8 +599,26 @@ export default function Dashboard() {
                 {/* Area Chart - Only show when no specific area is selected */}
                 {processedData && !area && (
                   <Box mb={4}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Typography variant="h6">Area Performance</Typography>
+                      <FormControl sx={{ minWidth: 200 }}>
+                        <InputLabel>Select Month</InputLabel>
+                        <Select
+                          value={selectedProductMonth}
+                          onChange={(e) => setSelectedProductMonth(e.target.value)}
+                          label="Select Month"
+                        >
+                          <MenuItem value="">All Months (Overall)</MenuItem>
+                          {Object.keys(processedData.monthlyAreaSummaries).map((month) => (
+                            <MenuItem key={month} value={month}>
+                              {month}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
                     <AreaChart
-                      areaData={processedData.areaSummaries}
+                      areaData={selectedProductMonth ? processedData.monthlyAreaSummaries[selectedProductMonth] || {} : processedData.areaSummaries}
                       monthlyAreaData={processedData.monthlyAreaSummaries}
                       selectedMonths={dateRange.month}
                     />
@@ -611,11 +630,29 @@ export default function Dashboard() {
                 {processedData &&
                   Object.keys(processedData.segmentSummaries).length > 0 && (
                     <Box mb={4}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6">Segment Performance</Typography>
+                        <FormControl sx={{ minWidth: 200 }}>
+                          <InputLabel>Select Month</InputLabel>
+                          <Select
+                            value={selectedProductMonth}
+                            onChange={(e) => setSelectedProductMonth(e.target.value)}
+                            label="Select Month"
+                          >
+                            <MenuItem value="">All Months (Overall)</MenuItem>
+                            {Object.keys(processedData.monthlySegmentSummaries).map((month) => (
+                              <MenuItem key={month} value={month}>
+                                {month}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
                       <SegmentPerformanceChart
                         subBusinessTypeData={
-                          processedData.subBusinessTypeSummaries
+                          selectedProductMonth ? processedData.monthlySubBusinessTypeSummaries[selectedProductMonth] || {} : processedData.subBusinessTypeSummaries
                         }
-                        segmentData={processedData.segmentSummaries}
+                        segmentData={selectedProductMonth ? processedData.monthlySegmentSummaries[selectedProductMonth] || {} : processedData.segmentSummaries}
                         selectedMonths={dateRange.month}
                         monthlySegmentData={processedData.monthlySegmentSummaries}
                         monthlySubBusinessTypeData={processedData.monthlySubBusinessTypeSummaries}
@@ -627,8 +664,26 @@ export default function Dashboard() {
                 {processedData &&
                   Object.keys(processedData.categorySummaries).length > 0 && (
                     <Box mb={4}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6">Product Category Performance</Typography>
+                        <FormControl sx={{ minWidth: 200 }}>
+                          <InputLabel>Select Month</InputLabel>
+                          <Select
+                            value={selectedProductMonth}
+                            onChange={(e) => setSelectedProductMonth(e.target.value)}
+                            label="Select Month"
+                          >
+                            <MenuItem value="">All Months (Overall)</MenuItem>
+                            {Object.keys(processedData.monthlyCategorySummaries).map((month) => (
+                              <MenuItem key={month} value={month}>
+                                {month}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
                       <ProductCategoryChart
-                        categoryData={processedData.categorySummaries}
+                        categoryData={selectedProductMonth ? processedData.monthlyCategorySummaries[selectedProductMonth] || {} : processedData.categorySummaries}
                         monthlyCategoryData={processedData.monthlyCategorySummaries}
                         selectedMonths={dateRange.month}
                       />
@@ -709,8 +764,26 @@ export default function Dashboard() {
                 {/* Product Summary Table */}
                 {processedData && (
                   <Box mb={4}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Typography variant="h6">Product Summary</Typography>
+                      <FormControl sx={{ minWidth: 200 }}>
+                        <InputLabel>Select Month</InputLabel>
+                        <Select
+                          value={selectedProductMonth}
+                          onChange={(e) => setSelectedProductMonth(e.target.value)}
+                          label="Select Month"
+                        >
+                          <MenuItem value="">All Months (Overall)</MenuItem>
+                          {Object.keys(processedData.monthlyProductSummaries).map((month) => (
+                            <MenuItem key={month} value={month}>
+                              {month}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
                     <ProductSummaryTable
-                      productSummaries={processedData.productSummaries}
+                      productSummaries={selectedProductMonth ? processedData.monthlyProductSummaries[selectedProductMonth] || {} : processedData.productSummaries}
                     />
                   </Box>
                 )}

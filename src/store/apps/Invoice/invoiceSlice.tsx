@@ -304,7 +304,7 @@ export const updateOrderItems =
     }
   };
 
-export const fetchStoreData = (params?: { area?: string, month?: string }) => async (dispatch: AppDispatch) => {
+export const fetchStoreData = (params?: { area?: string, month?: string, status?: string }) => async (dispatch: AppDispatch) => {
   dispatch(startLoading());
   try {
     const AUTH_TOKEN = getCookie("token");
@@ -320,9 +320,13 @@ export const fetchStoreData = (params?: { area?: string, month?: string }) => as
       if (params?.month) {
         searchParams.append("month", params.month);
       }
+      if (params?.status) {
+        searchParams.append("status", params.status);
+      }
 
     const request = `${ACTIVE_USERS_URL}?${searchParams.toString()}`;
 
+    console.log(request)
     const response = await axios.get(request, {
       // headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
     });
