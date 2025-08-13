@@ -128,10 +128,12 @@ export const useInvoiceData = () => {
         monthlyProductSummaries: {},
         monthlyCategorySummaries: {},
         monthlyAreaSummaries: {},
+        monthlyAgentSummaries: {},
         monthlySegmentSummaries: {},
         monthlySubBusinessTypeSummaries: {},
         storeSummaries: {},
         areaSummaries: {},
+        agentSummaries: {},
         segmentSummaries: {},
         subBusinessTypeSummaries: {},
         overallTOP: 0,
@@ -184,10 +186,12 @@ export const useInvoiceData = () => {
       monthlyProductSummaries: {},
       monthlyCategorySummaries: {},
       monthlyAreaSummaries: {},
+      monthlyAgentSummaries: {},
       monthlySegmentSummaries: {},
       monthlySubBusinessTypeSummaries: {},
       storeSummaries: {},
       areaSummaries: {},
+      agentSummaries: {},
       segmentSummaries: {},
       subBusinessTypeSummaries: {},
       overallTOP: 0,
@@ -663,6 +667,83 @@ export const useInvoiceData = () => {
 
       if (order.profit > 0) {
         monthlyAreaSummary.totalProfit += order.profit;
+      }
+
+      // Process agent data for overall summaries
+      const agentName = order.agent_name || "UNKNOWN";
+      if (!result.agentSummaries[agentName]) {
+        result.agentSummaries[agentName] = {
+          name: agentName,
+          totalOrders: 0,
+          totalInvoice: 0,
+          totalProfit: 0,
+          totalCOD: 0,
+          totalTOP: 0,
+          totalLunas: 0,
+          totalBelumLunas: 0,
+          orders: [],
+        };
+      }
+
+      const agentSummary = result.agentSummaries[agentName];
+      agentSummary.totalOrders++;
+      agentSummary.totalInvoice += order.total_invoice || 0;
+      agentSummary.orders.push(order);
+
+      if (order.payment_type === "COD") {
+        agentSummary.totalCOD += order.total_invoice || 0;
+      } else if (order.payment_type === "TOP") {
+        agentSummary.totalTOP += order.total_invoice || 0;
+      }
+
+      if (order.status_payment === "LUNAS") {
+        agentSummary.totalLunas += order.total_invoice || 0;
+      } else {
+        agentSummary.totalBelumLunas += order.total_invoice || 0;
+      }
+
+      if (order.profit > 0) {
+        agentSummary.totalProfit += order.profit;
+      }
+
+      // Process agent data for monthly summaries (ALL MONTHS, not just most recent)
+      if (!result.monthlyAgentSummaries[processedMonthKey]) {
+        result.monthlyAgentSummaries[processedMonthKey] = {};
+      }
+
+      if (!result.monthlyAgentSummaries[processedMonthKey][agentName]) {
+        result.monthlyAgentSummaries[processedMonthKey][agentName] = {
+          name: agentName,
+          totalOrders: 0,
+          totalInvoice: 0,
+          totalProfit: 0,
+          totalCOD: 0,
+          totalTOP: 0,
+          totalLunas: 0,
+          totalBelumLunas: 0,
+          orders: [],
+        };
+      }
+
+      const monthlyAgentSummary = result.monthlyAgentSummaries[processedMonthKey][agentName];
+      monthlyAgentSummary.totalOrders++;
+      monthlyAgentSummary.totalInvoice += order.total_invoice || 0;
+      monthlyAgentSummary.orders.push(order);
+
+      if (order.payment_type === "COD") {
+        monthlyAgentSummary.totalCOD += order.total_invoice || 0;
+      } else if (order.payment_type === "TOP") {
+        monthlyAgentSummary.totalTOP += order.total_invoice || 0;
+      }
+
+      if (order.status_payment === "LUNAS") {
+        monthlyAgentSummary.totalLunas += order.total_invoice || 0;
+      } else {
+        monthlyAgentSummary.totalBelumLunas += order.total_invoice || 0;
+      }
+
+      if (order.profit > 0) {
+        monthlyAgentSummary.totalProfit += order.profit;
       }
 
       // Initialize monthly segment summaries if not exists

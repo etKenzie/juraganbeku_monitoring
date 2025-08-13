@@ -8,6 +8,7 @@ import { useInvoiceData } from "./data";
 import Loading from "@/app/(DashboardLayout)/loading";
 import PageContainer from "@/app/components/container/PageContainer";
 import ActivationRateChart from "@/app/components/dashboards/invoice/ActivationRateChart";
+import AgentChart from "@/app/components/dashboards/invoice/AgentChart";
 import AreaChart from "@/app/components/dashboards/invoice/AreaChart";
 import InvoiceLineChart from "@/app/components/dashboards/invoice/InvoiceLineChart";
 import NOOAreaChart from "@/app/components/dashboards/invoice/NOOAreaChart";
@@ -599,55 +600,32 @@ export default function Dashboard() {
                 {/* Area Chart - Only show when no specific area is selected */}
                 {processedData && !area && (
                   <Box mb={4}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                      <Typography variant="h6">Area Performance</Typography>
-                      <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Select Month</InputLabel>
-                        <Select
-                          value={selectedProductMonth}
-                          onChange={(e) => setSelectedProductMonth(e.target.value)}
-                          label="Select Month"
-                        >
-                          <MenuItem value="">All Months (Overall)</MenuItem>
-                          {Object.keys(processedData.monthlyAreaSummaries).map((month) => (
-                            <MenuItem key={month} value={month}>
-                              {month}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
+                
                     <AreaChart
                       areaData={selectedProductMonth ? processedData.monthlyAreaSummaries[selectedProductMonth] || {} : processedData.areaSummaries}
                       monthlyAreaData={processedData.monthlyAreaSummaries}
                       selectedMonths={dateRange.month}
                     />
                   </Box>
+                                )}
+
+                {/* Agent Chart - Only show when no specific area is selected */}
+                {processedData && (
+                  <Box mb={4}>
+                  
+                    <AgentChart
+                      agentData={selectedProductMonth ? processedData.monthlyAgentSummaries[selectedProductMonth] || {} : processedData.agentSummaries}
+                      monthlyAgentData={processedData.monthlyAgentSummaries}
+                      selectedMonths={dateRange.month}
+                    />
+                  </Box>
                 )}
-            
 
                 {/* Segment Performance Chart */}
                 {processedData &&
                   Object.keys(processedData.segmentSummaries).length > 0 && (
                     <Box mb={4}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                        <Typography variant="h6">Segment Performance</Typography>
-                        <FormControl sx={{ minWidth: 200 }}>
-                          <InputLabel>Select Month</InputLabel>
-                          <Select
-                            value={selectedProductMonth}
-                            onChange={(e) => setSelectedProductMonth(e.target.value)}
-                            label="Select Month"
-                          >
-                            <MenuItem value="">All Months (Overall)</MenuItem>
-                            {Object.keys(processedData.monthlySegmentSummaries).map((month) => (
-                              <MenuItem key={month} value={month}>
-                                {month}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
+                  
                       <SegmentPerformanceChart
                         subBusinessTypeData={
                           selectedProductMonth ? processedData.monthlySubBusinessTypeSummaries[selectedProductMonth] || {} : processedData.subBusinessTypeSummaries
@@ -664,24 +642,7 @@ export default function Dashboard() {
                 {processedData &&
                   Object.keys(processedData.categorySummaries).length > 0 && (
                     <Box mb={4}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                        <Typography variant="h6">Product Category Performance</Typography>
-                        <FormControl sx={{ minWidth: 200 }}>
-                          <InputLabel>Select Month</InputLabel>
-                          <Select
-                            value={selectedProductMonth}
-                            onChange={(e) => setSelectedProductMonth(e.target.value)}
-                            label="Select Month"
-                          >
-                            <MenuItem value="">All Months (Overall)</MenuItem>
-                            {Object.keys(processedData.monthlyCategorySummaries).map((month) => (
-                              <MenuItem key={month} value={month}>
-                                {month}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
+                  
                       <ProductCategoryChart
                         categoryData={selectedProductMonth ? processedData.monthlyCategorySummaries[selectedProductMonth] || {} : processedData.categorySummaries}
                         monthlyCategoryData={processedData.monthlyCategorySummaries}

@@ -49,6 +49,18 @@ export interface AreaData {
   orders: OrderData[];
 }
 
+export interface AgentData {
+  name: string;
+  totalOrders: number;
+  totalInvoice: number;
+  totalProfit: number;
+  totalCOD: number;
+  totalTOP: number;
+  totalLunas: number;
+  totalBelumLunas: number;
+  orders: OrderData[];
+}
+
 export interface ProcessedData {
   overallTotalInvoice: number;
   overallTotalPembayaran: number;
@@ -59,10 +71,12 @@ export interface ProcessedData {
   monthlyProductSummaries: { [month: string]: { [productId: string]: ProductSummary } };
   monthlyCategorySummaries: { [month: string]: { [category: string]: CategorySummary } };
   monthlyAreaSummaries: { [month: string]: { [key: string]: AreaData } };
+  monthlyAgentSummaries: { [month: string]: { [key: string]: AgentData } };
   monthlySegmentSummaries: { [month: string]: { [key: string]: AreaData & { activeMonths: Set<string> } } };
   monthlySubBusinessTypeSummaries: { [month: string]: { [key: string]: AreaData & { activeMonths: Set<string> } } };
   storeSummaries: { [key: string]: StoreSummary };
   areaSummaries: { [key: string]: AreaData };
+  agentSummaries: { [key: string]: AgentData };
   segmentSummaries: { [key: string]: AreaData & { activeMonths: Set<string> } };
   subBusinessTypeSummaries: { [key: string]: AreaData & { activeMonths: Set<string> } };
   overallTOP: number;
