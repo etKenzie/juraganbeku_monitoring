@@ -119,7 +119,6 @@ export default function Dashboard() {
       totalProfit: number;
     }>
   >([]);
-  const [selectedArea, setSelectedArea] = useState<string>("");
   const [area, setArea] = useState(() => {
     if (role?.includes("surabaya")) return "SURABAYA";
     if (role?.includes("tangerang")) return "TANGERANG";
@@ -128,6 +127,9 @@ export default function Dashboard() {
   });
   const [areas, setAreas] = useState<string[]>([]);
   const [allAreas, setAllAreas] = useState<string[]>([]);
+  const [agent, setAgent] = useState<string>("");
+  const [agents, setAgents] = useState<string[]>([]);
+  const [allAgents, setAllAgents] = useState<string[]>([]);
   const [segment, setSegment] = useState<string>("");
   // Track the area used for the last processedData fetch
   const [processedArea, setProcessedArea] = useState(area);
@@ -219,6 +221,7 @@ export default function Dashboard() {
             sortTime,
             month: dateRange.month,
             area: AREA,
+            agent: agent,
             segment: segment,
           })
         ),
@@ -229,6 +232,7 @@ export default function Dashboard() {
             // startDate: "2025-03-01",
             // endDate: "2025-05-30",
             area: AREA,
+            agent: agent,
             segment: segment,
           })
         ),
@@ -353,12 +357,22 @@ export default function Dashboard() {
         const merged = new Set([...prev, ...uniqueAreas]);
         return Array.from(merged);
       });
+
+      // Extract unique agents from the data
+      const uniqueAgents = Object.keys(processedData.agentSummaries);
+      setAgents(uniqueAgents);
+      // Merge new agents into allAgents
+      setAllAgents(prev => {
+        const merged = new Set([...prev, ...uniqueAgents]);
+        return Array.from(merged);
+      });
     }
   }, [processedData]);
 
 
   let filteredOrders = validOrders.filter((order) => {
-    if (selectedArea && order.area !== selectedArea) return false;
+    if (area && order.area !== area) return false;
+    if (agent && order.agent_name !== agent) return false;
     const orderMonthYear = order.month.toLowerCase();
 
     // Check if the order's month is in the selected months
@@ -473,6 +487,24 @@ export default function Dashboard() {
                     </FormControl>
                   </Stack>
                 )}
+
+                <TextField
+                  label="Select Agent"
+                  select
+                  value={agent}
+                  onChange={(e) => setAgent(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ flexBasis: "30%", flexGrow: 1 }}
+                >
+                  <MenuItem value="">All Agents</MenuItem>
+                  {allAgents
+                    .filter((agentOption) => agentOption !== "")
+                    .map((agentOption) => (
+                      <MenuItem key={agentOption} value={agentOption}>
+                        {agentOption}
+                      </MenuItem>
+                    ))}
+                </TextField>
 
                 <TextField
                   label="Select Area"

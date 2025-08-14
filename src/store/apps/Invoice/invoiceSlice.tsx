@@ -201,6 +201,7 @@ interface OrderQuery {
   sortTime?: "desc" | "asc";
   month?: string;
   area?: string;
+  agent?: string;
   segment?: string;
   payment?: string;
 }
