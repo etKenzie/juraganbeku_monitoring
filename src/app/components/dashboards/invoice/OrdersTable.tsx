@@ -4,6 +4,7 @@ import DownloadButton from "@/app/components/common/DownloadButton";
 import { formatCurrency } from "@/app/utils/formatNumber";
 import { OrderData, updateOrderItems } from "@/store/apps/Invoice/invoiceSlice";
 import { AppDispatch } from "@/store/store";
+import { useAuth } from "@/contexts/AuthContext";
 import CancelIcon from "@mui/icons-material/Cancel";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -70,6 +71,7 @@ interface OrdersTableProps {
 
 const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }: OrdersTableProps) => {
   const dispatch = useDispatch<AppDispatch>();
+  const { role } = useAuth();
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [orderBy, setOrderBy] = useState<SortableField>("order_date");
   const [order, setOrder] = useState<Order>("desc");
@@ -87,6 +89,9 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
   }>({});
   const [isEditing, setIsEditing] = useState(false);
   const [tagFilter, setTagFilter] = useState<string>("");
+
+  // Check if user has admin role
+  const isAdmin = role?.includes("admin");
 
   const handleRequestSort = (property: SortableField) => {
     const isAsc = orderBy === property && order === "asc";
@@ -685,37 +690,39 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
                 <Typography variant="h6">
                   Order Details - {selectedOrder.order_code}
                 </Typography>
-                <Box>
-                  {!isEditing ? (
-                    <Button
-                      startIcon={<EditIcon />}
-                      onClick={() => setIsEditing(true)}
-                      variant="outlined"
-                    >
-                      Edit Buy Prices
-                    </Button>
-                  ) : (
-                    <Box>
+                {isAdmin && (
+                  <Box>
+                    {!isEditing ? (
                       <Button
-                        startIcon={<SaveIcon />}
-                        onClick={handleSaveBuyPrices}
-                        variant="contained"
-                        color="primary"
-                        sx={{ mr: 1 }}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        startIcon={<CancelIcon />}
-                        onClick={handleCancelEdit}
+                        startIcon={<EditIcon />}
+                        onClick={() => setIsEditing(true)}
                         variant="outlined"
-                        color="error"
                       >
-                        Cancel
+                        Edit Buy Prices
                       </Button>
-                    </Box>
-                  )}
-                </Box>
+                    ) : (
+                      <Box>
+                        <Button
+                          startIcon={<SaveIcon />}
+                          onClick={handleSaveBuyPrices}
+                          variant="contained"
+                          color="primary"
+                          sx={{ mr: 1 }}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          startIcon={<CancelIcon />}
+                          onClick={handleCancelEdit}
+                          variant="outlined"
+                          color="error"
+                        >
+                          Cancel
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                )}
               </Box>
               <TableContainer>
                 <Table>
@@ -743,7 +750,7 @@ const OrdersTable = ({ orders: initialOrders, title, exportOrderDetails = true }
                           {formatCurrency(item.total_invoice)}
                         </TableCell>
                         <TableCell>
-                          {isEditing ? (
+                          {isEditing && isAdmin ? (
                             <TextField
                               type="number"
                               value={editingBuyPrices[item.order_item_id] || 0}

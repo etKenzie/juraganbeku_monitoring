@@ -566,7 +566,7 @@ export default function Dashboard() {
                 {processedData && (
                   <Box mb={4}>
                     {(() => {
-                      const areaKey = processedArea || "NATIONAL";
+                      const agentKey = agent || "NATIONAL";
                       // Use appliedMonth/appliedYear for monthString
                       const getMonthString = (month: number, year: number) => {
                         const date = new Date(year, month, 1);
@@ -574,7 +574,7 @@ export default function Dashboard() {
                         return `${monthName} ${year}`;
                       };
                       const monthString = getMonthString(appliedMonth, appliedYear);
-                      const goal = goalProfit[areaKey]?.[monthString] || 0;
+                      const goal = goalProfit[agentKey]?.[monthString] || 0;
                       const profit = processedData.thisMonthMetrics.totalProfit || 0;
                       const remaining = goal - profit;
                       const isNegative = remaining > 0;

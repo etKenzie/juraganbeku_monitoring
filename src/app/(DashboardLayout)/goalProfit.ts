@@ -15,8 +15,12 @@ export const goalProfit: AreaGoalProfit = {
     'june 2025': 175000000,
     'july 2025': 166000000,
     'august 2025': 200000000,
+    'september 2025': 220000000,
+    'october 2025': 241000000,
+    'november 2025': 257000000,
+    'december 2025': 277000000,
   },
-  JAKARTA: {
+  "Oki irawan": {
     'january 2025': 51000000,
     'february 2025': 70300000,
     'march 2025': 70000000,
@@ -25,8 +29,12 @@ export const goalProfit: AreaGoalProfit = {
     'june 2025': 75000000,
     'july 2025': 75000000,
     'august 2025': 81500000,
+    'september 2025': 86500000,
+    'october 2025': 92000000,
+    'november 2025': 95000000,
+    'december 2025': 100000000,
   },
-  TANGERANG: {
+  "Rully juliandi": {
     'january 2025': 42000000,
     'february 2025': 52160000,
     'march 2025': 60000000,
@@ -35,8 +43,12 @@ export const goalProfit: AreaGoalProfit = {
     'june 2025': 75000000,
     'july 2025': 75000000,
     'august 2025': 81500000,
+    'september 2025': 86500000,
+    'october 2025': 92000000,
+    'november 2025': 95000000,
+    'december 2025': 100000000,
   },
-  SURABAYA: {
+  "Mardi": {
     'january 2025': 20000000,
     'february 2025': 20000000,
     'march 2025': 20000000,
@@ -45,8 +57,19 @@ export const goalProfit: AreaGoalProfit = {
     'june 2025': 17000000,
     'july 2025': 8000000,
     'august 2025': 8000000,
+    'september 2025': 8000000,
+    'october 2025': 8000000,
+    'november 2025': 8000000,
+    'december 2025': 8000000,
   },
-  CENTRAL: {
+  "Rifqi Cassidy": {
+    'august 2025': 20000000,
+    'september 2025': 30000000,
+    'october 2025': 40000000,
+    'november 2025': 50000000,
+    'december 2025': 60000000,
+  },
+  Others: {
     'january 2025': 13000000,
     'february 2025': 13000000,
     'march 2025': 10000000,
@@ -54,7 +77,26 @@ export const goalProfit: AreaGoalProfit = {
     'may 2025': 8000000,
     'june 2025': 8000000,
     'july 2025': 8000000,
-    'august 2025': 9000000
-    ,
+    'august 2025': 4000000,
+    'september 2025': 4000000,
+    'october 2025': 4000000,
+    'november 2025': 4000000,
+    'december 2025': 4000000,
+    
   },
+  Channel: {
+    'january 2025': 13000000,
+    'february 2025': 13000000,
+    'march 2025': 10000000,
+    'april 2025': 5440000,
+    'may 2025': 8000000,
+    'june 2025': 8000000,
+    'july 2025': 8000000,
+    'august 2025': 5000000,
+    'september 2025': 5000000,
+    'october 2025': 5000000,
+    'november 2025': 5000000,
+    'december 2025': 5000000,
+  },
+  
 };

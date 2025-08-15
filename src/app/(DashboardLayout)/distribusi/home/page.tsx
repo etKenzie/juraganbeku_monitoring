@@ -40,23 +40,27 @@ export default function DashboardPage() {
     return "";
   });
   const [segment, setSegment] = useState("");
+  const [agent, setAgent] = useState<string>("");
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const[monthString, setMonthString] = useState(getMonthString(selectedMonth, selectedYear))
-  const [filters, setFilters] = useState<{ area: string; segment: string; month: number; year: number }>({
+  const [filters, setFilters] = useState<{ area: string; segment: string; agent: string; month: number; year: number }>({
     area,
     segment: "",
+    agent: "",
     month: now.getMonth(),
     year: now.getFullYear(),
   });
 
   // Add allAreas state to track all areas across different filter selections
   const [allAreas, setAllAreas] = useState<string[]>([]);
+  const [agents, setAgents] = useState<string[]>([]);
+  const [allAgents, setAllAgents] = useState<string[]>([]);
 
   // Only fetch/process data after clicking Apply Filters
   const handleApplyFilters = () => {
-    setFilters({ area, segment, month: selectedMonth, year: selectedYear });
+    setFilters({ area, segment, agent, month: selectedMonth, year: selectedYear });
   };
 
   
@@ -74,6 +78,7 @@ export default function DashboardPage() {
         sortTime: "desc",
         month: newMonthString,
         area: AREA,
+        agent: filters.agent,
         segment: filters.segment,
       })
     );
@@ -82,6 +87,7 @@ export default function DashboardPage() {
         sortTime: "desc",
         month: newMonthString,
         area: AREA,
+        agent: filters.agent,
         segment: filters.segment,
       })
       
@@ -184,6 +190,22 @@ export default function DashboardPage() {
     return newAllAreas.filter((a) => a !== "");
   }, [processedData, allAreas]);
 
+  // Agents for filter dropdown - merge new agents with existing ones
+  const agentsList = useMemo(() => {
+    const currentAgents = processedData ? Object.keys(processedData.agentSummaries) : [];
+    
+    // Merge current agents with allAgents
+    const mergedAgents = new Set([...allAgents, ...currentAgents]);
+    const newAllAgents = Array.from(mergedAgents);
+    
+    // Update allAgents if there are new agents
+    if (newAllAgents.length !== allAgents.length) {
+      setAllAgents(newAllAgents);
+    }
+    
+    return newAllAgents.filter((a) => a !== "");
+  }, [processedData, allAgents]);
+
   // NOOs for selected month
   const nooForSelectedMonth = useMemo(() => {
     if (!Array.isArray(nooData)) return 0;
@@ -222,6 +244,15 @@ export default function DashboardPage() {
       {/* Filters */}
       <Box mb={3}>
         <Stack direction="row" spacing={2}>
+        <FormControl sx={{ minWidth: 120 }}>
+            <InputLabel>Agent</InputLabel>
+            <Select value={agent} onChange={(e) => setAgent(e.target.value)} label="Agent">
+              <MenuItem value="">All Agents</MenuItem>
+              {agentsList.filter((a) => a !== "").map((a) => (
+                <MenuItem key={a} value={a}>{a}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel>Area</InputLabel>
             <Select value={area} onChange={(e) => setArea(e.target.value)} label="Area">
@@ -269,8 +300,8 @@ export default function DashboardPage() {
         <Box mb={3}>
           {(() => {
             // Prepare tile data array
-            const areaKey = filters.area || "NATIONAL";
-            const goal = goalProfit[areaKey]?.[monthString] || 0;
+            const agentKey = filters.agent || "NATIONAL";
+            const goal = goalProfit[agentKey]?.[monthString] || 0;
             const profit = processedData.thisMonthMetrics.totalProfit || 0;
             const remaining = goal - profit;
             const isNegative = remaining > 0;
