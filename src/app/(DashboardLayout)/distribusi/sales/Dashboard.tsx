@@ -267,6 +267,7 @@ export default function Dashboard() {
       else if (role.includes("oki")) setAgent("Oki irawan");
       setHasInitialized(true); // prevent re-setting area
     }
+
   }, [role, hasInitialized]);
 
   // Add initial data fetch when component mounts
@@ -512,7 +513,10 @@ export default function Dashboard() {
                   InputLabelProps={{ shrink: true }}
                   sx={{ flexBasis: "30%", flexGrow: 1 }}
                 >
-                  <MenuItem value="">All Agents</MenuItem>
+                  
+                  {(role?.includes("admin") || role?.includes("dashboard")) && (
+                    <MenuItem value="">All Agents</MenuItem>
+                  )}
                   {allAgents
                     .filter((agentOption) => agentOption !== "")
                     .map((agentOption) => (

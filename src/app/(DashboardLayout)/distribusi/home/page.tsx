@@ -18,6 +18,8 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   
   const { role } = useAuth();
+  
+
   const { orders, nooData, loading, storeData } = useSelector((state: RootState) => ({
     orders: state.invoiceReducer.orders,
     storeData: state.invoiceReducer.storeData,
@@ -67,6 +69,19 @@ export default function DashboardPage() {
   };
 
   
+
+  // Handle role-based agent initialization
+  useEffect(() => {
+    if (role) {
+      if (role.includes("mardi")) setAgent("Mardi");
+      else if (role.includes("rully")) setAgent("Rully juliandi");
+      else if (role.includes("oki")) setAgent("Oki irawan");
+      else if (role.includes("rifqi")) setAgent("Rifqi Cassidy");
+      else if (role.includes("channel")) setAgent("Channel");
+      else if (role.includes("others")) setAgent("Others");
+      else setAgent(""); // Reset for admin/dashboard users
+    }
+  }, [role]);
 
   // Fetch data when filters are set
   useEffect(() => {
@@ -254,10 +269,12 @@ export default function DashboardPage() {
       {/* Filters */}
       <Box mb={3}>
         <Stack direction="row" spacing={2}>
-        <FormControl sx={{ minWidth: 120 }}>
+                  <FormControl sx={{ minWidth: 120 }}>
             <InputLabel>Agent</InputLabel>
             <Select value={agent} onChange={(e) => setAgent(e.target.value)} label="Agent">
-              <MenuItem value="">All Agents</MenuItem>
+              {(role?.includes("admin") || role?.includes("dashboard")) && (
+                <MenuItem value="">All Agents</MenuItem>
+              )}
               {agentsList.filter((a) => a !== "").map((a) => (
                 <MenuItem key={a} value={a}>{a}</MenuItem>
               ))}
