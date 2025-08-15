@@ -119,15 +119,18 @@ export default function Dashboard() {
       totalProfit: number;
     }>
   >([]);
-  const [area, setArea] = useState(() => {
-    if (role?.includes("surabaya")) return "SURABAYA";
-    if (role?.includes("tangerang")) return "TANGERANG";
-    if (role?.includes("jakarta")) return "JAKARTA";
-    return "";
-  });
+  const [area, setArea] = useState<string>("");
   const [areas, setAreas] = useState<string[]>([]);
   const [allAreas, setAllAreas] = useState<string[]>([]);
-  const [agent, setAgent] = useState<string>("");
+  const [agent, setAgent] = useState(() => {
+    if (role?.includes("mardi")) return "Mardi";
+    if (role?.includes("rully")) return "Rully juliandi";
+    if (role?.includes("oki")) return "Oki irawan";
+    if (role?.includes("rifqi")) return "Rifqi Cassidy";
+    if (role?.includes("channel")) return "Channel";
+    if (role?.includes("others")) return "Others";
+    return "";
+  });
   const [agents, setAgents] = useState<string[]>([]);
   const [allAgents, setAllAgents] = useState<string[]>([]);
   const [segment, setSegment] = useState<string>("");
@@ -205,14 +208,24 @@ export default function Dashboard() {
   const handleApplyFilters = async () => {
     try {
       let AREA = area;
-      if (role?.includes("tangerang")) {
-        AREA = "TANGERANG";
+      let AGENT = agent
+      if (role?.includes("rully")) {
+        AGENT = "Rully juliandi";
       }
-      if (role?.includes("surabaya")) {
-        AREA = "SURABAYA";
+      if (role?.includes("mardi")) {
+        AGENT = "Mardi";
       }
-      if (role?.includes("jakarta")) {
-        AREA = "JAKARTA";
+      if (role?.includes("oki")) {
+        AGENT = "Oki irawan";
+      }
+      if (role?.includes("rifqi")) {
+        AGENT = "Rifqi Cassidy";
+      }
+      if (role?.includes("channel")) {
+        AGENT = "Channel";
+      }
+      if (role?.includes("others")) {
+        AGENT = "Others";
       }
 
       await Promise.all([
@@ -221,7 +234,7 @@ export default function Dashboard() {
             sortTime,
             month: dateRange.month,
             area: AREA,
-            agent: agent,
+            agent: AGENT,
             segment: segment,
           })
         ),
@@ -232,7 +245,7 @@ export default function Dashboard() {
             // startDate: "2025-03-01",
             // endDate: "2025-05-30",
             area: AREA,
-            agent: agent,
+            agent: AGENT,
             segment: segment,
           })
         ),
@@ -249,9 +262,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (role && !hasInitialized) {
-      if (role.includes("surabaya")) setArea("SURABAYA");
-      else if (role.includes("tangerang")) setArea("TANGERANG");
-      else if (role.includes("jakarta")) setArea("JAKARTA");
+      if (role.includes("mardi")) setAgent("Mardi");
+      else if (role.includes("rully")) setAgent("Rully juliandi");
+      else if (role.includes("oki")) setAgent("Oki irawan");
       setHasInitialized(true); // prevent re-setting area
     }
   }, [role, hasInitialized]);
@@ -388,9 +401,12 @@ export default function Dashboard() {
 
   const hasAccess = [
     "admin",
-    "tangerang",
-    "jakarta",
-    "surabaya",
+    "rully",
+    "oki",
+    "mardi",
+    "rifqi",
+    "channel",
+    "others",
     "dashboard",
   ].some((r) => role?.includes(r));
 

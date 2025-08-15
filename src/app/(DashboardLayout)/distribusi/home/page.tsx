@@ -33,14 +33,17 @@ export default function DashboardPage() {
   };
 
   // Filters
-  const [area, setArea] = useState(() => {
-    if (role?.includes("surabaya")) return "SURABAYA";
-    if (role?.includes("tangerang")) return "TANGERANG";
-    if (role?.includes("jakarta")) return "JAKARTA";
+  const [area, setArea] = useState("");
+  const [segment, setSegment] = useState("");
+  const [agent, setAgent] = useState(() => {
+    if (role?.includes("mardi")) return "Mardi";
+    if (role?.includes("rully")) return "Rully juliandi";
+    if (role?.includes("oki")) return "Oki irawan";
+    if (role?.includes("rifqi")) return "Rifqi Cassidy";
+    if (role?.includes("channel")) return "Channel";
+    if (role?.includes("others")) return "Others";
     return "";
   });
-  const [segment, setSegment] = useState("");
-  const [agent, setAgent] = useState<string>("");
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -69,16 +72,20 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!filters) return;
     let AREA = filters.area;
-    if (role?.includes("tangerang")) AREA = "TANGERANG";
-    if (role?.includes("surabaya")) AREA = "SURABAYA";
-    if (role?.includes("jakarta")) AREA = "JAKARTA";
+    let AGENT = filters.agent;
+    if (role?.includes("rully")) AGENT = "Rully juliandi";
+    if (role?.includes("mardi")) AGENT = "Mardi";
+    if (role?.includes("oki")) AGENT = "Oki irawan";
+    if (role?.includes("rifqi")) AGENT = "Rifqi Cassidy";
+    if (role?.includes("channel")) AGENT = "Channel";
+    if (role?.includes("others")) AGENT = "Others";
     const newMonthString = getMonthString(filters.month, filters.year);
     dispatch(
       fetchOrders({
         sortTime: "desc",
         month: newMonthString,
         area: AREA,
-        agent: filters.agent,
+        agent: AGENT,
         segment: filters.segment,
       })
     );
@@ -87,7 +94,7 @@ export default function DashboardPage() {
         sortTime: "desc",
         month: newMonthString,
         area: AREA,
-        agent: filters.agent,
+        agent: AGENT,
         segment: filters.segment,
       })
       
@@ -221,9 +228,12 @@ export default function DashboardPage() {
   // Role-based access control
   const hasAccess = [
     "admin",
-    "tangerang",
-    "jakarta",
-    "surabaya",
+    "rully",
+    "mardi",
+    "oki",
+    "rifqi",
+    "channel",
+    "others",
     "dashboard",
   ].some((r) => role?.includes(r));
   if (!hasAccess) {
