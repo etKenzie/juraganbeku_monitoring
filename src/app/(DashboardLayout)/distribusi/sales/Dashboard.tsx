@@ -363,21 +363,19 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (processedData) {
-      // Extract unique areas from the data
-      const uniqueAreas = Object.keys(processedData.areaSummaries);
-      setAreas(uniqueAreas);
+      // Use areas and agents from most recent month only
+      setAreas(processedData.mostRecentMonthAreas);
       // Merge new areas into allAreas
       setAllAreas(prev => {
-        const merged = new Set([...prev, ...uniqueAreas]);
+        const merged = new Set([...prev, ...processedData.mostRecentMonthAreas]);
         return Array.from(merged);
       });
 
-      // Extract unique agents from the data
-      const uniqueAgents = Object.keys(processedData.agentSummaries);
-      setAgents(uniqueAgents);
+      // Use agents from most recent month only
+      setAgents(processedData.mostRecentMonthAgents);
       // Merge new agents into allAgents
       setAllAgents(prev => {
-        const merged = new Set([...prev, ...uniqueAgents]);
+        const merged = new Set([...prev, ...processedData.mostRecentMonthAgents]);
         return Array.from(merged);
       });
     }

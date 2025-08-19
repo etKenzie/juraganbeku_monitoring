@@ -163,8 +163,10 @@ export const useInvoiceData = () => {
           dpd60: 0,
           lunas: 0,
         },
-        paymentStatusMetrics: {},
-        chartData: [],
+              paymentStatusMetrics: {},
+      chartData: [],
+      mostRecentMonthAreas: [],
+      mostRecentMonthAgents: [],
       };
     }
 
@@ -223,6 +225,8 @@ export const useInvoiceData = () => {
       },
       paymentStatusMetrics: {},
       chartData: processChartData(uniqueOrders),
+      mostRecentMonthAreas: [],
+      mostRecentMonthAgents: [],
     };
 
     // Calculate weekly data from chartData
@@ -353,6 +357,8 @@ export const useInvoiceData = () => {
     )[0].month;
     console.log("Most recent month:", mostRecentMonth);
     const mostRecentMonthStores = new Set<string>();
+    const mostRecentMonthAreas = new Set<string>();
+    const mostRecentMonthAgents = new Set<string>();
 
     // Process all data in a single pass through uniqueOrders
     uniqueOrders.forEach((order) => {
@@ -396,6 +402,8 @@ export const useInvoiceData = () => {
       // Process most recent month specific data
       if (processedMonthKey === mostRecentMonth) {
         mostRecentMonthStores.add(userId);
+        mostRecentMonthAreas.add(area);
+        mostRecentMonthAgents.add(order.agent_name || "UNKNOWN");
         result.thisMonthMetrics.totalOrders++;
         result.thisMonthMetrics.totalInvoice += order.total_invoice;
 
@@ -997,6 +1005,10 @@ export const useInvoiceData = () => {
     result.thisMonthMetrics.activationRate =
       (mostRecentMonthStores.size / Object.keys(result.storeSummaries).length) *
       100;
+
+    // Assign most recent month areas and agents
+    result.mostRecentMonthAreas = Array.from(mostRecentMonthAreas);
+    result.mostRecentMonthAgents = Array.from(mostRecentMonthAgents);
 
     return result;
   };

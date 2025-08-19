@@ -123,6 +123,8 @@ export interface ProcessedData {
     totalInvoice: number;
     totalProfit: number;
   }>;
+  mostRecentMonthAreas: string[];
+  mostRecentMonthAgents: string[];
 }
 
 export interface StoreSummary {
