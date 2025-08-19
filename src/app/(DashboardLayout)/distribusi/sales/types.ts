@@ -17,6 +17,7 @@ export interface ProductSummary {
   // Additional fields for detailed product information
   totalQuantity: number;
   totalProfit: number;
+  totalInvoiceOverall: number;
   margin: number;
   orders: OrderData[];
   monthlyData: Array<{

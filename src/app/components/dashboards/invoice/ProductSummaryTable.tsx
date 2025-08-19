@@ -66,6 +66,7 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<(ProductSummary & { productId: string }) | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  console.log(productSummaries)
 
   const handleRequestSort = (property: keyof DisplayProductSummary) => {
     const isAsc = orderBy === property && order === "asc";
@@ -104,7 +105,7 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
     })
     .map(([id, summary]) => {
       const monthMargin = summary.totalInvoice > 0 ? (summary.profit / summary.totalInvoice) * 100 : 0;
-      const overallMargin = summary.totalInvoice > 0 ? (summary.totalProfit / summary.totalInvoice) * 100 : 0;
+      const overallMargin = summary.totalInvoiceOverall > 0 ? (summary.totalProfit / summary.totalInvoiceOverall) * 100 : 0;
       
       return {
         id,
@@ -114,7 +115,7 @@ export default function ProductSummaryTable({ productSummaries }: ProductSummary
         averagePrice: summary.price / summary.difPrice,
         totalProfit: summary.profit, // Month total from processedData
         monthMargin: monthMargin,
-        overallTotalInvoice: summary.totalQuantity > 0 ? summary.totalInvoice : 0, // Use totalInvoice for overall if available
+        overallTotalInvoice: summary.totalInvoiceOverall || 0, // Use totalInvoiceOverall for overall
         overallTotalProfit: summary.totalProfit || 0, // Use pre-calculated totalProfit
         overallMargin: overallMargin,
       };

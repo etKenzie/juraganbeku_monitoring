@@ -441,6 +441,7 @@ export const useInvoiceData = () => {
               profit: 0,
               totalQuantity: 0,
               totalProfit: 0,
+              totalInvoiceOverall: 0,
               margin: 0,
               orders: [],
               monthlyData: [],
@@ -463,6 +464,11 @@ export const useInvoiceData = () => {
             Number(item.total_invoice) || 0;
           result.productSummaries[item.product_id].quantity +=
             Number(item.order_quantity) || 1;
+          
+          // Add the order to the orders array if not already present
+          if (!result.productSummaries[item.product_id].orders.find(o => o.order_id === order.order_id)) {
+            result.productSummaries[item.product_id].orders.push(order);
+          }
         });
 
         // Process category data for most recent month (overall summaries)
@@ -542,9 +548,43 @@ export const useInvoiceData = () => {
 
       if (order.payment_type === "COD") {
         result.overallCOD += order.total_invoice || 0;
-      } else if (order.payment_type === "TOP") {
+      } else       if (order.payment_type === "TOP") {
         result.overallTOP += order.total_invoice || 0;
       }
+
+      // Process overall product totals (across all months)
+      order.detail_order?.forEach((item) => {
+        if (!item) return;
+
+        if (!result.productSummaries[item.product_id]) {
+          result.productSummaries[item.product_id] = {
+            name: item.product_name || "",
+            totalInvoice: 0,
+            quantity: 0,
+            price: Number(item.price) || 0,
+            difPrice: 1,
+            profit: 0,
+            totalQuantity: 0,
+            totalProfit: 0,
+            totalInvoiceOverall: 0,
+            margin: 0,
+            orders: [],
+            monthlyData: [],
+          };
+        }
+
+        // Update overall totals for all months
+        result.productSummaries[item.product_id].totalQuantity += Number(item.order_quantity) || 1;
+        result.productSummaries[item.product_id].totalInvoiceOverall += Number(item.total_invoice) || 0;
+        if (order.profit > 0) {
+          result.productSummaries[item.product_id].totalProfit += Number(order.profit);
+        }
+        
+        // Add order to orders array if not already present
+        if (!result.productSummaries[item.product_id].orders.find(o => o.order_id === order.order_id)) {
+          result.productSummaries[item.product_id].orders.push(order);
+        }
+      });
 
       // Process store-specific data
       if (!result.storeSummaries[userId]) {
@@ -971,6 +1011,7 @@ export const useInvoiceData = () => {
               profit: 0,
               totalQuantity: 0,
               totalProfit: 0,
+              totalInvoiceOverall: 0,
               margin: 0,
               orders: [],
               monthlyData: [],
@@ -980,7 +1021,11 @@ export const useInvoiceData = () => {
           const monthlyProductSummary = result.monthlyProductSummaries[processedMonthKey][productId];
           monthlyProductSummary.totalInvoice += Number(item.total_invoice) || 0;
           monthlyProductSummary.quantity += Number(item.order_quantity) || 1;
-          monthlyProductSummary.orders.push(order);
+          
+          // Add the order to the orders array if not already present
+          if (!monthlyProductSummary.orders.find(o => o.order_id === order.order_id)) {
+            monthlyProductSummary.orders.push(order);
+          }
 
           if (order.profit > 0) {
             monthlyProductSummary.profit += Number(order.profit);

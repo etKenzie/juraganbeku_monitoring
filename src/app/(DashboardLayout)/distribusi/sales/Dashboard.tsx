@@ -599,6 +599,66 @@ export default function Dashboard() {
                       const invoice = processedData.thisMonthMetrics.totalInvoice;
                       const margin = (!invoice || invoice === 0) ? "-" : (profit / invoice * 100).toFixed(2) + "%";
                       const progress = (!goal || goal === 0) ? "-" : (profit / goal * 100).toFixed(2) + "%";
+                      
+                      // Calculate average orders per day/week and average profit per day/week
+                      const calculateAverages = () => {
+                        if (!validOrders || validOrders.length === 0) {
+                          return { 
+                            avgOrdersPerDay: 0, 
+                            avgProfitPerDay: 0,
+                            avgOrdersPerWeek: 0,
+                            avgProfitPerWeek: 0
+                          };
+                        }
+                        
+                        // Get all order dates
+                        const orderDates = validOrders.map(order => new Date(order.order_date));
+                        const earliestDate = new Date(Math.min(...orderDates.map(date => date.getTime())));
+                        const latestDate = new Date(Math.max(...orderDates.map(date => date.getTime())));
+                        
+                        // Calculate total days (inclusive)
+                        const totalDays = Math.ceil((latestDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                        
+                        // Calculate total weeks (inclusive)
+                        const totalWeeks = Math.ceil(totalDays / 7);
+                        
+                        // Calculate totals
+                        const totalOrders = validOrders.length;
+                        const totalProfit = validOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
+                        
+                        // Calculate averages
+                        const avgOrdersPerDay = totalDays > 0 ? totalOrders / totalDays : 0;
+                        const avgProfitPerDay = totalDays > 0 ? totalProfit / totalDays : 0;
+                        const avgOrdersPerWeek = totalWeeks > 0 ? totalOrders / totalWeeks : 0;
+                        const avgProfitPerWeek = totalWeeks > 0 ? totalProfit / totalWeeks : 0;
+                        
+                        return { 
+                          avgOrdersPerDay, 
+                          avgProfitPerDay,
+                          avgOrdersPerWeek,
+                          avgProfitPerWeek
+                        };
+                      };
+                      
+                      const { avgOrdersPerDay, avgProfitPerDay, avgOrdersPerWeek, avgProfitPerWeek } = calculateAverages();
+                      
+                      // Calculate days remaining until September 3rd
+                      const calculateDaysRemaining = () => {
+                        const today = new Date();
+                        const targetDate = new Date(today.getFullYear(), 8, 3); // September is month 8 (0-indexed)
+                        
+                        // If September 3rd has passed this year, calculate for next year
+                        if (today > targetDate) {
+                          targetDate.setFullYear(today.getFullYear() + 1);
+                        }
+                        
+                        const diffTime = targetDate.getTime() - today.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        return diffDays;
+                      };
+                      
+                      const daysRemaining = calculateDaysRemaining();
+                      
                       // Format profit remaining with sign
                       const formatProfitRemaining = (value: number) => {
                         if (value === 0) return value;
@@ -619,6 +679,11 @@ export default function Dashboard() {
                         { title: "NOOs", value: nooCount },
                         { title: "Margin", value: margin, isCurrency: false },
                         { title: "Activation Rate", value: (activationRateData && activationRateData.length > 0) ? activationRateData[activationRateData.length - 1].activationRate + "%" : "0%", isCurrency: false },
+                        { title: "Avg Orders/Day", value: avgOrdersPerDay.toFixed(2), isCurrency: false },
+                        { title: "Avg Profit/Day", value: avgProfitPerDay, isCurrency: true },
+                        { title: "Avg Orders/Week", value: avgOrdersPerWeek.toFixed(2), isCurrency: false },
+                        { title: "Avg Profit/Week", value: avgProfitPerWeek, isCurrency: true },
+                        { title: "Days Remaining", value: daysRemaining, isCurrency: false },
                       ];
                       return <SummaryTiles tiles={tiles} md={2.4} />;
                     })()}
@@ -775,26 +840,9 @@ export default function Dashboard() {
                 {/* Product Summary Table */}
                 {processedData && (
                   <Box mb={4}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                      <Typography variant="h6">Product Summary</Typography>
-                      <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Select Month</InputLabel>
-                        <Select
-                          value={selectedProductMonth}
-                          onChange={(e) => setSelectedProductMonth(e.target.value)}
-                          label="Select Month"
-                        >
-                          <MenuItem value="">All Months (Overall)</MenuItem>
-                          {Object.keys(processedData.monthlyProductSummaries).map((month) => (
-                            <MenuItem key={month} value={month}>
-                              {month}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
+                
                     <ProductSummaryTable
-                      productSummaries={selectedProductMonth ? processedData.monthlyProductSummaries[selectedProductMonth] || {} : processedData.productSummaries}
+                      productSummaries={processedData.productSummaries}
                     />
                   </Box>
                 )}
