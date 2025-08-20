@@ -344,6 +344,85 @@ export default function DashboardPage() {
               return `${sign} ${formatCurrency(absValue)}`;
             };
 
+            // Calculate average orders per day/week and average profit per day/week
+            const calculateAverages = () => {
+              // Use the same filtered data that's used for processedData
+              const filteredOrders = validOrders.filter((order) => {
+                if (filters.area && order.area !== filters.area) return false;
+                if (filters.agent && order.agent_name !== filters.agent) return false;
+                if (filters.segment && order.business_type !== filters.segment) return false;
+                
+                // Check if the order's month matches the selected month
+                const orderMonthYear = order.month.toLowerCase();
+                const selectedMonthString = getMonthString(filters.month, filters.year).toLowerCase();
+                return orderMonthYear === selectedMonthString;
+              });
+
+              if (!filteredOrders || filteredOrders.length === 0) {
+                return { 
+                  avgOrdersPerDay: 0, 
+                  avgProfitPerDay: 0,
+                  avgOrdersPerWeek: 0,
+                  avgProfitPerWeek: 0
+                };
+              }
+              
+              // Get all order dates
+              const orderDates = filteredOrders.map(order => new Date(order.order_date));
+              const earliestDate = new Date(Math.min(...orderDates.map(date => date.getTime())));
+              const latestDate = new Date(Math.max(...orderDates.map(date => date.getTime())));
+              
+              // Calculate total days (inclusive)
+              const totalDays = Math.ceil((latestDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              
+              // Calculate total weeks (inclusive)
+              const totalWeeks = Math.ceil(totalDays / 7);
+              
+              // Calculate totals
+              const totalOrders = filteredOrders.length;
+              const totalProfit = filteredOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
+              
+              // Calculate averages
+              const avgOrdersPerDay = totalDays > 0 ? totalOrders / totalDays : 0;
+              const avgProfitPerDay = totalDays > 0 ? totalProfit / totalDays : 0;
+              const avgOrdersPerWeek = totalWeeks > 0 ? totalOrders / totalWeeks : 0;
+              const avgProfitPerWeek = totalWeeks > 0 ? totalProfit / totalWeeks : 0;
+              
+              return { 
+                avgOrdersPerDay, 
+                avgProfitPerDay,
+                avgOrdersPerWeek,
+                avgProfitPerWeek
+              };
+            };
+            
+            const { avgOrdersPerDay, avgProfitPerDay, avgOrdersPerWeek, avgProfitPerWeek } = calculateAverages();
+            
+            // Calculate days remaining until September 3rd
+            const calculateDaysRemaining = () => {
+              const today = new Date();
+              const currentMonth = today.getMonth();
+              const currentYear = today.getFullYear();
+              
+              // If selected month is not current month, return N/A
+              if (filters.month !== currentMonth || filters.year !== currentYear) {
+                return "N/A";
+              }
+              
+              const targetDate = new Date(today.getFullYear(), 8, 3); // September is month 8 (0-indexed)
+              
+              // If September 3rd has passed this year, calculate for next year
+              if (today > targetDate) {
+                targetDate.setFullYear(today.getFullYear() + 1);
+              }
+              
+              const diffTime = targetDate.getTime() - today.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              return diffDays;
+            };
+            
+            const daysRemaining = calculateDaysRemaining();
+
             const tiles = [
               { title: "Total Invoice", value: processedData.thisMonthMetrics.totalInvoice, isCurrency: true },
               { title: "Profit Goal", value: goal, isCurrency: true },
@@ -355,6 +434,11 @@ export default function DashboardPage() {
               { title: "NOOs", value: nooForSelectedMonth },
               { title: "Margin", value: margin, isCurrency: false },
               { title: "Activation Rate", value: (activationRateData && activationRateData.length > 0) ? activationRateData[activationRateData.length - 1].activationRate + "%" : "0%", isCurrency: false },
+              { title: "Avg Orders/Day", value: avgOrdersPerDay.toFixed(2), isCurrency: false },
+              { title: "Avg Profit/Day", value: avgProfitPerDay, isCurrency: true },
+              { title: "Avg Orders/Week", value: avgOrdersPerWeek.toFixed(2), isCurrency: false },
+              { title: "Avg Profit/Week", value: avgProfitPerWeek, isCurrency: true },
+              { title: "Days Remaining", value: daysRemaining, isCurrency: false, color: 'red', fontWeight: 700 },
             ];
             return <SummaryTiles tiles={tiles} md={2.4} />;
           })()}
