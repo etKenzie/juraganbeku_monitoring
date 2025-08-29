@@ -346,7 +346,19 @@ export default function DashboardPage() {
 
             // Calculate average orders per day/week and average profit per day/week
             const calculateAverages = () => {
-              if (!validOrders || validOrders.length === 0) {
+              // Use the same filtered data that's used for processedData
+              const filteredOrders = validOrders.filter((order) => {
+                if (filters.area && order.area !== filters.area) return false;
+                if (filters.agent && order.agent_name !== filters.agent) return false;
+                if (filters.segment && order.business_type !== filters.segment) return false;
+                
+                // Check if the order's month matches the selected month
+                const orderMonthYear = order.month.toLowerCase();
+                const selectedMonthString = getMonthString(filters.month, filters.year).toLowerCase();
+                return orderMonthYear === selectedMonthString;
+              });
+
+              if (!filteredOrders || filteredOrders.length === 0) {
                 return { 
                   avgOrdersPerDay: 0, 
                   avgProfitPerDay: 0,
@@ -356,7 +368,7 @@ export default function DashboardPage() {
               }
               
               // Get all order dates
-              const orderDates = validOrders.map(order => new Date(order.order_date));
+              const orderDates = filteredOrders.map(order => new Date(order.order_date));
               const earliestDate = new Date(Math.min(...orderDates.map(date => date.getTime())));
               const latestDate = new Date(Math.max(...orderDates.map(date => date.getTime())));
               
@@ -367,8 +379,8 @@ export default function DashboardPage() {
               const totalWeeks = Math.ceil(totalDays / 7);
               
               // Calculate totals
-              const totalOrders = validOrders.length;
-              const totalProfit = validOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
+              const totalOrders = filteredOrders.length;
+              const totalProfit = filteredOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
               
               // Calculate averages
               const avgOrdersPerDay = totalDays > 0 ? totalOrders / totalDays : 0;
@@ -389,6 +401,14 @@ export default function DashboardPage() {
             // Calculate days remaining until September 3rd
             const calculateDaysRemaining = () => {
               const today = new Date();
+              const currentMonth = today.getMonth();
+              const currentYear = today.getFullYear();
+              
+              // If selected month is not current month, return N/A
+              if (filters.month !== currentMonth || filters.year !== currentYear) {
+                return "N/A";
+              }
+              
               const targetDate = new Date(today.getFullYear(), 8, 3); // September is month 8 (0-indexed)
               
               // If September 3rd has passed this year, calculate for next year
@@ -418,7 +438,7 @@ export default function DashboardPage() {
               { title: "Avg Profit/Day", value: avgProfitPerDay, isCurrency: true },
               { title: "Avg Orders/Week", value: avgOrdersPerWeek.toFixed(2), isCurrency: false },
               { title: "Avg Profit/Week", value: avgProfitPerWeek, isCurrency: true },
-              { title: "Days Remaining", value: daysRemaining, isCurrency: false },
+              { title: "Days Remaining", value: daysRemaining, isCurrency: false, color: 'red', fontWeight: 700 },
             ];
             return <SummaryTiles tiles={tiles} md={2.4} />;
           })()}

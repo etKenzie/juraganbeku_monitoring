@@ -602,7 +602,18 @@ export default function Dashboard() {
                       
                       // Calculate average orders per day/week and average profit per day/week
                       const calculateAverages = () => {
-                        if (!validOrders || validOrders.length === 0) {
+                        // Filter orders to match the same month/year as used for processedData
+                        const monthFilteredOrders = validOrders.filter((order) => {
+                          if (area && order.area !== area) return false;
+                          if (agent && order.agent_name !== agent) return false;
+                          
+                          // Check if the order's month matches the applied month/year
+                          const orderMonthYear = order.month.toLowerCase();
+                          const appliedMonthString = getMonthString(appliedMonth, appliedYear).toLowerCase();
+                          return orderMonthYear === appliedMonthString;
+                        });
+
+                        if (!monthFilteredOrders || monthFilteredOrders.length === 0) {
                           return { 
                             avgOrdersPerDay: 0, 
                             avgProfitPerDay: 0,
@@ -612,7 +623,7 @@ export default function Dashboard() {
                         }
                         
                         // Get all order dates
-                        const orderDates = validOrders.map(order => new Date(order.order_date));
+                        const orderDates = monthFilteredOrders.map(order => new Date(order.order_date));
                         const earliestDate = new Date(Math.min(...orderDates.map(date => date.getTime())));
                         const latestDate = new Date(Math.max(...orderDates.map(date => date.getTime())));
                         
@@ -623,8 +634,8 @@ export default function Dashboard() {
                         const totalWeeks = Math.ceil(totalDays / 7);
                         
                         // Calculate totals
-                        const totalOrders = validOrders.length;
-                        const totalProfit = validOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
+                        const totalOrders = monthFilteredOrders.length;
+                        const totalProfit = monthFilteredOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
                         
                         // Calculate averages
                         const avgOrdersPerDay = totalDays > 0 ? totalOrders / totalDays : 0;
@@ -645,6 +656,14 @@ export default function Dashboard() {
                       // Calculate days remaining until September 3rd
                       const calculateDaysRemaining = () => {
                         const today = new Date();
+                        const currentMonth = today.getMonth();
+                        const currentYear = today.getFullYear();
+                        
+                        // If selected month is not current month, return N/A
+                        if (appliedMonth !== currentMonth || appliedYear !== currentYear) {
+                          return "N/A";
+                        }
+                        
                         const targetDate = new Date(today.getFullYear(), 8, 3); // September is month 8 (0-indexed)
                         
                         // If September 3rd has passed this year, calculate for next year
@@ -683,7 +702,7 @@ export default function Dashboard() {
                         { title: "Avg Profit/Day", value: avgProfitPerDay, isCurrency: true },
                         { title: "Avg Orders/Week", value: avgOrdersPerWeek.toFixed(2), isCurrency: false },
                         { title: "Avg Profit/Week", value: avgProfitPerWeek, isCurrency: true },
-                        { title: "Days Remaining", value: daysRemaining, isCurrency: false },
+                        { title: "Days Remaining", value: daysRemaining, isCurrency: false, color: 'red', fontWeight: 700 },
                       ];
                       return <SummaryTiles tiles={tiles} md={2.4} />;
                     })()}
