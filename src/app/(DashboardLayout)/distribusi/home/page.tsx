@@ -114,7 +114,7 @@ export default function DashboardPage() {
       })
       
     );
-    dispatch(fetchStoreData({ area: AREA, agent: AGENT }) as any),
+    dispatch(fetchStoreData({ area: AREA, status: "active", agent: AGENT }) as any),
     setMonthString(newMonthString); // If you still need to keep monthString in state for other reasons
     // eslint-disable-next-line
   }, [filters]);
@@ -380,7 +380,7 @@ export default function DashboardPage() {
               
               // Calculate totals
               const totalOrders = filteredOrders.length;
-              const totalProfit = filteredOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
+              const totalProfit = filteredOrders.reduce((sum, order) => sum + (order.profit > 0 ? order.profit : 0), 0);
               
               // Calculate averages
               const avgOrdersPerDay = totalDays > 0 ? totalOrders / totalDays : 0;

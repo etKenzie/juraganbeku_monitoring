@@ -249,7 +249,7 @@ export default function Dashboard() {
             segment: segment,
           })
         ),
-        dispatch(fetchStoreData({ area: AREA, status: "active" })),
+        dispatch(fetchStoreData({ area: AREA, status: "active", agent: AGENT })),
       ]);
       setProcessedArea(AREA);
       setAppliedMonth(customMonth);
@@ -635,7 +635,7 @@ export default function Dashboard() {
                         
                         // Calculate totals
                         const totalOrders = monthFilteredOrders.length;
-                        const totalProfit = monthFilteredOrders.reduce((sum, order) => sum + (order.profit || 0), 0);
+                        const totalProfit = monthFilteredOrders.reduce((sum, order) => sum + (order.profit > 0 ? order.profit : 0), 0);
                         
                         // Calculate averages
                         const avgOrdersPerDay = totalDays > 0 ? totalOrders / totalDays : 0;
