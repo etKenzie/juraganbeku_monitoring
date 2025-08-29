@@ -305,7 +305,7 @@ export const updateOrderItems =
     }
   };
 
-export const fetchStoreData = (params?: { area?: string, month?: string, status?: string }) => async (dispatch: AppDispatch) => {
+export const fetchStoreData = (params?: { area?: string, month?: string, status?: string, agent?: string }) => async (dispatch: AppDispatch) => {
   dispatch(startLoading());
   try {
     const AUTH_TOKEN = getCookie("token");
@@ -323,6 +323,9 @@ export const fetchStoreData = (params?: { area?: string, month?: string, status?
       }
       if (params?.status) {
         searchParams.append("status", params.status);
+      }
+      if (params?.agent) {
+        searchParams.append("agent", params.agent);
       }
 
     const request = `${ACTIVE_USERS_URL}?${searchParams.toString()}`;
